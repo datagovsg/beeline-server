@@ -1,0 +1,33 @@
+From: Beeline <admin@beeline.sg>
+To: {{{customerEmail}}}
+Subject: Your Beeline Ticket (Booking #{{{bookingId}}})
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="beesbeesbeesbeesbeesbees"
+Content-Transfer-Encoding: 8bit
+
+--beesbeesbeesbeesbeesbees
+Content-Type: multipart/alternative; boundary="buzzbuzzbuzzbuzzbuzzbuzz"
+MIME-Version: 1.0
+
+--buzzbuzzbuzzbuzzbuzzbuzz
+Content-type: text/plain; charset=utf-8
+
+{{{textPage}}}
+
+--buzzbuzzbuzzbuzzbuzzbuzz
+Content-type: text/html
+
+{{{htmlPage}}}
+
+--buzzbuzzbuzzbuzzbuzzbuzz--
+{{#each attachments}}
+--beesbeesbeesbeesbeesbees
+Content-Type: {{{mimeType}}}; name="{{{filename}}}"
+Content-Transfer-Encoding: base64
+Content-ID: <{{{contentId}}}>
+Content-Disposition: inline; filename="{{{filename}}}"
+
+{{{data}}}
+{{/each}}
+--beesbeesbeesbeesbeesbees--
+Trash after message

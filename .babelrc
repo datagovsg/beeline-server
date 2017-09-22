@@ -1,0 +1,19 @@
+{
+    "plugins": [
+      "transform-runtime",
+      "transform-es2015-modules-commonjs",
+      "transform-object-rest-spread"
+    ],
+    "sourceMaps": "inline",
+    "env": {
+      "awslambda": {
+        "plugins": [
+          "transform-runtime",
+          "transform-es2015-modules-commonjs",
+          "transform-object-rest-spread",
+          "syntax-async-functions",
+          "transform-async-to-generator"
+        ],
+      }
+    }
+}

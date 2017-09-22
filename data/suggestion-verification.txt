@@ -1,0 +1,10 @@
+Dear User,
+
+Thank you for submitting a suggestion to Beeline! Please verify your email address by clicking on the link below:
+
+{{{verificationLink}}}
+
+If you did not make a suggestion to Beeline, please ignore this email.
+
+Cheers,
+The Beeline Team

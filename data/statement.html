@@ -1,0 +1,143 @@
+
+
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+    integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
+    crossorigin="anonymous">
+  </head>
+
+  <body>
+
+    <h1>Transaction Statement</h1>
+    <h2>{{formatDate query.startDate}} -- {{formatDate query.endDate}}</h2>
+
+    <ul>
+    {{#each query}}
+      <li>{{@key}} = {{this}}</li>
+    {{/each}}
+    </ul>
+
+    <h2>Tickets Sold</h2>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Ticket ID</th>
+          <th>Route</th>
+          <th>Credit</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each data.ticketSale}}
+        <tr>
+          <td>
+            {{formatDate createdAt}}
+          </td>
+          <td>
+            {{ticketSale.id}}
+          </td>
+          <td>
+            ({{ticketSale.boardStop.trip.route.label}})
+            {{ticketSale.boardStop.trip.route.name}}
+          </td>
+          <td>
+            {{credit}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td></td>
+          <td>Total</td>
+          <td>{{sumCredit data.ticketSale}}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <h3>Tickets Refunded</h3>
+    {{sumCredit data.ticketRefund}}
+
+    <h3>Tickets Refunded</h3>
+    {{sumCredit data.ticketRefund}}
+
+
+    <h2>Payments Received</h2>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Charge ID</th>
+          <th>Credit</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each data.payment}}
+        <tr>
+          <td>
+            {{formatDate createdAt}}
+          </td>
+          <td>
+            {{payment.paymentResource}}
+          </td>
+          <td>
+            {{debit}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td></td>
+          <td>Total</td>
+          <td>{{sumCredit data.ticketSale}}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <h2>Refunds Paid Out</h2>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Route</th>
+          <th>Credit</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each data.refundPayment}}
+        <tr>
+          <td>
+            {{createdAt}}
+          </td>
+          <td>
+            {{refundPayment.paymentResource}}
+          </td>
+          <td>
+            {{debit}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td></td>
+          <td>Total</td>
+          <td>{{sumCredit data.refundPayment}}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+  </body>
+
+</html>

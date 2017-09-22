@@ -1,0 +1,53 @@
+language: node_js
+node_js:
+- '8'
+env:
+  global:
+  - CXX=g++-4.8
+  - SHUTUP=1
+  - TZ=Asia/Singapore
+  matrix:
+  - BABEL_ENV=awslambda
+  - BABEL_ENV=web
+before_deploy:
+  - npm install -g babel
+  - npm run build
+deploy:
+  - provider: lambda
+    function_name: expireStaleRouteCredits-staging-grab
+    region: ap-southeast-1
+    role: arn:aws:iam::882000534153:role/service-role/batch
+    runtime: nodejs6.10
+    timeout: 300
+    memory_size: 256
+    handler_name: handler
+    module_name: dist/lib/aws/expireStaleRouteCredits
+    access_key_id: AKIAINDAIWOZ6QCKG5WQ
+    secret_access_key:
+      secure: mYi61PTnW32bLTWN36MXtFNGTZD5277y+mooYImk4X8QX1xxksOuPCX0puGH6RtP4O/l07ykCHCzkdEUf+xcWapV4QiJQAbHnaF3W1kJMznrFcXiS0y0R77cR27OhvqlU1DhbdgIUF86ae64f2YlzUIZFpD5S6qojZxhgJBEkgZtWr+wF2VJph1ozFO+X8rmlYkBtn1XQQdc0rAJ5XZ7AmicTeg1/0oVsHrywlN0mTnFpKQaxEPAPEPE1CvGd8guUlmJlWHlBuBjkK9Cs7A2ki40AKMZSLP9brY1QbjORT5slAe7NRTPT40kEPAbRkXPDgKcx3PYz5E+W6HF4V8LVOR/6e0fsgIKl3r2yktLG3pkrMTMcpWwoqc/rkksYpHMwd2nbOJmfNVNikpQ5zfcIdl3qHozShwUDeOpKDezXYUois7h+Uqz/r6306dqlvVU0nqwiTarqYPrjcyl3yiUNmrQBCWC0KAJIs4FKQmBazv34SABwoKb/RzjKTzF/o7gKSVthKpV71IFVWYr2ZCpcR1noWiZEDG27Mv6UimcPTAmrl7uigHrocGSwgicdv5/zkQuLCoDHeQX25T+Lf1WS5UMHM9F0fI8Dvv3P8Ekx07Q/J6emJz8x3zO+bVqhRjzSfQ/2D3EDl95yURHtfGAn0xvu1/eJ//Z9HeH+gDRQdY=
+    on:
+      branch: master
+      condition: $BABEL_ENV = awslambda
+  - provider: lambda
+    function_name: expireStaleRouteCredits-prod-grab
+    region: ap-southeast-1
+    role: arn:aws:iam::882000534153:role/service-role/batch
+    runtime: nodejs6.10
+    timeout: 300
+    memory_size: 256
+    handler_name: handler
+    module_name: dist/lib/aws/expireStaleRouteCredits
+    access_key_id: AKIAINDAIWOZ6QCKG5WQ
+    secret_access_key:
+      secure: mYi61PTnW32bLTWN36MXtFNGTZD5277y+mooYImk4X8QX1xxksOuPCX0puGH6RtP4O/l07ykCHCzkdEUf+xcWapV4QiJQAbHnaF3W1kJMznrFcXiS0y0R77cR27OhvqlU1DhbdgIUF86ae64f2YlzUIZFpD5S6qojZxhgJBEkgZtWr+wF2VJph1ozFO+X8rmlYkBtn1XQQdc0rAJ5XZ7AmicTeg1/0oVsHrywlN0mTnFpKQaxEPAPEPE1CvGd8guUlmJlWHlBuBjkK9Cs7A2ki40AKMZSLP9brY1QbjORT5slAe7NRTPT40kEPAbRkXPDgKcx3PYz5E+W6HF4V8LVOR/6e0fsgIKl3r2yktLG3pkrMTMcpWwoqc/rkksYpHMwd2nbOJmfNVNikpQ5zfcIdl3qHozShwUDeOpKDezXYUois7h+Uqz/r6306dqlvVU0nqwiTarqYPrjcyl3yiUNmrQBCWC0KAJIs4FKQmBazv34SABwoKb/RzjKTzF/o7gKSVthKpV71IFVWYr2ZCpcR1noWiZEDG27Mv6UimcPTAmrl7uigHrocGSwgicdv5/zkQuLCoDHeQX25T+Lf1WS5UMHM9F0fI8Dvv3P8Ekx07Q/J6emJz8x3zO+bVqhRjzSfQ/2D3EDl95yURHtfGAn0xvu1/eJ//Z9HeH+gDRQdY=
+    on:
+      branch: production
+      condition: $BABEL_ENV = awslambda
+addons:
+  postgresql: '9.6'
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - postgresql-9.6-postgis-2.3
+    - g++-4.8

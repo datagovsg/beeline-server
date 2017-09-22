@@ -1,0 +1,317 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=600px, initial-scale=1.0" />
+    <title>Mandai Express Bus Service</title>
+
+</head>
+
+<body style="background-color: #eee; margin: 0; padding: 0; min-width: 100%!important; font-family: Arial, Helvetica, sans-serif; text-align: left;">
+    <table style=" background-color: #fff; margin: 0 auto; background-repeat:no-repeat; width:600px;" cellpadding="0" cellspacing="0" border="0">
+        <tr style="height:120px; background-color: #493762;">
+            <td style="text-align:center;">
+                <img style="width:70px;" src="{{logo}}" alt="" class="img-rounded center-block" />
+            </td>
+        </tr>
+
+
+        <tr style="height:120px; background-color:#fff;">
+            <td>
+                <h2 style="text-align: center;color: #493762; margin-top:20px;">Mandai Express Bus Service</h2>
+                <h4 style="font-size:14px; color: #333;text-align: center; margin-bottom:-5px;">
+              Your Booking is Successful! <br><br>
+              <i>Please show a print-out of this receipt or flash this e-receipt to the driver.
+            </i>
+        </h4>
+        <p style="font-size:12px; ;text-align: center;">
+          A copy of this receipt is also sent to the email address provided.
+        </p>
+        <br />
+            </td>
+        </tr>
+
+
+        <tr style="height:120px; background-color:#fff;">
+            <td>
+                <h3 style="color: #493762; text-align: left; margin-left: 30px; ">Booking Receipt</h3>
+                <table style="margin: 0 auto; border: 1px solid #eee; width: 90%; padding: 10px 10px;" cellpadding="5">
+                  {{#if adultPax}}
+                    <tr>
+                        <td>
+                            <b>No. of adults</b>
+                        </td>
+                        <td>
+                            {{adultPax}} <img style="width:20px;" src="{{iconPax}}" alt="" class="img-rounded center-block" />
+                        </td>
+                    </tr>
+                    {{/if}}
+                    {{#if childPax}}
+                    <tr>
+                        <td>
+                            <b>No. of children</b>
+                        </td>
+                        <td>
+                            {{childPax}} <img style="width:20px;" src="{{iconPax}}" alt="" class="img-rounded center-block" />
+                        </td>
+                    </tr>
+                    {{/if}}
+                    <tr>
+                        <td>
+                            <b>Trip Date</b>
+                        </td>
+                        <td>
+                            {{formatDateLong date}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; width: 30%;">
+                            <b>Trips Booked</b>
+                        </td>
+                        <td>
+                          {{#each trips}}
+                            {{time}} - {{description}}
+                            <br/><br/>
+                          {{/each}}
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+        <tr style="height:30px;">
+
+        </tr>
+        <tr style="height:120px; background-color:#fff; ">
+            <td>
+                <h3 style="color: #493762; text-align: left; margin-left: 30px; ">Booking Details</h3>
+                <table style="margin: 0 auto; border: 1px solid #eee; width: 90%; padding: 10px 10px;" cellpadding="5">
+
+                    <tr>
+                        <td style="width: 30%;">
+                            <b>Name</b>
+                        </td>
+                        <td>
+                            {{user.name}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Booking ID</b>
+                        </td>
+                        <td>
+                            {{formatBookingId bookingId}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Amount Paid</b>
+                        </td>
+                        <td>
+                            {{amountPaid}}
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+
+
+        {{#if toZoo}}
+        <tr style="height:30px;">
+
+        </tr>
+        <tr style="height:120px; background-color:#fff;">
+            <td>
+                <h3 style="color: #493762; text-align: left; margin-left: 30px; ">Getting to  Mandai</h3>
+                <table style="margin: 0 auto; border: 1px solid #eee; width: 90%; padding: 10px 10px;" cellpadding="5">
+
+                    <tr>
+                        <td>
+                            <b>Pick-Up at</b>
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <td style="width: 30%; vertical-align: top; text-align: right;">
+                            {{formatTime toZoo.boardStop.time}}
+                        </td>
+                        <td>
+                            {{formatStop toZoo.boardStop.stop}}
+
+                            {{#if toZoo.boardStop.stop.viewUrl}}
+                            <a style="color: #493762;" href="{{toZoo.boardStop.stop.viewUrl}}" target="_blank">Streetview</a>
+                            {{/if}}
+                            <br> {{toZoo.boardStop.stop.road}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Drop-off at</b>
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <td style="width: 30%; vertical-align: top; text-align: right;">
+                            {{formatTime toZoo.alightStop.time}}
+                        </td>
+                        <td>
+                            {{formatStop toZoo.alightStop.stop}}
+
+                            {{#if toZoo.alightStop.stop.viewUrl}}
+                            <a style="color: #493762;" href="{{toZoo.alightStop.stop.viewUrl}}"target="_blank">Streetview</a>
+                            {{/if}}
+                            <br> {{toZoo.alightStop.stop.road}}
+                        </td>
+                    </tr>
+
+
+                </table>
+            </td>
+        </tr>
+        {{/if}}
+
+
+
+        {{#if fromZoo}}
+        <tr style="height:30px;">
+
+        </tr>
+        <tr style="height:120px; background-color:#fff; text-align: left; ">
+            <td>
+                <h3 style="color: #493762; text-align: left; margin-left: 30px; ">Return Trip from Mandai</h3>
+                <table style="margin: 0 auto; border: 1px solid #eee; width: 90%; padding: 10px 10px;" cellpadding="5">
+
+                    <tr>
+                        <td>
+                            <b>Pick-Up at</b>
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <td style="width: 30%; vertical-align: top; text-align: right;">
+                            {{formatTime fromZoo.boardStop.time}}
+                        </td>
+                        <td>
+                            {{formatStop fromZoo.boardStop.stop}}
+
+                            {{#if fromZoo.boardStop.stop.viewUrl}}
+                            <a style="color: #493762;" href="{{fromZoo.boardStop.stop.viewUrl}}" target="_blank">Streetview</a>
+                            {{/if}}
+                            <br> {{fromZoo.boardStop.stop.road}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Drop-off at</b>
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <td style="width: 30%; vertical-align: top; text-align: right;">
+                            {{formatTime fromZoo.alightStop.time}}
+                        </td>
+                        <td>
+                            {{formatStop fromZoo.alightStop.stop}}
+
+                            {{#if fromZoo.alightStop.stop.viewUrl}}
+                            <a style="color: #493762;" href="{{fromZoo.alightStop.stop.viewUrl}}" target="_blank">Streetview</a>
+                            {{/if}}
+                            <br> {{fromZoo.alightStop.stop.road}}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        {{/if}}
+
+
+        <tr style="height:30px;">
+
+        </tr>
+
+
+        <tr>
+
+            <td style="text-align:left;">
+                <h3 style="color: #493762; text-align: left; margin-left: 30px; ">Important Notes</h3>
+                <table style="width:90%; margin: 0 auto; padding: 10px 20px; border: 1px solid #eee; ">
+                  <tr style=" height: 20px; width:90%;">
+                    <td style="vertical-align:top;">
+                      <!--  <img style="width:240px; height:76px;" src="{{busCoLogo}}" alt="" class="center-block" /> -->
+                      <strong>For enquiry, please contact :</strong>
+                    </td>
+                  </tr>
+                  <tr style=" width:90%;">
+                    <td style="vertical-align:top;">
+                      <p style="line-height: 1.5;">
+                        <strong>Tel:</strong> (+65) 6269 3411<br>
+                        <strong>Email:</strong> enquiry@wrs.com.sg
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <table style="width:90%; margin: 10 auto; padding: 0px">
+                    <tr>
+                        <td>
+                            <ul>
+                              <li style="font-size: 14px;line-height: 1.5">
+                                  Bus is operated by <strong>Wildlife Reserves Singapore Group</strong>
+                              </li>
+                                <li style="font-size: 14px;line-height: 1.5">
+                                    Please be at your pick-up stop 5 mins before stipulated time.
+                                </li>
+                                <li style="font-size: 14px;line-height: 1.5">
+                                    Children below 3 years old ride for free and can board with an accompanying passenger with a valid booking receipt.
+                                </li>
+                                <li style="font-size: 14px;line-height: 1.5">
+                                    You will not be able to board shuttle services of other timings or routes as bus seats are pre-booked and capacity is limited.
+                                </li>
+                                <li style="font-size: 14px;line-height: 1.5">
+                                    Strictly no cancellation.
+                                </li>
+                                <p style="font-size: 14px;line-height: 1.2">
+                                    <a style="color: #493762;" href="https://mandaiexpress.beeline.sg/booking_policy.html" target="_blank">Read more</a>
+                                </p>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+
+
+
+
+
+
+
+
+
+            </td>
+        </tr>
+
+
+
+
+
+        <tr style="height:120px; background-color:#ffffff;">
+            <td style="text-align:center;">
+                <p style="font-size:12px; padding-top: 10px; line-height: 1.6;">
+                    This booking service is powered by <a href="https://beeline.sg/" style="color: #493762;text-decoration: none" target="_blank">Beeline.sg</a>
+                    <br />
+                    <a href="https://mandaiexpress.beeline.sg/terms_of_use.html" style="color: #493762;text-decoration: none" target="_blank">Terms of Use</a> and
+                    <a href="https://mandaiexpress.beeline.sg/privacy_policy.html" style="color: #493762;text-decoration: none" target="_blank">Privacy Policy</a>
+                </p>
+                <p style="font-size:12px;">
+                    feedback@beeline.sg
+                </p>
+            </td>
+        </tr>
+    </table>
+
+
+
+</body>
+
+</html>

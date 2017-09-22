@@ -1,0 +1,89 @@
+Bus Rides to Singapore Zoo
+==========================
+
+Please print this receipt and show it to the driver.
+
+Booking Receipt
+---------------
+
+No. of Adults: {{{adultPax}}}
+No. of Children: {{{childPax}}}
+Trip Date: {{{formatDateLong date}}}
+
+Trips Booked
+------------
+
+{{#each trips}}
+{{{time}}} - {{{description}}}
+{{/each}}
+
+Booking Details
+---------------
+
+Name: {{{user.name}}}
+Booking ID: {{{formatBookingId bookingId}}}
+Amount Paid: {{{amountPaid}}}
+
+{{#if toZoo}}
+Getting to the Zoo
+------------------
+
+Pick-Up at: {{{formatTime toZoo.boardStop.time}}}
+            {{{formatStop toZoo.boardStop.stop}}}
+            {{{toZoo.boardStop.stop.road}}}
+
+{{#if toZoo.boardStop.stop.viewUrl}}
+{{{toZoo.boardStop.stop.viewUrl}}}
+{{/if}}
+
+
+Drop-off at:  {{{formatTime toZoo.alightStop.time}}}
+              {{{formatStop toZoo.alightStop.stop}}}
+              {{{toZoo.alightStop.stop.road}}}
+
+{{#if toZoo.alightStop.stop.viewUrl}}
+{{{toZoo.alightStop.stop.viewUrl}}}
+{{/if}}
+
+{{/if}}
+
+{{#if fromZoo}}
+Return Trip from the Zoo
+------------------------
+
+Pick-Up at: {{{formatTime fromZoo.boardStop.time}}}
+            {{{formatStop fromZoo.boardStop.stop}}}
+            {{{fromZoo.boardStop.stop.road}}}
+
+{{#if fromZoo.boardStop.stop.viewUrl}}
+{{{fromZoo.boardStop.stop.viewUrl}}}
+{{/if}}
+
+
+Drop-off at:  {{{formatTime fromZoo.alightStop.time}}}
+              {{{formatStop fromZoo.alightStop.stop}}}
+              {{{fromZoo.alightStop.stop.road}}}
+
+{{#if fromZoo.alightStop.stop.viewUrl}}
+{{{fromZoo.alightStop.stop.viewUrl}}}
+{{/if}}
+
+{{/if}}
+
+Booking Policy
+--------------
+
+* Buses are operated by Wildlife Reserves Singapore Group
+* Please be at your pick-up stop 5 mins before stipulated time.
+* Children below 3 years old ride for free and can board with an accompanying passenger with a valid booking receipt.
+* You will not be able to board shuttle services at other timings as bus seats are pre-booked and capacity is limited.
+* Strictly no cancellation.
+
+Read More At: https://mandaiexpress.beeline.sg/booking_policy.html
+
+-------------------------------------------------------------------------------
+This booking service is powered by Beeline.sg
+
+Terms of Use: https://mandaiexpress.beeline.sg/terms_of_use.html
+Privacy Policy: https://mandaiexpress.beeline.sg/privacy_policy.html
+Feedback: feedback@beeline.sg
