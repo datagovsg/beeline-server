@@ -24,12 +24,7 @@ export function getToken () {
 
     var thisPromise = axios.get(url)
       .then((response) => {
-        if (response.statusCode === 200) {
-          var data = JSON.parse(response.body)
-          return data.GetToken[0].NewToken
-        } else {
-          throw new Error("Didn't get OK response from onemap server")
-        }
+        return response.data.GetToken[0].NewToken
       })
 
     lastToken.token = thisPromise
