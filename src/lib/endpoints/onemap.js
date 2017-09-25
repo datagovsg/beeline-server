@@ -24,7 +24,7 @@ export async function getToken () {
       return response.data.access_token
     })
 
-    return thisPromise
+    return tokenRequest
   }
 }
 
