@@ -5,30 +5,24 @@ import assert from "assert"
 import Boom from "boom"
 
 var lastToken = {
-  iat: 0,
+  exp: 0,
   token: null
 }
 
-export function getToken () {
-  /* request a token only every 1 hour or so */
+export async function getToken () {
   var now = new Date().getTime()
 
-  if (now - lastToken.iat < 3600 * 1000) {
+  /* 10 minutes to expiry */
+  if (lastToken.exp * 1e3 - now > 10 * 60e3) {
     return lastToken.token
   } else {
-    var url = "http://www.onemap.sg/API/services.svc/getToken?" + qs.stringify({
-      accessKEY: process.env.ONEMAP_TOKEN,
-      v: "3.10",
-      type: "compact"
+    var url = 'https://developers.onemap.sg/publicapi/publicsessionid'
+
+    var tokenRequest = axios.get(url).then((response) => {
+      lastToken.exp = response.data.expiry_timestamp
+      lastToken.token = response.data.access_token
+      return response.data.access_token
     })
-
-    var thisPromise = axios.get(url)
-      .then((response) => {
-        return response.data.GetToken[0].NewToken
-      })
-
-    lastToken.token = thisPromise
-    lastToken.iat = now
 
     return thisPromise
   }
@@ -41,7 +35,7 @@ export async function query (path, queryString) {
     token: token
   })
 
-  var response = await axios.get(`http://www.onemap.sg/API/services.svc/${path}?` + qs.stringify(options))
+  var response = await axios.get(`https://developers.onemap.sg/publicapi/${path}?` + qs.stringify(options))
 
   return response.data
 }
