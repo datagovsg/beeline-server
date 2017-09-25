@@ -3,7 +3,6 @@ import qs from "querystring"
 import _ from "lodash"
 import assert from "assert"
 import Boom from "boom"
-import BlueBird from 'bluebird'
 
 var lastToken = {
   iat: 0,
@@ -23,14 +22,9 @@ export function getToken () {
       type: "compact"
     })
 
-    var thisPromise = BlueBird.promisify(request)(url)
+    var thisPromise = axios.get(url)
       .then((response) => {
-        if (response.statusCode === 200) {
-          var data = JSON.parse(response.body)
-          return data.GetToken[0].NewToken
-        } else {
-          throw new Error("Didn't get OK response from onemap server")
-        }
+        return response.data.GetToken[0].NewToken
       })
 
     lastToken.token = thisPromise
