@@ -13,7 +13,7 @@ import {RateLimitError} from './errors'
 
 const rateLimit = {}
 
-export var sendSMS = (what) => {
+export function sendSMS (what) {
   // Ensure that SMS is sent at most once every 30 seconds to the same number
   assert(what.to)
   if (what.rateLimit && rateLimit[what.to]) throw new RateLimitError(`Too many SMS requests by ${what.to}`)

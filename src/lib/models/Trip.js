@@ -2,7 +2,8 @@ import assert from 'assert'
 import _ from "lodash"
 import leftPad from 'left-pad'
 import seedrandom from "seedrandom"
-const sms = require("../util/sms")
+import * as sms from "../util/sms"
+import * as onesignal from "../util/onesignal"
 const Joi = require('../util/joi')
 
 export default function (modelCache) {
@@ -191,18 +192,74 @@ export default function (modelCache) {
        * Messages passengers who hold tickets on this trip
        * @param body -- message body
        * @param options
-       *    @prop smsFunc -- the alternative to sms.sendSMS (e.g. for testing purposes)
        *    @prop sendToAdmins : boolean -- whether to message admins
        *    @prop sender : string -- the sender of the message (e.g. email address of admin)
        *    @prop ccDetail : string -- additional information for those on the list
        */
       async messagePassengers (body, options) {
+        return Promise.all([
+          this.messagePassengersByOneSignal(body, options),
+          this.messagePassengersBySMS(body, options),
+          this.messagePassengersNotifyAdmin(body, options),
+        ])
+      },
+
+      async messagePassengersByOneSignal (body, options) {
+        const passengers = await this.getPassengers()
+        const onesignalTags = passengers.map(p => _.get(p, 'notes.pushNotificationTag'))
+
+        return onesignalTags.filter(x => x).map(tag =>
+          onesignal.createNotification({
+            contents: {
+              en: body,
+            },
+            headings: {
+              en: 'Beeline'
+            },
+            filters: [
+              {filter: 'tag', key: 'user_tag', relation: '=', value: tag}
+            ]
+          }).catch(() => {})
+        )
+      },
+
+      async messagePassengersNotifyAdmin (body, options) {
+        const smsFunc = x => sms.sendSMS(x).catch((err) => {})
+
         // defaults:
-        _.defaults(options, {
+        const notifyOptions = {
           sendToAdmins: true,
           sender: '(anonymous)',
-          smsFunc: x => sms.sendSMS(x).catch((err) => { console.error(err) })
-        })
+          ccDetail: '',
+          ...options,
+        }
+
+        // drop a notification to our admins
+        if (notifyOptions.sendToAdmins) {
+          // get time and creator
+          var creator = notifyOptions.sender
+          var now = new Date()
+          var time = leftPad(now.getHours(), 2, '0') + ':' + leftPad(now.getMinutes(), 2, '0')
+          var route = await modelCache.models.Route.findById(this.routeId)
+
+          var ccRecipients = await modelCache.models.Admin.allToAlertFromCompany(route.transportCompanyId)
+          var messageToAdmins = `${body}\nSent by ${creator} at ${time}`
+          if (notifyOptions.ccDetail) {
+            messageToAdmins += `, ${notifyOptions.ccDetail}`
+          }
+
+          return Promise.all(ccRecipients.map((admin) => {
+            return smsFunc({
+              from: 'BeelineOps',
+              to: admin.telephone,
+              body: messageToAdmins
+            })
+          }))
+        }
+      },
+
+      async messagePassengersBySMS (body, smsOptions) {
+        const smsFunc = x => sms.sendSMS(x).catch((err) => {})
 
         // get list of passengers
         var telephones = await this.getPassengerTelephones()
@@ -211,39 +268,17 @@ export default function (modelCache) {
         telephones = _.uniq(telephones)
 
         var route = await modelCache.models.Route.findById(this.routeId)
-
+        
         var transportCompany =
           await modelCache.models.TransportCompany.findById(
             route.transportCompanyId, { attributes: ['smsOpCode'] })
 
         // send out the message
-        var sendMessagePromises = telephones.map((tel) => options.smsFunc({
+        var sendMessagePromises = telephones.map((tel) => smsFunc({
           from: transportCompany.smsOpCode || 'BeelineSG',
           to: tel,
           body: body,
         }))
-
-        // drop a notification to our admins
-        if (options.sendToAdmins) {
-        // get time and creator
-          var creator = options.sender
-          var now = new Date()
-          var time = leftPad(now.getHours(), 2, '0') + ':' + leftPad(now.getMinutes(), 2, '0')
-
-          var ccRecipients = await modelCache.models.Admin.allToAlertFromCompany(route.transportCompanyId)
-          var messageToAdmins = `${body}\nSent by ${creator} at ${time}`
-          if (options.ccDetail) {
-            messageToAdmins += `, ${options.ccDetail}`
-          }
-
-          sendMessagePromises = sendMessagePromises.concat(ccRecipients.map((admin) => {
-            return options.smsFunc({
-              from: 'BeelineOps',
-              to: admin.telephone,
-              body: messageToAdmins
-            })
-          }))
-        }
 
         await Promise.all(sendMessagePromises)
 

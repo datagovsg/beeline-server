@@ -1,16 +1,20 @@
-var Lab = require("lab")
-var lab = exports.lab = Lab.script()
-var Code = require("code")
+const Lab = require("lab")
+const lab = exports.lab = Lab.script()
+const Code = require("code")
 
-var server = require("../src/index.js")
+const server = require("../src/index.js")
 const {db, models: m} = require("../src/lib/core/dbschema")()
 import {loginAs, randomSingaporeLngLat, expectEvent} from './test_common'
 import querystring from 'querystring'
+import sinon from 'sinon'
+import * as sms from '../src/lib/util/sms'
+import * as onesignal from '../src/lib/util/onesignal'
 import _ from 'lodash'
 
 lab.experiment("Trip manipulation", function () {
-  var authHeaders
-  var company, route
+  let authHeaders
+  let company, route
+  let sandbox
 
   lab.before({timeout: 10000}, async () => {
     company = await m.TransportCompany.create({
@@ -34,6 +38,17 @@ lab.experiment("Trip manipulation", function () {
     authHeaders = {
       authorization: "Bearer " + response.result.sessionToken
     }
+  })
+
+  /**
+    * Set up and teardown the Sinon sandbox
+    */
+  lab.beforeEach(async function() {
+    sandbox = sinon.sandbox.create()
+  })
+
+  lab.afterEach(async function() {
+    sandbox.restore()
   })
 
   const createStopsTripsUsersTickets = async function (companyId) {
@@ -139,7 +154,7 @@ lab.experiment("Trip manipulation", function () {
     var compareResponses = function (a, b) {
       // check object equality...
       Code.expect(a.capacity).to.equal(b.capacity)
-      // Code.expect(a.transportCompanyId).to.equal(b.transportCompanyId);
+      // Code.expect(a.transportCompanyId).to.equal(b.transportCompanyId)
       Code.expect(a.driverId).to.equal(b.driverId)
       Code.expect(a.vehicleId).to.equal(b.vehicleId)
       Code.expect(a.price).to.equal(b.price)
@@ -318,15 +333,19 @@ lab.experiment("Trip manipulation", function () {
 
   lab.test('Message passengers', async function () {
     const {tripInst} = await createStopsTripsUsersTickets(company.id)
+    const {expect} = Code
 
-    var adminCreds = await loginAs('admin', {
+    const sendSMSStub = sandbox.stub(sms, 'sendSMS', async function (options) {})
+
+    // Try sending as admin...
+    const adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
       permissions: ['message-passengers']
     })
-    var ev = expectEvent('passengersMessaged', {routeIds: [tripInst.routeId]})
-    var adminSendResponse = await server.inject({
+    const ev = expectEvent('passengersMessaged', {routeIds: [tripInst.routeId]})
+    const adminSendResponse = await server.inject({
       method: 'POST',
-      url: `/trips/${tripInst.id}/messagePassengers?dryRun=true`,
+      url: `/trips/${tripInst.id}/messagePassengers`,
       headers: {
         Authorization: `Bearer ${adminCreds.result.sessionToken}`
       },
@@ -334,13 +353,16 @@ lab.experiment("Trip manipulation", function () {
         message: 'This is a test run'
       }
     })
-    Code.expect(adminSendResponse.statusCode).equal(200)
+    expect(sendSMSStub.called).true()
+    expect(adminSendResponse.statusCode).equal(200)
     await ev.check()
 
-    var superadminCreds = await loginAs('superadmin')
-    var superadminSendResponse = await server.inject({
+    // Try sending as superadmin...
+    sendSMSStub.reset()
+    const superadminCreds = await loginAs('superadmin')
+    const superadminSendResponse = await server.inject({
       method: 'POST',
-      url: `/trips/${tripInst.id}/messagePassengers?dryRun=true`,
+      url: `/trips/${tripInst.id}/messagePassengers`,
       headers: {
         Authorization: `Bearer ${superadminCreds.result.sessionToken}`
       },
@@ -348,20 +370,20 @@ lab.experiment("Trip manipulation", function () {
         message: 'This is a test run'
       }
     })
-    Code.expect(superadminSendResponse.statusCode).equal(200)
+    expect(sendSMSStub.called).true()
+    expect(superadminSendResponse.statusCode).equal(200)
   })
 
   lab.test('Messages should be from BeelineSG by default', async function () {
     const {tripInst} = await createStopsTripsUsersTickets(company.id)
+    const {expect} = Code
 
-    const messageCapture = {}
-    await tripInst.messagePassengers('This is a test run', {
-      smsFunc: x => {
-        messageCapture.message = x
-      }
+    const sendSMSStub = sandbox.stub(sms, 'sendSMS', async function (options) {
+      expect(options.message.from).equal('BeelineSG')
     })
 
-    Code.expect(messageCapture.message.from).equal('BeelineSG')
+    await tripInst.messagePassengers('This is a test run')
+    expect(sendSMSStub.called).true()
   })
 
   lab.test('Messages should be from operator code if available', async function () {
@@ -371,15 +393,49 @@ lab.experiment("Trip manipulation", function () {
       smsOpCode: smsOpCode,
     })
     const {tripInst} = await createStopsTripsUsersTickets(smsCompany.id)
+    const {expect} = Code
 
-    const messageCapture = {}
-    await tripInst.messagePassengers('This is a test run', {
-      smsFunc: x => {
-        messageCapture.message = x
-      }
+    const sendSMSStub = sandbox.stub(sms, 'sendSMS', async function (options) {
+      expect(options.message.from).equal(smsOpCode)
     })
 
-    Code.expect(messageCapture.message.from).equal(smsOpCode)
+    await tripInst.messagePassengers('This is a test run')
+    expect(sendSMSStub.called).true()
+  })
+
+  lab.test('Messages should be sent to OneSignal', async function () {
+    const smsOpCode = 'XYZCO';
+    var smsCompany = await m.TransportCompany.create({
+      name: "XYZ Company",
+      smsOpCode: smsOpCode,
+    });
+    const {expect} = Code
+    const {tripInst, userInst} = await createStopsTripsUsersTickets(smsCompany.id)
+
+    const message = 'This is a test run'
+
+    userInst.notes = {
+      ...userInst.notes,
+      pushNotificationTag: '1234-5678-9012-3456'
+    }
+    await userInst.save()
+
+    /* Stub the SMS so that no real SMS is sent */
+    sandbox.stub(sms, 'sendSMS', async function () {})
+
+    /* Stub OneSignal */
+    const sendNotificationStub = sandbox.stub(onesignal, 'createNotification', async function (url, body) {
+      expect(body.contents.en).equal(message)
+      expect(body.filters.find(f =>
+        f.filter === 'tag' &&
+        f.key === 'user_tag' &&
+        f.relation === '=' &&
+        f.value === userInst.notes.pushNotificationTag
+      )).exist()
+    })
+
+    await tripInst.messagePassengers(message)
+    expect(sendNotificationStub.called).true()
   })
 
   lab.test('Querying ticket report by date enforces UTC midnight', async function () {

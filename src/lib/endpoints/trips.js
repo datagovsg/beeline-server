@@ -574,9 +574,6 @@ Trip's company ID and driver's company ID must match.
       tags: ['api'],
       auth: {access: {scope: ['admin', 'superadmin']}},
       validate: {
-        query: {
-          dryRun: Joi.boolean().optional().default(false),
-        },
         params: {
           id: Joi.number().integer(),
         },
@@ -596,15 +593,15 @@ Trip's company ID and driver's company ID must match.
 
         const numMessagesSent = await tripInst.messagePassengers(request.payload.message, {
           sender: request.auth.credentials.email,
-          smsFunc: request.query.dryRun ? console.log : undefined
         })
 
         events.emit('passengersMessaged', {
           message: request.payload.message,
           sender: request.auth.credentials.email,
-          trip: _.defaults({
-            numPassengers: numMessagesSent,
-          }, tripInst.toJSON()),
+          trip: {
+            numPassengers: (await tripInst.getPassengers()).length,
+            ...tripInst.toJSON(),
+          },
         })
 
         reply(request.payload.message)
