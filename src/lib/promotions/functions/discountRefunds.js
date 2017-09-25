@@ -85,7 +85,7 @@ export const discountingFunctions = {
       price: Joi.number().min(0).precision(2).required()
     })
     return (items, options) => {
-      const totalValue = _.sumBy(items, item => parseFloat(item.price))
+      const totalValue = roundToNearestCent(_.sumBy(items, item => parseFloat(item.price)))
       const totalDiscount = totalValue - params.price
       return totalDiscount <= 0
         ? items
@@ -160,7 +160,7 @@ export const discountingFunctions = {
     assertTiersAreIncreasing(params.schedule)
 
     return (items, options) => {
-      const totalValue = _.sumBy(items, item => parseFloat(item.price))
+      const totalValue = roundToNearestCent(_.sumBy(items, item => parseFloat(item.price)))
       const match = findMatchingTier(totalValue, params.schedule)
       return items.map(item => roundToNearestCent(parseFloat(item.price) * match))
     }
@@ -185,7 +185,7 @@ export const discountingFunctions = {
     assertTiersAreIncreasing(params.schedule)
 
     return (items, options) => {
-      const totalValue = _.sumBy(items, item => parseFloat(item.price))
+      const totalValue = roundToNearestCent(_.sumBy(items, item => parseFloat(item.price)))
       const match = findMatchingTier(totalValue, params.schedule)
       return Array(items.length).fill(roundToNearestCent(match / items.length))
     }
