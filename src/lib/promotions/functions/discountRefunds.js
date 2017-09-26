@@ -76,11 +76,6 @@ export const discountingFunctions = {
     }
   },
 
-
-
-
-
-
   /**
    * Fixed price for the entire transaction
    * @param {number} fixed

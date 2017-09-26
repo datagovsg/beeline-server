@@ -3,11 +3,17 @@ const request = require("request")
 const leftPad = require('left-pad')
 const assert = require('assert')
 const jwt = require('jsonwebtoken')
-const {SecurityError, NotFoundError, RateLimitError, InvalidArgumentError,
-        TransactionError, ChargeError} = require('./errors')
+const {
+  SecurityError, NotFoundError,
+  RateLimitError, InvalidArgumentError,
+  TransactionError, ChargeError
+} = require('./errors')
 
-export {SecurityError, NotFoundError, RateLimitError, InvalidArgumentError,
-        TransactionError, ChargeError}
+export {
+  SecurityError, NotFoundError,
+  RateLimitError, InvalidArgumentError,
+  TransactionError, ChargeError
+}
 
 export function defaultErrorHandler (cb) {
   return (err) => {
@@ -67,18 +73,17 @@ export function getModels (request) {
 
 export function midnightToday () {
   var d = new Date()
-    // local time
+  // local time
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 export function midnightTomorrow () {
   var d = new Date()
-    // local time
+  // local time
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
 }
 
 export function getDeviceUUID (request) {
   // check that is is a valid uuid
-  var trackingId = null
   var uuid = request.headers["beeline-device-uuid"]
 
   if (!uuid) return null
