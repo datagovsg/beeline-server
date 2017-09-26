@@ -89,11 +89,12 @@ export function getDeviceUUID (request) {
   if (!/^[a-f0-9]{32}$/.test(uuid)) {
     return null
   } else {
-    uuid = uuid.substr(0, 8) + "-" +
-          uuid.substr(8, 4) + "-" +
-          uuid.substr(12, 4) + "-" +
-          uuid.substr(16, 4) + "-" +
-          uuid.substr(20, 12)
+    uuid =
+      uuid.substr(0, 8) + "-" +
+      uuid.substr(8, 4) + "-" +
+      uuid.substr(12, 4) + "-" +
+      uuid.substr(16, 4) + "-" +
+      uuid.substr(20, 12)
     return uuid
   }
 }
