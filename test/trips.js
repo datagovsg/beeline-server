@@ -43,11 +43,11 @@ lab.experiment("Trip manipulation", function () {
   /**
     * Set up and teardown the Sinon sandbox
     */
-  lab.beforeEach(async function() {
+  lab.beforeEach(async function () {
     sandbox = sinon.sandbox.create()
   })
 
-  lab.afterEach(async function() {
+  lab.afterEach(async function () {
     sandbox.restore()
   })
 
@@ -404,11 +404,11 @@ lab.experiment("Trip manipulation", function () {
   })
 
   lab.test('Messages should be sent to OneSignal', async function () {
-    const smsOpCode = 'XYZCO';
+    const smsOpCode = 'XYZCO'
     var smsCompany = await m.TransportCompany.create({
       name: "XYZ Company",
       smsOpCode: smsOpCode,
-    });
+    })
     const {expect} = Code
     const {tripInst, userInst} = await createStopsTripsUsersTickets(smsCompany.id)
 
@@ -427,7 +427,7 @@ lab.experiment("Trip manipulation", function () {
     const sendNotificationStub = sandbox.stub(onesignal, 'createNotification', async function (url, body) {
       expect(body.contents.en).equal(message)
       expect(body.filters.find(f =>
-        f.filter === 'tag' &&
+        f.field === 'tag' &&
         f.key === 'user_tag' &&
         f.relation === '=' &&
         f.value === userInst.notes.pushNotificationTag

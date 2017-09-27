@@ -1,3 +1,5 @@
+/* eslint-disable babel/new-cap */
+
 import assert from 'assert'
 import _ from "lodash"
 import leftPad from 'left-pad'
@@ -217,14 +219,14 @@ export default function (modelCache) {
               en: 'Beeline'
             },
             filters: [
-              {filter: 'tag', key: 'user_tag', relation: '=', value: tag}
+              {field: 'tag', key: 'user_tag', relation: '=', value: tag}
             ]
-          }).catch(() => {})
+          }).catch((err) => { console.error(err) })
         )
       },
 
       async messagePassengersNotifyAdmin (body, options) {
-        const smsFunc = x => sms.sendSMS(x).catch((err) => {})
+        const smsFunc = x => sms.sendSMS(x).catch((err) => { console.log(err) })
 
         // defaults:
         const notifyOptions = {
@@ -259,7 +261,7 @@ export default function (modelCache) {
       },
 
       async messagePassengersBySMS (body, smsOptions) {
-        const smsFunc = x => sms.sendSMS(x).catch((err) => {})
+        const smsFunc = x => sms.sendSMS(x).catch((err) => { console.log(err) })
 
         // get list of passengers
         var telephones = await this.getPassengerTelephones()
@@ -268,7 +270,7 @@ export default function (modelCache) {
         telephones = _.uniq(telephones)
 
         var route = await modelCache.models.Route.findById(this.routeId)
-        
+
         var transportCompany =
           await modelCache.models.TransportCompany.findById(
             route.transportCompanyId, { attributes: ['smsOpCode'] })
