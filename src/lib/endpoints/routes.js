@@ -5,6 +5,7 @@ const {toSVY} = require("../util/svy21")
 const leftPad = require('left-pad')
 
 import assert from 'assert'
+import camelCase from 'camelcase'
 import * as auth from '../core/auth'
 import {getModels, getDB, defaultErrorHandler, InvalidArgumentError, TransactionError} from '../util/common'
 import {purchaseRoutePass} from '../transactions'
@@ -23,12 +24,12 @@ export function register (server, options, next) {
       ...request,
       query: {
         ...request.query,
-        include_trips: true,
-        include_indicative: false,
-        include_path: true,
-        start_date: new Date(),
-        end_date: null,
-        limit_trips: 5,
+        includeTrips: true,
+        includeIndicative: false,
+        includePath: true,
+        startDate: new Date(),
+        endDate: null,
+        limitTrips: 5,
         transportCompanyId: null,
         tags: null,
         label: null,
@@ -59,24 +60,24 @@ export function register (server, options, next) {
       .map(r => {
         const base = _.omit(r, ['path', 'trips'])
 
-        if (request.query.include_path) {
+        if (request.query.includePath) {
           base.path = r.path
         }
-        if (request.query.include_trips) {
+        if (request.query.includeTrips) {
           base.trips = r.trips
 
-          if (request.query.end_date) {
-            const compare = stringDate(request.query.end_date)
+          if (request.query.endDate) {
+            const compare = stringDate(request.query.endDate)
             base.trips = base.trips.filter(t =>
               t.date.toISOString().substr(0, 10) <= compare)
           }
-          if (request.query.limit_trips) {
-            base.trips = base.trips.slice(0, request.query.limit_trips)
+          if (request.query.limitTrips) {
+            base.trips = base.trips.slice(0, request.query.limitTrips)
           }
         }
         return base
       })
-      .filter(r => !request.query.include_trips || r.trips.length > 0)
+      .filter(r => !request.query.includeTrips || r.trips.length > 0)
   }
 
   async function uncachedFetchRoutes (request) {
@@ -107,12 +108,12 @@ export function register (server, options, next) {
       routeQuery.where.label = request.query.label
     }
     // Filter by dates
-    if ((request.query.start_date || request.query.end_date) && !request.query.include_trips) {
+    if ((request.query.startDate || request.query.endDate) && !request.query.includeTrips) {
       routeQuery.where = routeQuery.where || {}
       routeQuery.where.$and = routeQuery.where.$and || []
 
-      let startDateExpr = request.query.start_date && request.query.start_date.toISOString()
-      let endDateExpr = request.query.end_date && request.query.end_date.toISOString()
+      let startDateExpr = request.query.startDate && request.query.startDate.toISOString()
+      let endDateExpr = request.query.endDate && request.query.endDate.toISOString()
 
       routeQuery.where.$and.push([
         `"route".id IN (SELECT "routeId" FROM "trips" INNER JOIN "tripStops"
@@ -123,20 +124,20 @@ export function register (server, options, next) {
             )`
       ])
     }
-    if (request.query.include_path) {
+    if (request.query.includePath) {
       routeQuery.attributes = undefined
     } else {
       routeQuery.attributes.exclude.push("path")
     }
 
-    if (request.query.include_indicative) {
+    if (request.query.includeIndicative) {
       routeQuery.include.push(m.IndicativeTrip)
     }
 
     let routes = await m.Route.findAll(routeQuery)
     routes = routes.map(r => r.toJSON())
 
-    if (request.query.include_dates) {
+    if (request.query.includeDates) {
       const dateQuery = `
         select
           a."routeId",
@@ -160,11 +161,11 @@ export function register (server, options, next) {
       })
     }
 
-    if (request.query.include_trips) {
-      const startDateQuery = request.query.start_date
+    if (request.query.includeTrips) {
+      const startDateQuery = request.query.startDate
         ? `"trips".date >= :startDate` : '1=1'
 
-      const endDateQuery = request.query.end_date
+      const endDateQuery = request.query.endDate
         ? `"trips".date <= :endDate` : '1=1'
 
       const tripIdsQuery = routes.map(r => `
@@ -185,9 +186,9 @@ export function register (server, options, next) {
 
       const tripIds = await db.query(tripIdsQuery, {
         replacements: {
-          startDate: stringDate(request.query.start_date),
-          endDate: stringDate(request.query.end_date),
-          limitTrips: request.query.limit_trips,
+          startDate: stringDate(request.query.startDate),
+          endDate: stringDate(request.query.endDate),
+          limitTrips: request.query.limitTrips,
           routeIds: routes.map(r => r.id),
         },
         raw: true,
@@ -226,6 +227,35 @@ export function register (server, options, next) {
     }
   }
 
+  const routeCommonParams = {
+    startDate: Joi.date(),
+    endDate: Joi.date(),
+    includeIndicative: Joi.boolean().default(false),
+    includeTrips: Joi.boolean().optional().description("Include trips, tripStops and stops"),
+    includeDates: Joi.boolean().optional().description("Include first, last and next trip dates"),
+  }
+
+  const routeCommonLegacyParams = {
+    start_date: Joi.date(),
+    end_date: Joi.date(),
+    include_indicative: Joi.boolean(),
+    include_trips: Joi.boolean().optional().description("Include trips, tripStops and stops"),
+    include_dates: Joi.boolean().optional().description("Include first, last and next trip dates"),
+    include_availability: Joi.boolean().optional().description("DEPRECATED: availability always included"),
+  }
+
+  const convertToCamelCase = query => {
+    const casedQueries = _(query)
+      .toPairs()
+      .partition(([k, v]) => k.includes('_'))
+      .map(_.fromPairs)
+      .value()
+    return {
+      ...casedQueries[1],
+      ..._.mapKeys(casedQueries[0], (v, k) => camelCase(k)),
+    }
+  }
+
   server.route({
     method: "GET",
     path: "/routes",
@@ -233,19 +263,17 @@ export function register (server, options, next) {
       tags: ["api"],
       description:
             `List of all routes. Authentication not required.
-If \`include_trips\` is \`true\`, and \`start_date\` is not specified,
-the \`start_date\` defaults to the time of request.
+If \`includeTrips\` is \`true\`, and \`startDate\` is not specified,
+the \`startDate\` defaults to the time of request.
             `,
       validate: {
         query: {
-          start_date: Joi.date(),
-          end_date: Joi.date(),
-          include_trips: Joi.boolean().optional().description("Include trips, tripStops and stops"),
-          include_path: Joi.boolean().default(false),
-          include_indicative: Joi.boolean().default(false),
-          include_dates: Joi.boolean().optional().description("Include first, last and next trip dates"),
-          limit_trips: Joi.number().integer().default(5).max(5),
-          include_availability: Joi.boolean().optional().description("DEPRECATED: availability always included"),
+          ...routeCommonLegacyParams,
+          include_path: Joi.boolean(),
+          limit_trips: Joi.number().integer().max(5),
+          ...routeCommonParams,
+          includePath: Joi.boolean().default(false),
+          limitTrips: Joi.number().integer().default(5).max(5),
           transportCompanyId: Joi.number().integer().optional(),
           tags: Joi.array().items(Joi.string()),
           companyTags: Joi.array().items(Joi.string()),
@@ -255,16 +283,17 @@ the \`start_date\` defaults to the time of request.
     },
     handler: async function (request, reply) {
       try {
+        request.query = convertToCamelCase(request.query)
         const now = new Date()
         if (
           request.auth.credentials.scope !== 'admin' &&
           request.auth.credentials.scope !== 'superadmin' &&
           /* same date */
-          request.query.start_date &&
-          request.query.start_date.getFullYear() === now.getFullYear() &&
-          request.query.start_date.getMonth() === now.getMonth() &&
-          request.query.start_date.getDate() === now.getDate() &&
-          !request.query.include_indicative
+          request.query.startDate &&
+          request.query.startDate.getFullYear() === now.getFullYear() &&
+          request.query.startDate.getMonth() === now.getMonth() &&
+          request.query.startDate.getDate() === now.getDate() &&
+          !request.query.includeIndicative
         ) {
           reply(cachedFetchRoutes(request).then(routes => filterCached(routes, request)))
         } else {
@@ -288,19 +317,17 @@ the \`start_date\` defaults to the time of request.
           id: Joi.number()
         },
         query: {
-          start_date: Joi.date(),
-          end_date: Joi.date(),
-          include_indicative: Joi.boolean().default(false),
-          include_trips: Joi.boolean().optional().description("Include trips, tripStops and stops"),
-          include_dates: Joi.boolean().optional().description("Include first, last and next trip dates"),
-          include_availability: Joi.boolean().optional().description("DEPRECATED: availability always included"),
-          include_features: Joi.boolean().default(false),
+          ...routeCommonLegacyParams,
+          include_features: Joi.boolean(),
+          ...routeCommonParams,
+          includeFeatures: Joi.boolean().default(false),
         }
       }
     },
     handler: async function (request, reply) {
       var m = getModels(request)
       try {
+        request.query = convertToCamelCase(request.query)
         var routeQuery = {
           where: {
             id: request.params.id
@@ -310,11 +337,11 @@ the \`start_date\` defaults to the time of request.
             include: []
           }
         }
-        if (request.query.include_indicative) {
+        if (request.query.includeIndicative) {
           routeQuery.include.push(m.IndicativeTrip)
         }
 
-        if (request.query.include_features) {
+        if (request.query.includeFeatures) {
           routeQuery.attributes.include.push("features")
         } else {
           routeQuery.attributes = undefined
@@ -335,7 +362,7 @@ the \`start_date\` defaults to the time of request.
             route.indicativeTrip.tripStops.map(ts => ts.toJSON())
         }
 
-        if (request.query.include_dates) {
+        if (request.query.includeDates) {
           const dateQuery = `
             select
             min(a.date) as "firstDate",
@@ -354,7 +381,7 @@ the \`start_date\` defaults to the time of request.
           route.dates = routeDates && routeDates.length > 0 ? routeDates[0] : {}
         }
 
-        if (request.query.include_trips) {
+        if (request.query.includeTrips) {
           var tripQuery = {
             where: {
               routeId: route.id,
@@ -368,20 +395,20 @@ the \`start_date\` defaults to the time of request.
             }],
             order: [[m.TripStop, "time", "ASC"]]
           }
-          if (request.query.start_date) {
+          if (request.query.startDate) {
             tripQuery.include[0].where.time = tripQuery.include[0].where.time || {}
-            tripQuery.include[0].where.time.$gte = request.query.start_date
+            tripQuery.include[0].where.time.$gte = request.query.startDate
 
             tripQuery.where.date = tripQuery.where.date || {}
             tripQuery.where.date.$gte = new Date(Date.UTC(
-              request.query.start_date.getFullYear(),
-              request.query.start_date.getMonth(),
-              request.query.start_date.getDate()
+              request.query.startDate.getFullYear(),
+              request.query.startDate.getMonth(),
+              request.query.startDate.getDate()
             ))
           }
-          if (request.query.end_date) {
+          if (request.query.endDate) {
             tripQuery.include[0].where.time = tripQuery.include[0].where.time || {}
-            tripQuery.include[0].where.time.$lte = request.query.end_date
+            tripQuery.include[0].where.time.$lte = request.query.endDate
           }
           route.trips = await m.Trip.findAll(tripQuery)
           route.trips = route.trips
@@ -638,7 +665,9 @@ the \`start_date\` defaults to the time of request.
             SELECT
                 routes.*,
                 (SELECT MAX(date) FROM trips WHERE trips."routeId" = routes."id") AS "last_trip",
-                (SELECT MIN(date) FROM trips WHERE trips."routeId" = routes."id") AS "first_trip"
+                (SELECT MIN(date) FROM trips WHERE trips."routeId" = routes."id") AS "first_trip",
+                (SELECT MAX(date) FROM trips WHERE trips."routeId" = routes."id") AS "lastTrip",
+                (SELECT MIN(date) FROM trips WHERE trips."routeId" = routes."id") AS "firstTrip"
             FROM "routes"
                 INNER JOIN "routeRegions"
                     ON "routeRegions"."routeId" = "routes"."id"
