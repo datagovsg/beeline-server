@@ -19,19 +19,13 @@ function expireRoutePasses (transaction) {
     UPDATE
       "routePasses" rp
     SET
-      status = 'expired', notes = notes || ('{"expiredAt": "${new Date()}"}')::jsonb
+      status = 'expired'
     WHERE
       status = 'valid'
-      AND rp.tag LIKE 'rp-%'
-      AND rp."companyId" = :transportCompanyId
-      AND now()::date - rp."createdAt"::date > :maxDays
+      AND now()::date > rp."expiresAt"::date
     RETURNING *
     `,
     {
-      replacements: {
-        maxDays: process.env.MAX_DAYS,
-        transportCompanyId: process.env.TRANSPORT_COMPANY_ID
-      },
       raw: true,
       transaction,
     }

@@ -126,11 +126,7 @@ export function register (server, options, next) {
       ]
     }
     await tb.build({type: 'routePassExpiry'})
-    const notes = {
-      ...routePassInst.notes,
-      expiredAt: new Date(),
-    }
-    return routePassInst.update({ status: 'expired', notes }, {transaction})
+    return routePassInst.update({status: 'expired'}, {transaction})
   }
 
   server.route({
