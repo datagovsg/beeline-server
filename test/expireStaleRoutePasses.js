@@ -7,9 +7,9 @@ import * as testData from './test_data'
 
 const {models} = require("../src/lib/core/dbschema")()
 
-const expireStaleRouteCredits = require("../src/lib/aws/expireStaleRouteCredits")
+const expireStaleRoutePasses = require("../src/lib/aws/expireStaleRoutePasses")
 
-lab.experiment("expireStaleRouteCredits", function () {
+lab.experiment("expireStaleRoutePasses", function () {
   let userInstance
   let companyInstance
   let routePassInstance
@@ -26,8 +26,6 @@ lab.experiment("expireStaleRouteCredits", function () {
       itemid: routePassInstance.id,
       debit: -10
     })
-
-    process.env.TRANSPORT_COMPANY_ID = companyInstance.id
   })
 
   lab.after({timeout: 10000}, async () => {
@@ -40,8 +38,7 @@ lab.experiment("expireStaleRouteCredits", function () {
   })
 
   lab.test("Route pass with fresh date remains untouched", {timeout: 10000}, async () => {
-    process.env.MAX_DAYS = 10
-    await expireStaleRouteCredits.handler(undefined, undefined, err => {
+    await expireStaleRoutePasses.handler(undefined, undefined, err => {
       if (err) {
         fail(err)
       }
@@ -51,9 +48,8 @@ lab.experiment("expireStaleRouteCredits", function () {
   })
 
   lab.test("Route pass with stale date is expired", {timeout: 10000}, async () => {
-    // Be unreasonable and insist on passes that are created in the future
-    process.env.MAX_DAYS = -1
-    await expireStaleRouteCredits.handler(undefined, undefined, err => {
+    await routePassInstance.update({ expiresAt: new Date(new Date().getTime() - 24 * 3600 * 1000) })
+    await expireStaleRoutePasses.handler(undefined, undefined, err => {
       if (err) {
         fail(err)
       }

@@ -20,14 +20,14 @@ before_deploy:
   - npm run build
 deploy:
   - provider: lambda
-    function_name: expireStaleRouteCredits-staging-grab
+    function_name: expireStaleRoutePasses-staging
     region: ap-southeast-1
     role: arn:aws:iam::882000534153:role/service-role/batch
     runtime: nodejs6.10
     timeout: 300
     memory_size: 256
     handler_name: handler
-    module_name: dist/lib/aws/expireStaleRouteCredits
+    module_name: dist/lib/aws/expireStaleRoutePasses
     access_key_id: AKIAIA5EZRS7UXDQSHDA
     secret_access_key:
       secure: t++hFNtpfRsehF5QodV4l1Qx/UgFWW2F8E38XrYuKnsUZT85ZkC/m61eXbqrbcfcZcpr+UpkC2VilxRcDR+/CDSm3/kg17FD5ZFKQ5aTsJvK92Q6e8XfN3kevW/qKPmRSUIXlXL4m/BE+6MW8oBH2DCvUGJKbSxpgu1WrorSa7yfAAVIMicWhBpDZkTTAoFZSFGgeNDd61xuZIbb8+Fd3cHpngB8Cz8aJKUxcB6l3XAdd0gz0YhfUxe4mV93CdQyQomdFoKg6BpaLD54t8CURQJB8MkmZA4RuPK2SAU4pClsqUjx/jRfbJG2FOJ+IlrPi02/ti/1BykL/Uc3A/DNxtPUAptVTjNMol/R8fANNMWPFGmV4Q1WYmvQVRBohvdLSHwU8vEXAnDBwMV+vixpkG3MtcH9ECCvq6DTmBvH0F7wscNEHOtDssZGYcENuTjWNh/sbvjNLRTW5EvZf79ASdQkxK92P7y1+Ni49bgQpyeVzDNuS9gJUwLLdmjyymz/TLdx8BBraUHbGfjJ+JrGxWDfMRb0+qpknv5kRwNO6wNjfkzwBlxPkbmMdnklWOXho7sLjrjFwVsqGtW/vVuyL15/4KWADZcHf9PfNlNdHzDZCz54BKGVTvn/JHAaFoBpQWKmAJhVtX/nmlDlSu5pw4yTfAFsHAWUv7mqqhOhjjU=
@@ -35,14 +35,14 @@ deploy:
       branch: master
       condition: $BABEL_ENV = awslambda
   - provider: lambda
-    function_name: expireStaleRouteCredits-prod-grab
+    function_name: expireStaleRoutePasses-prod
     region: ap-southeast-1
     role: arn:aws:iam::882000534153:role/service-role/batch
     runtime: nodejs6.10
     timeout: 300
     memory_size: 256
     handler_name: handler
-    module_name: dist/lib/aws/expireStaleRouteCredits
+    module_name: dist/lib/aws/expireStaleRoutePasses
     access_key_id: AKIAIA5EZRS7UXDQSHDA
     secret_access_key:
       secure: t++hFNtpfRsehF5QodV4l1Qx/UgFWW2F8E38XrYuKnsUZT85ZkC/m61eXbqrbcfcZcpr+UpkC2VilxRcDR+/CDSm3/kg17FD5ZFKQ5aTsJvK92Q6e8XfN3kevW/qKPmRSUIXlXL4m/BE+6MW8oBH2DCvUGJKbSxpgu1WrorSa7yfAAVIMicWhBpDZkTTAoFZSFGgeNDd61xuZIbb8+Fd3cHpngB8Cz8aJKUxcB6l3XAdd0gz0YhfUxe4mV93CdQyQomdFoKg6BpaLD54t8CURQJB8MkmZA4RuPK2SAU4pClsqUjx/jRfbJG2FOJ+IlrPi02/ti/1BykL/Uc3A/DNxtPUAptVTjNMol/R8fANNMWPFGmV4Q1WYmvQVRBohvdLSHwU8vEXAnDBwMV+vixpkG3MtcH9ECCvq6DTmBvH0F7wscNEHOtDssZGYcENuTjWNh/sbvjNLRTW5EvZf79ASdQkxK92P7y1+Ni49bgQpyeVzDNuS9gJUwLLdmjyymz/TLdx8BBraUHbGfjJ+JrGxWDfMRb0+qpknv5kRwNO6wNjfkzwBlxPkbmMdnklWOXho7sLjrjFwVsqGtW/vVuyL15/4KWADZcHf9PfNlNdHzDZCz54BKGVTvn/JHAaFoBpQWKmAJhVtX/nmlDlSu5pw4yTfAFsHAWUv7mqqhOhjjU=

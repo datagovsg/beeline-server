@@ -26,8 +26,17 @@ export default function (modelCache) {
       },
       allowNull: false,
     },
+    expiresAt: DataTypes.DATEONLY,
     notes: DataTypes.JSONB
   }, {
+    hooks: {
+      beforeCreate: function (routePass, options) {
+        if (!routePass.expiresAt) {
+          const validPeriod = (process.env.VALID_DAYS || 35) * 24 * 3600 * 1000
+          routePass.expiresAt = new Date(new Date().getTime() + validPeriod)
+        }
+      },
+    },
     indexes: [
       {fields: ["userId", "status"]},
       {fields: ["companyId", "tag"]},
