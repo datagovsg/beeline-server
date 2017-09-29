@@ -307,6 +307,21 @@ export function register (server, options, next) {
           "paymentData"],
           [db.literal(`(
             SELECT
+              ti2."itemId" as "routePassId"
+            FROM
+              "transactionItems"
+              INNER JOIN "transactionItems" AS ti2
+                ON "transactionItems"."transactionId" = "ti2"."transactionId"
+                AND "ti2"."itemType" = 'routePass'
+                AND "transactionItems"."itemId"::text in (select * from json_object_keys(("ti2".notes->>'tickets')::json))
+            WHERE
+              "transactionItems"."itemId" = "ticket"."id"
+              AND "transactionItems"."itemType" = 'ticketSale'
+            LIMIT 1
+          )`),
+          "routePassId"],
+          [db.literal(`(
+            SELECT
               "refundPayments"."paymentResource"
             FROM
               "transactionItems"
@@ -903,7 +918,7 @@ async function sendTicketAsEmail ([db, m], payload, id) {
 
 
 async function contextFromTransaction (connection, transaction) {
-  var [db, m] = connection
+  var [, m] = connection
   var context = {}
 
   var txnItems = _.groupBy(transaction.transactionItems, x => x.itemType)
@@ -983,7 +998,7 @@ async function contextFromTransaction (connection, transaction) {
 }
 
 async function getTransaction (connection, id) {
-  var [db, m] = connection
+  var [, m] = connection
   var transaction = await m.Transaction.findById(id, {
     include: [
       {
