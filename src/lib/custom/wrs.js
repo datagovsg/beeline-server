@@ -17,6 +17,7 @@ import {
 import BlueBird from 'bluebird'
 import {emit} from '../events/events'
 import * as email from '../util/email'
+import {STATUSES as TICKET_STATUSES} from '../models/Ticket'
 
 Handlebars.registerHelper('formatTime', formatTime)
 Handlebars.registerHelper('formatDate', formatDate)
@@ -777,8 +778,8 @@ export function register (server, options, next) {
           routeId: Joi.number().integer().allow(null).allow(''),
           tripId: Joi.number().integer().allow(null).allow(''),
           statuses: Joi.array()
-            .items(Joi.string().valid(['valid', 'refunded', 'void', 'failed', 'bidded', 'pending']))
-            .default([]),
+            .items(Joi.string().valid(TICKET_STATUSES))
+            .default(TICKET_STATUSES),
           transportCompanyId: Joi.number().integer(),
 
           format: Joi.string().valid(['csv', 'json'])
@@ -903,7 +904,7 @@ async function sendTicketAsEmail ([db, m], payload, id) {
 
 
 async function contextFromTransaction (connection, transaction) {
-  var [db, m] = connection
+  var [, m] = connection
   var context = {}
 
   var txnItems = _.groupBy(transaction.transactionItems, x => x.itemType)
@@ -983,7 +984,7 @@ async function contextFromTransaction (connection, transaction) {
 }
 
 async function getTransaction (connection, id) {
-  var [db, m] = connection
+  var [, m] = connection
   var transaction = await m.Transaction.findById(id, {
     include: [
       {

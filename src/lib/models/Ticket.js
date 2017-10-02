@@ -2,9 +2,10 @@ import _ from "lodash"
 import Sequelize from "sequelize"
 import {TransactionError} from '../transactions'
 
+export const STATUSES = ['failed', 'valid', 'void', 'refunded', 'pending']
+
 export default function (modelCache) {
-  const STATUSES = ["failed", "valid", "void", "refunded", "pending", "bidded", "withdrawn"]
-  const VOID_STATUSES = ['void', 'withdrawn', 'refunded', 'failed']
+  const VOID_STATUSES = ['void', 'refunded', 'failed']
   const VALID_STATUSES = _.difference(STATUSES, VOID_STATUSES)
 
   const updateAvailability = op => async (tickets, options) => {
