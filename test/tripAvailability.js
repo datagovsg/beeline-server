@@ -52,7 +52,7 @@ lab.experiment("Trip availability update hooks in Ticket", () => {
     await ticket.update({ status: 'void' })
     await tripInstances[0].reload()
     expect(tripInstances[0].seatsAvailable).equal(tripInstances[0].capacity)
-    await ticket.update({ status: 'withdrawn' })
+    await ticket.update({ status: 'refunded' })
     await tripInstances[0].reload()
     expect(tripInstances[0].seatsAvailable).equal(tripInstances[0].capacity)
   })

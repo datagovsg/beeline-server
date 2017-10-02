@@ -489,6 +489,41 @@ lab.experiment("Trip manipulation", function () {
     Code.expect(ticketReport.statusCode).equal(400)
   })
 
+  lab.test('Querying by ticket id works', async function () {
+    const {ticketInst} = await createStopsTripsUsersTickets(company.id)
+
+    await m.Transaction.create({
+      committed: true,
+      transactionItems: [
+        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0}
+      ]
+    }, {
+      include: [m.TransactionItem]
+    })
+
+    var adminCreds = await loginAs('admin', {
+      transportCompanyId: company.id,
+      permissions: ['view-transactions']
+    })
+    var headers = {
+      authorization: `Bearer ${adminCreds.result.sessionToken}`
+    }
+
+    // Get the ticket reports
+    // Dates OK
+    var defaultQuery = {
+      ticketId: ticketInst.id
+    }
+    var ticketReport = await server.inject({
+      method: 'GET',
+      url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
+      headers
+    })
+    Code.expect(ticketReport.statusCode).equal(200)
+    Code.expect(ticketReport.result.rows.length).equal(1)
+    Code.expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
+  })
+
   lab.test('CSV reporting works', async function () {
     const {ticketInst} = await createStopsTripsUsersTickets(company.id)
 
