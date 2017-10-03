@@ -5,7 +5,6 @@ const stream = require('stream')
 const fastCSV = require('fast-csv')
 
 const {getModels, getDB, defaultErrorHandler} = require("../util/common")
-const {routeRequestsTo} = require("../util/endpoints")
 
 import fs from 'fs'
 import Handlebars from 'handlebars'
@@ -15,8 +14,9 @@ import leftPad from 'left-pad'
 import BlueBird from 'bluebird'
 
 export function register (server, options, next) {
-  routeRequestsTo(server, ["/transactionItems", "/transaction_items"], {
+  server.route({
     method: "GET",
+    path: "/transaction_items",
     config: {
       tags: ["api"],
       description:
@@ -316,100 +316,7 @@ export function register (server, options, next) {
     }
   }
 
-  const buildRouteCreditsQuery = buildRoutePassQueryFor('routeCredits', 'RouteCredit')
   const buildRoutePassQuery = buildRoutePassQueryFor('routePass', 'RoutePass')
-
-  routeRequestsTo(server, ["/companies/{companyId}/transactionItems/routeCredits", "/companies/{companyId}/transaction_items/route_credits"], {
-    method: "GET",
-    config: {
-      tags: ["api"],
-      description: 'Get all routeCredit transactionItems, and those related to it',
-      auth: { access: { scope: ['admin', 'superadmin'] }},
-      validate: {
-        query: {
-          ...routeCreditsQuerySchema,
-          perPage: Joi.number().integer().min(1).default(20),
-          page: Joi.number().integer().min(1).default(1),
-        }
-      }
-    },
-    async handler (request, reply) {
-      try {
-        const m = getModels(request)
-
-        auth.assertAdminRole(request.auth.credentials, 'view-transactions', request.params.companyId)
-
-        const {page, perPage} = request.query
-        const entryOffset = (page - 1) * perPage
-
-        let query = buildRouteCreditsQuery(request)
-
-        let relatedTransactionItems = await m.TransactionItem.findAll({
-          ...query,
-          limit: perPage,
-          offset: entryOffset,
-        })
-
-        reply(relatedTransactionItems)
-      } catch (err) {
-        defaultErrorHandler(reply)(err)
-      }
-    }
-  })
-
-  routeRequestsTo(server, ["/companies/{companyId}/transactionItems/routeCredits/summary", "/companies/{companyId}/transaction_items/route_credits/summary"], {
-    method: "GET",
-    config: {
-      tags: ["api"],
-      description: 'Get all routeCredit transactionItems, and those related to it',
-      auth: { access: { scope: ['admin', 'superadmin'] }},
-      validate: {
-        query: {
-          ...routeCreditsQuerySchema,
-        }
-      }
-    },
-    async handler (request, reply) {
-      try {
-        const db = getDB(request)
-        const m = getModels(request)
-
-        auth.assertAdminRole(request.auth.credentials, 'view-transactions', request.params.companyId)
-
-        const query = buildRouteCreditsQuery(request)
-        const transactionDateExpression = `("transactionItem"."createdAt" AT TIME ZONE interval '+08:00')::date`
-
-        const takeNoAttributes = (include) => ({
-          ...include,
-          attributes: [],
-          include: include.include ? include.include.map(takeNoAttributes) : []
-        })
-
-        let items = await m.TransactionItem.findAll({
-          ...query,
-          include: query.include.map(takeNoAttributes),
-          group: [db.literal(transactionDateExpression)],
-          attributes: [
-            [db.fn('count', db.literal('distinct "transactionItem"."id"')), 'count'],
-            [db.literal(transactionDateExpression), 'date']
-          ],
-          raw: true, // Summary doesn't need consolidation
-          order: [], // Summary has no order
-        })
-
-        const totalItems = _.sum(items.map(i => parseInt(i.count)))
-
-        let txnCountByDay = _(items)
-          .keyBy(i => i.date.getTime())
-          .mapValues(i => parseInt(i.count))
-          .value()
-
-        reply({totalItems, txnCountByDay})
-      } catch (err) {
-        defaultErrorHandler(reply)(err)
-      }
-    }
-  })
 
   server.route({
     method: "GET",

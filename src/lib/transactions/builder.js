@@ -194,7 +194,7 @@ transactionBuilder
 - transactionItemsByType.{payment, credits, routeCredits, ...}.notes.tickets :
     { [ticketId: number] -> number }
 
-  Payment, credits and routeCredits are all payment methods.
+  Payment, credits and route passes are all payment methods.
   note.tickets indicates the amount of funds from this payment method was used
   to pay for each ticket. This will be used during refunds.
 
@@ -274,7 +274,6 @@ DO NOT:
 
 For examples, refer to:
 - transactionBuilder.finalizeForPayment
-- RouteCredits.applyCredits
 - Credits.applyCredits
 - [util/transactions].absorbSmallPayments
 

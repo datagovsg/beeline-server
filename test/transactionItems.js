@@ -244,7 +244,7 @@ lab.experiment("TransactionItems", function () {
     expect(noHeaderResponse.statusCode).equal(403)
   })
 
-  lab.test('Summary for routeCredits transactions', {timeout: 20000}, async function () {
+  lab.test('Summary for routePass transactions', {timeout: 20000}, async function () {
     const companyId = companyInstance.id
 
     async function getSummary (queryOptions = {}) {
@@ -278,11 +278,5 @@ lab.experiment("TransactionItems", function () {
       headers: authHeaders.user
     })
     expect(userResponse.statusCode).equal(403)
-
-    const noHeaderResponse = await server.inject({
-      method: 'GET',
-      url: `/companies/${companyId}/transaction_items/route_credits/summary`,
-    })
-    expect(noHeaderResponse.statusCode).equal(403)
   })
 })

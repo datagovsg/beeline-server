@@ -178,7 +178,7 @@ lab.experiment("Credits integration test", function () {
     expect(+transactionItemsByType.transfer[0].credit).about(5, 0.0001)
   })
 
-  lab.test("Using routeCredits, userCredits, promoCodes together", {timeout: 20000}, async () => {
+  lab.test("Using routePass, userCredits, promoCodes together", {timeout: 20000}, async () => {
     var userId = userInstance.id
     const userCreditAmt = '5.00'
     var promoCode = randomString()

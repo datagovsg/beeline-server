@@ -220,7 +220,7 @@ lab.experiment("Transactions", function () {
     await (async () => {
       var txnItems1Response = await server.inject({
         method: 'GET',
-        url: `/transactionItems?orderBy=createdAt&order=desc&perPage=100&endDate=${Date.now()}`,
+        url: `/transaction_items?orderBy=createdAt&order=desc&perPage=100&endDate=${Date.now()}`,
         headers: {
           authorization: `Bearer ${admin1Auth}`
         }
@@ -261,7 +261,7 @@ lab.experiment("Transactions", function () {
 
     var user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/userHistory',
+      url: '/transactions/user_history',
       headers: {
         authorization: `Bearer ${user1Login}`
       }
@@ -271,7 +271,7 @@ lab.experiment("Transactions", function () {
 
     var user2History = (await server.inject({
       method: 'GET',
-      url: '/transactions/userHistory',
+      url: '/transactions/user_history',
       headers: {
         authorization: `Bearer ${user2Login}`
       }
