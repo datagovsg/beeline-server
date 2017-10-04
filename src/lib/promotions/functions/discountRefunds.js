@@ -137,7 +137,7 @@ export const discountingFunctions = {
 
     return (items, options) => {
       const match = findMatchingTier(items.length, params.schedule)
-      return Array(items.length).fill(roundToNearestCent(match / items.length))
+      return distribute(match, items.map(it => 1))
     }
   },
 
@@ -187,7 +187,7 @@ export const discountingFunctions = {
     return (items, options) => {
       const totalValue = roundToNearestCent(_.sumBy(items, item => parseFloat(item.price)))
       const match = findMatchingTier(totalValue, params.schedule)
-      return Array(items.length).fill(roundToNearestCent(match / items.length))
+      return distribute(match, items.map(it => 1))
     }
   },
 
