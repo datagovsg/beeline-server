@@ -61,7 +61,6 @@ export function register (server, options, next) {
               options: Joi.object()
             }).allow(null),
             creditTag: Joi.string().optional().allow(null),
-            applyRouteCredits: Joi.boolean().default(false),
             applyRoutePass: Joi.boolean().default(false),
             applyReferralCredits: Joi.boolean().default(false),
             applyCredits: Joi.boolean().default(false),
@@ -95,7 +94,7 @@ export function register (server, options, next) {
             trips: request.payload.trips,
             promoCode: request.payload.promoCode,
             creditTag: request.payload.creditTag,
-            applyRoutePass: request.payload.applyRoutePass || request.payload.applyRouteCredits,
+            applyRoutePass: request.payload.applyRoutePass,
             applyReferralCredits: request.payload.applyReferralCredits,
             applyCredits: request.payload.applyCredits,
             dryRun: false,
@@ -185,8 +184,8 @@ export function register (server, options, next) {
             if (promo.length === 1) {
               promotionId = promo[0].discount.promotionId
               numValidPromoTickets = _.keys(promo[0].notes.tickets)
-                                 .filter(ticketId => promo[0].notes.tickets[ticketId] > 0)
-                                 .length
+                .filter(ticketId => promo[0].notes.tickets[ticketId] > 0)
+                .length
             }
           }
 
@@ -210,7 +209,6 @@ export function register (server, options, next) {
 
   routeRequestsTo(server,
     [
-      "/transactions/paymentRoutePass",
       "/transactions/route_passes/payment"
     ],
     {
@@ -350,7 +348,6 @@ export function register (server, options, next) {
               alightStopId: Joi.number().integer()
             })),
             creditTag: Joi.string().optional().allow(null),
-            applyRouteCredits: Joi.boolean().default(false),
             applyRoutePass: Joi.boolean().default(false),
             applyReferralCredits: Joi.boolean().default(false),
             applyCredits: Joi.boolean().default(false),
@@ -377,7 +374,7 @@ export function register (server, options, next) {
             trips: request.payload.trips,
             promoCode: request.payload.promoCode,
             creditTag: request.payload.creditTag,
-            applyRoutePass: request.payload.applyRoutePass || request.payload.applyRouteCredits,
+            applyRoutePass: request.payload.applyRoutePass,
             applyReferralCredits: request.payload.applyReferralCredits,
             applyCredits: request.payload.applyCredits,
             dryRun: request.payload.dryRun
@@ -442,17 +439,6 @@ will not be refunded here, so we will make a net profit.`,
   // transfer                          |      $x       |
   routeRequestsTo(server,
     [
-      {
-        path: "/transactions/refund/payment",
-        config: {
-          validate: {
-            payload: Joi.object({
-              ticketId: Joi.number().integer().min(0).required(),
-              targetAmt: Joi.number().min(0).required(),
-            })
-          }
-        }
-      },
       {
         path: "/transactions/tickets/{ticketId}/refund/payment",
         config: {
@@ -567,23 +553,11 @@ will not be refunded here, so we will make a net profit.`,
   //                                   |  Debit   |  Credit
   // =======================================================
   // ticketRefund                      |   $x     |
-  // routeCredits                      |          |    $x
+  // routePass                         |          |    $x
   // account (Upstream Refunds)        |          |    $x
   // account (COGS)                    |   $x     |
   routeRequestsTo(server,
     [
-      {
-        path: "/transactions/refund/routePass",
-        config: {
-          validate: {
-            payload: Joi.object({
-              ticketId: Joi.number().integer().min(0).required(),
-              targetAmt: Joi.number().min(0).required(),
-              creditTag: Joi.string().disallow(INVALID_CREDIT_TAGS).required()
-            })
-          }
-        }
-      },
       {
         path: "/transactions/tickets/{ticketId}/refund/route_pass",
         config: {
@@ -653,13 +627,15 @@ will not be refunded here, so we will make a net profit.`,
                 INNER JOIN "transportCompanies"
                   ON "transportCompanies"."id" = "routes"."transportCompanyId"
               WHERE "tickets"."id" = :ticketId
-            `, {
-              transaction: t,
-              type: db.QueryTypes.SELECT,
-              replacements: {
-                ticketId: ticket.id
+            `,
+              {
+                transaction: t,
+                type: db.QueryTypes.SELECT,
+                replacements: {
+                  ticketId: ticket.id
+                }
               }
-            })
+            )
             auth.assertAdminRole(request.auth.credentials, 'refund', company.id)
 
             // Reverse search from ticket id, get transaction entry + related transactionItems
@@ -750,20 +726,19 @@ will not be refunded here, so we will make a net profit.`,
     }
   )
 
-  // Add routeCredits to a user's account
+  // Issue a free route pass to a user's account
   // Assumption that companies are bearing costs for this
   // Parameters:
-  // - userId: user to give routeCredits to
-  // - numPasses: number of routePasses to issue.
+  // - userId: user to give route passes to
+  // - numPasses: number of route passes to issue.
   // - routeId: route to issue routePasses for
   // - description: reason for free route pass
   //                                   |  Debit   |  Credit
   // =======================================================
-  // routeCredits                      |          |    $x
+  // routePass                         |          |    $x
   // account (Upstream Route Credits)  |   $x     |
   routeRequestsTo(server,
     [
-      '/transactions/issueFreeRoutePass',
       '/transactions/route_passes/issue_free'
     ],
     {
@@ -877,7 +852,6 @@ will not be refunded here, so we will make a net profit.`,
   */
   routeRequestsTo(server,
     [
-      "/transactions/issueFreeTicket",
       "/transactions/tickets/issue_free"
     ],
     {
@@ -899,12 +873,12 @@ will not be refunded here, so we will make a net profit.`,
 
 
             cancelledTicketIds: Joi.array().items(Joi.number().integer())
-                .optional()
-                .description(
-                  `The ticket id of the cancelled ticket(s). If specified, this
-                  ticket must be valid during the operation. After the operation
-                  this ticket will be set to "cancelled". A line item will
-                  be added to invalidate this ticket.`),
+              .optional()
+              .description(
+                `The ticket id of the cancelled ticket(s). If specified, this
+                ticket must be valid during the operation. After the operation
+                this ticket will be set to "cancelled". A line item will
+                be added to invalidate this ticket.`),
           }).unknown()
         }
       },
@@ -947,7 +921,7 @@ will not be refunded here, so we will make a net profit.`,
               creatorType: request.auth.credentials.scope,
               creatorId: (request.auth.credentials.scope === 'admin') ? request.auth.credentials.adminId
                 : (request.auth.credentials.scope === 'superadmin') ? request.auth.credentials.email
-                : null,
+                  : null,
             }
 
             // insert the transaction items
@@ -986,8 +960,8 @@ will not be refunded here, so we will make a net profit.`,
               await Promise.all(refundTickets.map(async refundTicket => {
                 // ensure either superadmin, or same company
                 auth.assertAdminRole(request.auth.credentials, 'issue-tickets',
-                      refundTicket.boardStop.trip.route.transportCompanyId, true,
-                      "The ticket being cancelled does not belong to your company")
+                  refundTicket.boardStop.trip.route.transportCompanyId, true,
+                  "The ticket being cancelled does not belong to your company")
 
                 // ensure that the ticket is currently valid
                 if (refundTicket.status !== 'valid') {
@@ -1106,9 +1080,8 @@ it as fsck for transactions)`
     }
   })
 
-  server.route({
+  routeRequestsTo(server, ["/transactions/userHistory", "/transactions/user_history"], {
     method: "GET",
-    path: "/transactions/userHistory",
     config: {
       tags: ["api"],
       description:

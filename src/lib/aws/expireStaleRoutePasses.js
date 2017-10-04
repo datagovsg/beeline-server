@@ -40,7 +40,7 @@ function insertExpiredCreditTransactions (transaction, affectedEntries) {
         const tb = new TransactionBuilder({
           db, models, transaction,
           committed: true, dryRun: false,
-          creator: {type: 'system', id: 'expireRouteCredits'}
+          creator: {type: 'system', id: 'expireRoutePasses'}
         })
 
         // On the debit side

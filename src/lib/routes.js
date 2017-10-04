@@ -30,7 +30,6 @@ module.exports = (server, options, next) => {
     require("./endpoints/admins"),
     require("./endpoints/vehicles"),
     require("./endpoints/routePassAdmin"),
-    require("./endpoints/routeCredits"),
     require("./endpoints/credits"),
     require("./endpoints/loader"),
     require("./endpoints/crowdstart"),
@@ -39,8 +38,7 @@ module.exports = (server, options, next) => {
     require("./daemons/eventSubscriptions"),
     require("./daemons/smoketest"),
     // daemons/monitoring is loaded by endpoints/monitoring
-  ])
-  .then(next, (err) => {
+  ]).then(next, (err) => {
     console.log(err)
     next(err)
   })
