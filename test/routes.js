@@ -60,8 +60,7 @@ lab.experiment("Route manipulation", function () {
     label: "Test1"
   }
 
-  var transportCompany, transportCompany2
-  var stops, route
+  var transportCompany, transportCompany2, route
 
   lab.before({timeout: 10000}, async function () {
     transportCompany = await models.TransportCompany.create({})
@@ -174,7 +173,7 @@ lab.experiment("Route manipulation", function () {
 
     var response = await server.inject({
       method: 'GET',
-      url: '/routes?include_dates=true'
+      url: '/routes?includeDates=true'
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -187,7 +186,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?include_trips=true'
+      url: '/routes?includeTrips=true'
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -203,7 +202,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?include_trips=true&start_date=2016-01-01'
+      url: '/routes?includeTrips=true&startDate=2016-01-01'
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).above(1)
@@ -216,7 +215,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?include_trips=true&end_date=2016-12-01'
+      url: '/routes?includeTrips=true&endDate=2016-12-01'
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).above(1)
@@ -249,7 +248,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?include_trips=true&include_availability=true'
+      url: '/routes?includeTrips=true'
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -276,8 +275,8 @@ lab.experiment("Route manipulation", function () {
     var response = await server.inject({
       method: 'GET',
       url: '/routes?' + querystring.stringify({
-        include_trips: 'true',
-        start_date: stringDate(new Date())
+        includeTrips: 'true',
+        startDate: stringDate(new Date())
       })
     })
     Code.expect(response.statusCode).equal(200)
@@ -292,10 +291,10 @@ lab.experiment("Route manipulation", function () {
     await server.inject({
       method: 'GET',
       url: '/routes?' + querystring.stringify({
-        include_trips: 'true',
+        includeTrips: 'true',
         tags: JSON.stringify(['public']),
         label: 'R2',
-        start_date: stringDate(new Date())
+        startDate: stringDate(new Date())
       })
     })
     Code.expect(response.statusCode).equal(200)
@@ -313,7 +312,7 @@ lab.experiment("Route manipulation", function () {
 
     var response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?include_dates=true`
+      url: `/routes/${route.id}?includeDates=true`
     })
     expect(response.statusCode).equal(200)
     expect(response.result.dates).instanceof(Object)
@@ -321,14 +320,14 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?include_trips=true`
+      url: `/routes/${route.id}?includeTrips=true`
     })
     expect(response.statusCode).equal(200)
     expect(response.result.trips).not.empty()
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?include_trips=true&start_date=2016-01-01`
+      url: `/routes/${route.id}?includeTrips=true&startDate=2016-01-01`
     })
     expect(response.statusCode).equal(200)
     for (let trip of response.result.trips) {
@@ -337,7 +336,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?include_trips=true&end_date=2016-12-01`
+      url: `/routes/${route.id}?includeTrips=true&endDate=2016-12-01`
     })
     expect(response.statusCode).equal(200)
     for (let trip of response.result.trips) {
@@ -346,7 +345,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?include_trips=true&include_availability=true`
+      url: `/routes/${route.id}?includeTrips=true`
     })
     expect(response.statusCode).equal(200)
     for (let trip of response.result.trips) {
@@ -516,7 +515,7 @@ lab.experiment("Route manipulation", function () {
 
     var response = await server.inject({
       method: 'GET',
-      url: `/routes/${routeInstance.id}?include_indicative=true`
+      url: `/routes/${routeInstance.id}?includeIndicative=true`
     })
     Code.expect(response.statusCode).equal(200)
     Code.expect(response.result).to.include('indicativeTrip')
@@ -566,10 +565,9 @@ lab.experiment("Route manipulation", function () {
     var resp = await server.inject({
       url: "/routes/" + routeInst.id + "?" +
                     querystring.stringify({
-                      start_date: new Date(2016, 1 /* FEBRUARY */, 1).toISOString(),
-                      end_date: new Date(2016, 1 /* FEBRUARY */, 2).toISOString(),
-                      include_availability: true,
-                      include_trips: true,
+                      startDate: new Date(2016, 1 /* FEBRUARY */, 1).toISOString(),
+                      endDate: new Date(2016, 1 /* FEBRUARY */, 2).toISOString(),
+                      includeTrips: true,
                     }),
       method: "GET"
     })
@@ -664,10 +662,9 @@ lab.experiment("Route manipulation", function () {
     var resp = await server.inject({
       url: "/routes/" + routeInst.id + "?" +
                 querystring.stringify({
-                  start_date: new Date(2016, 1 /* 1 = FEBRUARY */, 1).toISOString(),
-                  end_date: new Date(2016, 1 /* 1 = FEBRUARY */, 20).toISOString(),
-                  include_availability: true,
-                  include_trips: true,
+                  startDate: new Date(2016, 1 /* 1 = FEBRUARY */, 1).toISOString(),
+                  endDate: new Date(2016, 1 /* 1 = FEBRUARY */, 20).toISOString(),
+                  includeTrips: true,
                 }),
       method: "GET"
     })
@@ -1347,8 +1344,8 @@ lab.experiment("Route manipulation", function () {
     var queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
         tags: JSON.stringify([]),
-        start_date: '2016-02-01T07:59:00+0800',
-        end_date: '2016-02-01T08:01:00+0800',
+        startDate: '2016-02-01T07:59:00+0800',
+        endDate: '2016-02-01T08:01:00+0800',
       }),
       method: 'GET',
     })
@@ -1365,8 +1362,8 @@ lab.experiment("Route manipulation", function () {
     queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
         tags: JSON.stringify(['tag1']),
-        start_date: '2016-02-01T07:59:00+0800',
-        end_date: '2016-02-01T08:01:00+0800',
+        startDate: '2016-02-01T07:59:00+0800',
+        endDate: '2016-02-01T08:01:00+0800',
       }),
       method: 'GET',
     })
@@ -1382,8 +1379,8 @@ lab.experiment("Route manipulation", function () {
     queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
         tags: JSON.stringify(['tag2']),
-        start_date: '2016-02-01T07:59:00+0800',
-        end_date: '2016-02-01T08:01:00+0800',
+        startDate: '2016-02-01T07:59:00+0800',
+        endDate: '2016-02-01T08:01:00+0800',
       }),
       method: 'GET',
     })
@@ -1399,8 +1396,8 @@ lab.experiment("Route manipulation", function () {
     queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
         tags: JSON.stringify(['tag2', 'tag1']),
-        start_date: '2016-02-01T07:59:00+0800',
-        end_date: '2016-02-01T08:01:00+0800',
+        startDate: '2016-02-01T07:59:00+0800',
+        endDate: '2016-02-01T08:01:00+0800',
       }),
       method: 'GET',
     })
