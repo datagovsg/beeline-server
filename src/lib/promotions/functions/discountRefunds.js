@@ -122,7 +122,7 @@ export const discountingFunctions = {
    * schedule is an sorted array of (quantity, discount amount) pairs
    * the function will take the highest qty in the schdule
    * that is lower or equal to the number of ticket purchase
-   * and apply the discount amount SPREAD EVENLY OVER ALL TICKETS
+   * and apply the discount amount SPREAD PROPORTIONALLY OVER ALL TICKETS
    */
   tieredFixedByQty (params) {
     Joi.assert(params, {
@@ -137,7 +137,7 @@ export const discountingFunctions = {
 
     return (items, options) => {
       const match = findMatchingTier(items.length, params.schedule)
-      return distribute(match, items.map(it => 1))
+      return distribute(match, items.map(it => it.price))
     }
   },
 
@@ -171,7 +171,7 @@ export const discountingFunctions = {
    * schedule is an sorted array of (value, discount rate) pairs
    * the function will take the highest value in the schdule
    * that is lower or equal to the total purchase value
-   * and apply the discount amount SPREAD EVENLY OVER ALL TICKETS
+   * and apply the discount amount SPREAD PROPORTIONALLY OVER ALL TICKETS
    */
   tieredFixedByTotalValue (params) {
     Joi.assert(params, {
@@ -187,7 +187,7 @@ export const discountingFunctions = {
     return (items, options) => {
       const totalValue = roundToNearestCent(_.sumBy(items, item => parseFloat(item.price)))
       const match = findMatchingTier(totalValue, params.schedule)
-      return distribute(match, items.map(it => 1))
+      return distribute(match, items.map(it => it.price))
     }
   },
 

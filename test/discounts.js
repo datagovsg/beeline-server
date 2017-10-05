@@ -1,4 +1,5 @@
 import Lab from 'lab'
+import _ from 'lodash'
 export const lab = Lab.script()
 
 import {expect} from 'code'
@@ -113,11 +114,14 @@ lab.experiment("discountingFunctions", {timeout: 10000}, function () {
     const check = tieredFixedByQty(params)
     const orderDiscount = mockPrices(7.31, 5.27, 6.98, 4.21, 6.52)
     const orderNoDiscount = mockPrices(7.31, 5.27, 6.98, 4.21)
-    const expectDiscount = [1, 1, 1, 1, 1]
+    const sum = _.sum(orderDiscount.map(i => i.price))
+    const expectDiscount = orderDiscount.map(i => i.price / sum * 5)
     const expectNoDiscount = [0, 0, 0, 0]
     const actualDiscount = check(orderDiscount, {})
     const actualNoDiscount = check(orderNoDiscount, {})
-    expect(JSON.stringify(actualDiscount)).to.equal(JSON.stringify(expectDiscount))
+    for (var i = 0; i < actualDiscount.length; ++i) {
+      expect(actualDiscount[i]).to.about(expectDiscount[i], 0.01)
+    }
     expect(JSON.stringify(actualNoDiscount)).to.equal(JSON.stringify(expectNoDiscount))
   })
 
@@ -139,11 +143,14 @@ lab.experiment("discountingFunctions", {timeout: 10000}, function () {
     const check = tieredFixedByTotalValue(params)
     const orderDiscount = mockPrices(7.31, 5.27, 6.98, 4.21, 6.52)
     const orderNoDiscount = mockPrices(6.31, 5.27, 6.98, 4.21, 6.52)
-    const expectDiscount = [1, 1, 1, 1, 1]
+    const sum = _.sum(orderDiscount.map(i => i.price))
+    const expectDiscount = orderDiscount.map(i => i.price / sum * 5)
     const expectNoDiscount = [0, 0, 0, 0, 0]
     const actualDiscount = check(orderDiscount, {})
     const actualNoDiscount = check(orderNoDiscount, {})
-    expect(JSON.stringify(actualDiscount)).to.equal(JSON.stringify(expectDiscount))
+    for (var i = 0; i < actualDiscount.length; ++i) {
+      expect(actualDiscount[i]).to.about(expectDiscount[i], 0.01)
+    }
     expect(JSON.stringify(actualNoDiscount)).to.equal(JSON.stringify(expectNoDiscount))
   })
 
