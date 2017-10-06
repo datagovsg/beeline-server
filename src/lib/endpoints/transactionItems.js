@@ -4,7 +4,7 @@ const Boom = require("boom")
 const stream = require('stream')
 const fastCSV = require('fast-csv')
 
-const {getModels, getDB, defaultErrorHandler} = require("../util/common")
+const {getModels, getDB, defaultErrorHandler, InvalidArgumentError} = require("../util/common")
 
 import fs from 'fs'
 import Handlebars from 'handlebars'
@@ -281,7 +281,25 @@ export function register (server, options, next) {
       include: [{
         model: m[modelName],
         where: itemTypeWhereClause,
-        include: [{ model: m.User }],
+        include: [
+          { model: m.User, attributes: ['email', 'name', 'telephone'] },
+        ],
+        attributes: {
+          include: [
+            [
+              db.literal(`(
+                SELECT
+                  jsonb_build_object('label', label, 'name', name)
+                FROM
+                  routes
+                WHERE
+                  "routePass".tag = ANY(routes.tags)
+                LIMIT 1
+              )`),
+              'route'
+            ]
+          ]
+        },
         as: itemType
       }, {
         model: m.Transaction,
@@ -328,29 +346,38 @@ export function register (server, options, next) {
       validate: {
         query: {
           ...routeCreditsQuerySchema,
-          perPage: Joi.number().integer().min(1).default(20),
+          perPage: Joi.number().integer().min(1).max(100).default(20),
           page: Joi.number().integer().min(1).default(1),
+          format: Joi.string()
+            .valid(['json'])
+            .default('json'),
         }
       }
     },
     async handler (request, reply) {
-      try {
-        const m = getModels(request)
-
-        auth.assertAdminRole(request.auth.credentials, 'view-transactions', request.params.companyId)
-
-        const {page, perPage} = request.query
+      const getTransactionItems = async (m, query, page, perPage) => {
         const entryOffset = (page - 1) * perPage
-
-        let query = buildRoutePassQuery(request)
-
-        let relatedTransactionItems = await m.TransactionItem.findAll({
+        return m.TransactionItem.findAll({
           ...query,
           limit: perPage,
           offset: entryOffset,
         })
+      }
 
-        reply(relatedTransactionItems)
+      try {
+        auth.assertAdminRole(request.auth.credentials, 'view-transactions', request.params.companyId)
+
+        const m = getModels(request)
+        const query = buildRoutePassQuery(request)
+
+        if (request.query.format === 'json') {
+          const {page, perPage} = request.query
+          const relatedTransactionItems = await getTransactionItems(m, query, page, perPage)
+
+          reply(relatedTransactionItems)
+        } else {
+          throw new InvalidArgumentError(`Unrecognized format argument: ${request.query.format}`)
+        }
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
