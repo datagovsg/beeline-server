@@ -186,7 +186,7 @@ export function register (server, options, next) {
           m.Trip.findById(request.params.id)])
 
         if (driver.id !== trip.driverId) {
-          reply(Boom.resourceGone())
+          return reply(Boom.resourceGone())
         }
 
         if (request.payload.vehicleId && (!vehicle || vehicle.driverId !== driver.id)) {
