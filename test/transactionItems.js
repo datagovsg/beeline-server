@@ -202,17 +202,12 @@ lab.experiment("TransactionItems", function () {
   lab.test('Transaction items for route pass transactions', {timeout: 60000}, async function () {
     const companyId = companyInstance.id
 
-    // Expect:
-    // 7 transactions, of which 5 are returned
-
     const txnResponse = await server.inject({
       method: 'GET',
       url: `/companies/${companyId}/transaction_items/route_passes`,
       headers: authHeaders.admin
     })
     expect(txnResponse.statusCode).equal(200)
-
-    console.log(JSON.stringify(txnResponse.result.map(r => r.toJSON()), null, 2))
 
     expect(txnResponse.result.length).equal(8)
 
@@ -229,6 +224,13 @@ lab.experiment("TransactionItems", function () {
     expect(txnByType.freeRoutePass.length).equal(3)
     expect(txnByType.routePassPurchase).exist()
     expect(txnByType.routePassPurchase.length).equal(1)
+
+    const csvResponse = await server.inject({
+      method: 'GET',
+      url: `/companies/${companyId}/transaction_items/route_passes?format=csvdump`,
+      headers: authHeaders.admin
+    })
+    expect(csvResponse.statusCode).equal(200)
 
     const userResponse = await server.inject({
       method: 'GET',
