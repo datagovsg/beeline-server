@@ -410,7 +410,7 @@ export function register (server, options, next) {
           db.transaction(async transaction => {
             const perPage = 100
             var page = 1
-            var pageSize = 100
+            var pageSize = 20
             while (pageSize >= perPage) {
               const relatedTransactionItems = await getTransactionItems(m, query, page, perPage, transaction) // eslint-disable-line no-await-in-loop
               for (const row of relatedTransactionItems) {
