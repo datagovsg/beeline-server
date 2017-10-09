@@ -349,28 +349,91 @@ export function register (server, options, next) {
           perPage: Joi.number().integer().min(1).max(100).default(20),
           page: Joi.number().integer().min(1).default(1),
           format: Joi.string()
-            .valid(['json'])
+            .valid(['json', 'csvdump'])
+            .description('json, or csvdump. csvdump ignores perPage and page')
             .default('json'),
         }
       }
     },
     async handler (request, reply) {
-      const getTransactionItems = async (m, query, page, perPage) => {
+      const getTransactionItems = async (m, query, page, perPage, transaction) => {
         const entryOffset = (page - 1) * perPage
         return m.TransactionItem.findAll({
           ...query,
           limit: perPage,
           offset: entryOffset,
+          transaction,
         })
+      }
+
+      const routePassCSVFields = [
+        'transactionId', 'transaction.createdAt', 'transaction.type',
+        'refundingTransactionId',
+        'routePass.expiresAt', 'routePass.status',
+        'routePass.notes.ticketId',
+        'routePass.route.label', 'routePass.route.name',
+        'routePass.tag',
+        'routePass.user.name',
+        'routePass.user.email',
+        'routePass.user.telephone',
+        'credit',
+        'routePass.notes.discountValue'
+      ]
+
+      const routePassJSONToCSV = row => {
+        const isoStringIfDate = value => value instanceof Date
+          ? value.toISOString() : value
+        const csv = _(routePassCSVFields)
+          .map(f => [f, isoStringIfDate(_.get(row, f))])
+          .fromPairs()
+          .value()
+        return csv
       }
 
       try {
         auth.assertAdminRole(request.auth.credentials, 'view-transactions', request.params.companyId)
-
+        const db = getDB(request)
         const m = getModels(request)
         const query = buildRoutePassQuery(request)
 
-        if (request.query.format === 'json') {
+        if (request.query.format === 'csvdump') {
+          const io = new stream.PassThrough()
+          const writer = fastCSV
+            .createWriteStream({ headers: true })
+            .transform(routePassJSONToCSV)
+          writer.pipe(io)
+
+          reply(io)
+            .header('Content-type', 'text/csv')
+            .header('content-disposition', 'attachment; filename="route_pass_report.csv"')
+
+          db.transaction(async transaction => {
+            const perPage = 100
+            var page = 1
+            var pageSize = 100
+            while (pageSize >= perPage) {
+              const relatedTransactionItems = await getTransactionItems(m, query, page, perPage, transaction) // eslint-disable-line no-await-in-loop
+              for (const row of relatedTransactionItems) {
+                if (!writer.write(row.toJSON())) {
+                  await new Promise((resolve) => { // eslint-disable-line no-await-in-loop
+                    writer.once('drain', resolve)
+                  })
+                }
+              }
+              pageSize = relatedTransactionItems.length
+              ++page
+            }
+          }).catch(err => {
+            // corrupt output to indicate error
+            writer.write({id: `Error generating output: ${err}`})
+          }).finally(() => {
+            writer.end()
+          })
+
+          writer.on('error', (err) => {
+            console.log(err) // There's not much we can do here
+          })
+        } else if (request.query.format === 'json') {
           const {page, perPage} = request.query
           const relatedTransactionItems = await getTransactionItems(m, query, page, perPage)
 
