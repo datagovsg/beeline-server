@@ -168,51 +168,57 @@ export function register (server, options, next) {
       const endDateQuery = request.query.endDate
         ? `"trips".date <= :endDate` : '1=1'
 
-      const tripIdsQuery = routes.map(r => `
-          (SELECT "id" FROM "trips"
-          WHERE
-          trips."routeId" = (${r.id})
-          AND ${startDateQuery}
-          AND ${endDateQuery}
-          ORDER BY "routeId", "date"
-          LIMIT :limitTrips)
-        `).join(' UNION ')
-
       const stringDate = d => d && [
         leftPad(d.getFullYear(), 4, '0'),
         leftPad(d.getMonth() + 1, 2, '0'),
         leftPad(d.getDate(), 2, '0'),
       ].join('-')
 
-      const tripIds = await db.query(tripIdsQuery, {
-        replacements: {
-          startDate: stringDate(request.query.startDate),
-          endDate: stringDate(request.query.endDate),
-          limitTrips: request.query.limitTrips,
-          routeIds: routes.map(r => r.id),
-        },
-        raw: true,
-        type: db.QueryTypes.SELECT
-      })
+      const tripQueries = []
 
-      const trips = await m.Trip.findAll({
-        where: {
-          id: {$in: tripIds.map(t => t.id)},
-        },
-        include: [{
-          model: m.TripStop,
-          attributes: {exclude: ['createdAt', 'updatedAt']},
+      for (var i = 0; i < routes.length; i += 10) {
+        const routeIdBatch = routes.slice(i, i + 10).map(r => r.id)
+        const tripIdsQuery = routeIdBatch.map(routeId =>
+          `
+            (SELECT "id" FROM "trips"
+            WHERE
+            trips."routeId" = (${routeId})
+            AND ${startDateQuery}
+            AND ${endDateQuery}
+            ORDER BY "date"
+            LIMIT :limitTrips)
+          `
+        ).join(' UNION ')
+        const tripIdsBatch = await db.query(tripIdsQuery, { // eslint-disable-line no-await-in-loop
+          replacements: {
+            startDate: stringDate(request.query.startDate),
+            endDate: stringDate(request.query.endDate),
+            limitTrips: request.query.limitTrips,
+          },
+          raw: true,
+          type: db.QueryTypes.SELECT
+        })
+        tripQueries.push(m.Trip.findAll({
+          where: {
+            id: {$in: tripIdsBatch.map(t => t.id)},
+          },
           include: [{
-            model: m.Stop,
-            attributes: {exclude: ['createdAt', 'updatedAt']}
+            model: m.TripStop,
+            attributes: {exclude: ['createdAt', 'updatedAt']},
+            include: [{
+              model: m.Stop,
+              attributes: {exclude: ['createdAt', 'updatedAt']}
+            }],
           }],
-        }],
-        order: [
-          ['id'],
-          [m.TripStop, 'time']
-        ],
-        attributes: {exclude: ['createdAt', 'updatedAt']},
-      })
+          order: [
+            ['id'],
+            [m.TripStop, 'time']
+          ],
+          attributes: {exclude: ['createdAt', 'updatedAt']},
+        }))
+      }
+
+      const trips = await Promise.all(tripQueries).then(_.flatten)
 
       const tripsByRouteId = _.groupBy(trips, 'routeId')
 
