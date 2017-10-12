@@ -59,7 +59,7 @@ export function validateTxn (txn) {
  */
 
 
- /* Prepare the transaction. Transaction has the following lines:
+/* Prepare the transaction. Transaction has the following lines:
              DEBIT     CREDIT
  Ticket 1 (as Revenue account):           5.00
  Ticket 2 (as Revenue account):          10.00     [ for each ticket
@@ -136,8 +136,7 @@ export async function prepareTicketSale (connection, optionsRaw) {
     convertToJson: Joi.boolean().default(true),
 
     type: Joi.string().allow(null).optional()
-  }) // ensure that the checks field is populated
-  .validate(optionsRaw)
+  }).validate(optionsRaw) // ensure that the checks field is populated
 
   assert(!error, `Invalid input in prepareTicketSale() ${error && error.details}`)
 
@@ -441,7 +440,8 @@ export async function prepareTicketRefund (options) {
       "Trying to refund a non-valid ticket")
 
     // Find the associated company, check if user is authorised to trigger refund
-    var [company] = await db.query(`
+    var [company] = await db.query(
+      `
       SELECT "transportCompanies"."id"
       FROM tickets
         INNER JOIN "tripStops"
@@ -453,13 +453,13 @@ export async function prepareTicketRefund (options) {
         INNER JOIN "transportCompanies"
           ON "transportCompanies"."id" = "routes"."transportCompanyId"
       WHERE "tickets"."id" = :ticketId
-    `, {
-      transaction: t,
-      type: db.QueryTypes.SELECT,
-      replacements: {
-        ticketId: ticket.id
-      }
-    })
+      `, {
+        transaction: t,
+        type: db.QueryTypes.SELECT,
+        replacements: {
+          ticketId: ticket.id
+        }
+      })
     auth.assertAdminRole(credentials, 'refund', company.id)
 
     // Reverse search from ticket id, get transaction entry + related transactionItems
@@ -714,12 +714,14 @@ export async function chargeSale (options) {
   // Group the transaction items first
   try {
     // [db, m], transaction, stripeToken, tokenIat
-    assert(options.db)
     assert(options.models)
     assert(options.transaction)
     // assert(options.stripeToken);
     assert(options.paymentDescription)
-    if (options.stripeToken) { var {db, models: m, transaction, stripeToken, tokenIat, paymentDescription} = options } else if (options.customerId && options.sourceId) { var {db, models: m, transaction, tokenIat, paymentDescription, customerId, sourceId} = options } else { assert(false, "Either ...") }
+
+    var {models: m, transaction, tokenIat, paymentDescription, stripeToken, customerId, sourceId} = options
+
+    assert(stripeToken || (customerId && sourceId), 'Either stripe token or saved payment info should be set')
 
     var txnGroups = _.groupBy(transaction.transactionItems, "itemType")
 
@@ -748,10 +750,12 @@ export async function chargeSale (options) {
       .replace(/[<>"']/g, '') // no <>"'
       .substr(0, 22) // 22 characters max
 
+    var chargeResult
+
     if (paymentValue === '0.00') {
-      var chargeResult = {id: null}
+      chargeResult = {id: null}
     } else if (options.stripeToken) {
-      var chargeResult = await Payment.chargeCard({
+      chargeResult = await Payment.chargeCard({
         value: paymentValue,
         description: paymentDescription,
         statement_descriptor: statementDescriptor,
@@ -760,7 +764,7 @@ export async function chargeSale (options) {
         source: stripeToken
       })
     } else if (options.customerId && options.sourceId) {
-      var chargeResult = await Payment.chargeCard({
+      chargeResult = await Payment.chargeCard({
         value: paymentValue,
         description: paymentDescription,
         statement_descriptor: statementDescriptor,
@@ -883,8 +887,7 @@ export function checkAvailability ([db, m], tripIds, transaction) {
     where: {
       id: {$in: tripIds}
     }
-  })
-  .then(trips => {
+  }).then(trips => {
     if (trips.some(t => t.seatsAvailable < 0)) {
       throw new TransactionError("Not enough seats available")
     }
