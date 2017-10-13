@@ -408,10 +408,10 @@ export function register (server, options, next) {
             .header('content-disposition', 'attachment; filename="route_pass_report.csv"')
 
           db.transaction(async transaction => {
-            const perPage = 100
+            const perPage = 20
             var page = 1
-            var pageSize = 20
-            while (pageSize >= perPage) {
+            var lastFetchedSize = perPage
+            while (lastFetchedSize >= perPage) {
               const relatedTransactionItems = await getTransactionItems(m, query, page, perPage, transaction) // eslint-disable-line no-await-in-loop
               for (const row of relatedTransactionItems) {
                 if (!writer.write(row.toJSON())) {
@@ -420,7 +420,7 @@ export function register (server, options, next) {
                   })
                 }
               }
-              pageSize = relatedTransactionItems.length
+              lastFetchedSize = relatedTransactionItems.length
               ++page
             }
           }).catch(err => {

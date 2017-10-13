@@ -28,12 +28,12 @@ deploy:
     memory_size: 256
     handler_name: handler
     module_name: dist/lib/aws/expireStaleRoutePasses
-    access_key_id: AKIAIA5EZRS7UXDQSHDA
+    access_key_id: AKIAJQPC5ZBLGJX36AXA
     secret_access_key:
-      secure: t++hFNtpfRsehF5QodV4l1Qx/UgFWW2F8E38XrYuKnsUZT85ZkC/m61eXbqrbcfcZcpr+UpkC2VilxRcDR+/CDSm3/kg17FD5ZFKQ5aTsJvK92Q6e8XfN3kevW/qKPmRSUIXlXL4m/BE+6MW8oBH2DCvUGJKbSxpgu1WrorSa7yfAAVIMicWhBpDZkTTAoFZSFGgeNDd61xuZIbb8+Fd3cHpngB8Cz8aJKUxcB6l3XAdd0gz0YhfUxe4mV93CdQyQomdFoKg6BpaLD54t8CURQJB8MkmZA4RuPK2SAU4pClsqUjx/jRfbJG2FOJ+IlrPi02/ti/1BykL/Uc3A/DNxtPUAptVTjNMol/R8fANNMWPFGmV4Q1WYmvQVRBohvdLSHwU8vEXAnDBwMV+vixpkG3MtcH9ECCvq6DTmBvH0F7wscNEHOtDssZGYcENuTjWNh/sbvjNLRTW5EvZf79ASdQkxK92P7y1+Ni49bgQpyeVzDNuS9gJUwLLdmjyymz/TLdx8BBraUHbGfjJ+JrGxWDfMRb0+qpknv5kRwNO6wNjfkzwBlxPkbmMdnklWOXho7sLjrjFwVsqGtW/vVuyL15/4KWADZcHf9PfNlNdHzDZCz54BKGVTvn/JHAaFoBpQWKmAJhVtX/nmlDlSu5pw4yTfAFsHAWUv7mqqhOhjjU=
+      secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
     on:
       branch: master
-      condition: $BABEL_ENV = awslambda
+      condition: "$BABEL_ENV = awslambda"
   - provider: lambda
     function_name: expireStaleRoutePasses-prod
     region: ap-southeast-1
@@ -43,12 +43,12 @@ deploy:
     memory_size: 256
     handler_name: handler
     module_name: dist/lib/aws/expireStaleRoutePasses
-    access_key_id: AKIAIA5EZRS7UXDQSHDA
+    access_key_id: AKIAJQPC5ZBLGJX36AXA
     secret_access_key:
-      secure: t++hFNtpfRsehF5QodV4l1Qx/UgFWW2F8E38XrYuKnsUZT85ZkC/m61eXbqrbcfcZcpr+UpkC2VilxRcDR+/CDSm3/kg17FD5ZFKQ5aTsJvK92Q6e8XfN3kevW/qKPmRSUIXlXL4m/BE+6MW8oBH2DCvUGJKbSxpgu1WrorSa7yfAAVIMicWhBpDZkTTAoFZSFGgeNDd61xuZIbb8+Fd3cHpngB8Cz8aJKUxcB6l3XAdd0gz0YhfUxe4mV93CdQyQomdFoKg6BpaLD54t8CURQJB8MkmZA4RuPK2SAU4pClsqUjx/jRfbJG2FOJ+IlrPi02/ti/1BykL/Uc3A/DNxtPUAptVTjNMol/R8fANNMWPFGmV4Q1WYmvQVRBohvdLSHwU8vEXAnDBwMV+vixpkG3MtcH9ECCvq6DTmBvH0F7wscNEHOtDssZGYcENuTjWNh/sbvjNLRTW5EvZf79ASdQkxK92P7y1+Ni49bgQpyeVzDNuS9gJUwLLdmjyymz/TLdx8BBraUHbGfjJ+JrGxWDfMRb0+qpknv5kRwNO6wNjfkzwBlxPkbmMdnklWOXho7sLjrjFwVsqGtW/vVuyL15/4KWADZcHf9PfNlNdHzDZCz54BKGVTvn/JHAaFoBpQWKmAJhVtX/nmlDlSu5pw4yTfAFsHAWUv7mqqhOhjjU=
+      secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
     on:
       branch: production
-      condition: $BABEL_ENV = awslambda
+      condition: "$BABEL_ENV = awslambda"
 addons:
   postgresql: '9.6'
   apt:

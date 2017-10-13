@@ -1961,7 +1961,7 @@ lab.experiment("Transactions", function () {
     await promoInst.destroy()
   })
 
-  lab.test("Apply route credits works and is not refundable", {timeout: 15000}, async () => {
+  lab.test("Apply route pass works and is refundable only once", {timeout: 15000}, async () => {
     const rpTag = 'rp-' + routeInstance.id
     await routeInstance.update({ tags: [rpTag] })
 
@@ -2009,7 +2009,17 @@ lab.experiment("Transactions", function () {
       },
       headers: authHeaders.admin
     })
-    expect(refundResponse.statusCode).to.equal(400)
+    expect(refundResponse.statusCode).to.equal(200)
+
+    const badRefundResponse = await server.inject({
+      method: "POST",
+      url: `/transactions/route_passes/${routePass.id}/refund/payment`,
+      payload: {
+        transactionItemId: transactionItem.id
+      },
+      headers: authHeaders.admin
+    })
+    expect(badRefundResponse.statusCode).to.equal(400)
 
     await routePass.destroy()
   })
