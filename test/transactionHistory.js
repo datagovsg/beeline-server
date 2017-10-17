@@ -333,7 +333,7 @@ lab.experiment("Transactions", function () {
 
     var user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/userHistory',
+      url: '/transactions/user_history',
       headers: {
         authorization: `Bearer ${user.makeToken()}`
       }
@@ -389,7 +389,7 @@ lab.experiment("Transactions", function () {
 
     var user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/userHistory',
+      url: '/transactions/user_history',
       headers: {
         authorization: `Bearer ${user.makeToken()}`
       }
