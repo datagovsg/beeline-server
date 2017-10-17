@@ -1080,8 +1080,9 @@ it as fsck for transactions)`
     }
   })
 
-  routeRequestsTo(server, ["/transactions/userHistory", "/transactions/user_history"], {
+  server.route({
     method: "GET",
+    path: "/transactions/user_history",
     config: {
       tags: ["api"],
       description:

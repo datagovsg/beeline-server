@@ -5,7 +5,6 @@ const {toSVY} = require("../util/svy21")
 const leftPad = require('left-pad')
 
 import assert from 'assert'
-import camelCase from 'camelcase'
 import * as auth from '../core/auth'
 import {getModels, getDB, defaultErrorHandler, InvalidArgumentError, TransactionError} from '../util/common'
 import {purchaseRoutePass} from '../transactions'
@@ -241,27 +240,6 @@ export function register (server, options, next) {
     includeDates: Joi.boolean().optional().description("Include first, last and next trip dates"),
   }
 
-  const routeCommonLegacyParams = {
-    start_date: Joi.date(),
-    end_date: Joi.date(),
-    include_indicative: Joi.boolean(),
-    include_trips: Joi.boolean().optional().description("Include trips, tripStops and stops"),
-    include_dates: Joi.boolean().optional().description("Include first, last and next trip dates"),
-    include_availability: Joi.boolean().optional().description("DEPRECATED: availability always included"),
-  }
-
-  const convertToCamelCase = query => {
-    const casedQueries = _(query)
-      .toPairs()
-      .partition(([k, v]) => k.includes('_'))
-      .map(_.fromPairs)
-      .value()
-    return {
-      ...casedQueries[1],
-      ..._.mapKeys(casedQueries[0], (v, k) => camelCase(k)),
-    }
-  }
-
   server.route({
     method: "GET",
     path: "/routes",
@@ -274,9 +252,6 @@ the \`startDate\` defaults to the time of request.
             `,
       validate: {
         query: {
-          ...routeCommonLegacyParams,
-          include_path: Joi.boolean(),
-          limit_trips: Joi.number().integer().max(5),
           ...routeCommonParams,
           includePath: Joi.boolean().default(false),
           limitTrips: Joi.number().integer().default(5).max(5),
@@ -289,7 +264,6 @@ the \`startDate\` defaults to the time of request.
     },
     handler: async function (request, reply) {
       try {
-        request.query = convertToCamelCase(request.query)
         const now = new Date()
         if (
           request.auth.credentials.scope !== 'admin' &&
@@ -323,8 +297,6 @@ the \`startDate\` defaults to the time of request.
           id: Joi.number()
         },
         query: {
-          ...routeCommonLegacyParams,
-          include_features: Joi.boolean(),
           ...routeCommonParams,
           includeFeatures: Joi.boolean().default(false),
         }
@@ -333,7 +305,6 @@ the \`startDate\` defaults to the time of request.
     handler: async function (request, reply) {
       var m = getModels(request)
       try {
-        request.query = convertToCamelCase(request.query)
         var routeQuery = {
           where: {
             id: request.params.id
