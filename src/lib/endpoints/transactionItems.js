@@ -328,6 +328,55 @@ export function register (server, options, next) {
               LIMIT 1
             )`),
             'refundingTransactionId'
+          ],
+          [
+            db.literal(`(
+              SELECT
+                "paymentResource"
+              FROM
+                "transactionItems" "paymentItem",
+                "payments"
+              WHERE
+                "paymentItem"."transactionId" = "transactionItem"."transactionId"
+                AND "paymentItem"."itemType" = 'payment'
+                AND "paymentItem"."itemId" = "payments"."id"
+              LIMIT 1
+            )`),
+            'paymentResource'
+          ],
+          [
+            db.literal(`(
+              SELECT
+                "payments".data->'transfer'->>'destination_payment'
+              FROM
+                "transactionItems" "paymentItem",
+                "payments"
+              WHERE
+                "paymentItem"."transactionId" = "transactionItem"."transactionId"
+                AND "paymentItem"."itemType" = 'payment'
+                AND "paymentItem"."itemId" = "payments"."id"
+              LIMIT 1
+            )`),
+            'transferResource'
+          ],
+          [
+            db.literal(`(
+              SELECT
+                "paymentResource"
+              FROM
+                "transactionItems" "refundingTransaction",
+                "transactionItems" "refundPaymentItem",
+                "refundPayments"
+              WHERE
+                "refundingTransaction".notes IS NOT NULL
+                AND "refundingTransaction".notes->>'refundedTransactionId' = "transactionItem"."transactionId"::text
+                AND "refundingTransaction"."itemType" = '${itemType}'
+                AND "refundingTransaction"."itemId" = "transactionItem"."itemId"
+                AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
+                AND "refundPayments".id = "refundPaymentItem"."itemId"
+              LIMIT 1
+            )`),
+            'refundResource'
           ]
         ]
       }
@@ -367,8 +416,13 @@ export function register (server, options, next) {
       }
 
       const routePassCSVFields = [
-        'transactionId', 'transaction.createdAt', 'transaction.type',
+        'transactionId', 'transaction.createdAt',
+        'transaction.committed', 'transaction.type',
         'refundingTransactionId',
+        'paymentResource',
+        'transferResource',
+        'refundResource',
+        'routePass.id',
         'routePass.expiresAt', 'routePass.status',
         'routePass.notes.ticketId',
         'routePass.route.label', 'routePass.route.name',
