@@ -455,7 +455,7 @@ export function register (server, options, next) {
             .header('content-disposition', 'attachment; filename="route_pass_report.csv"')
 
           db.transaction(async transaction => {
-            const perPage = 20
+            const perPage = 10
             var page = 1
             var lastFetchedSize = perPage
             while (lastFetchedSize >= perPage) {
