@@ -251,7 +251,6 @@ export function register (server, options, next) {
 
   const buildRoutePassQueryFor = (itemType, modelName) => request => {
     const m = getModels(request)
-    const db = getDB(request)
     const {companyId} = request.params
     const {userId, startDateTime, endDateTime,
       transactionType, hideUncommittedTransactions, tag} = request.query
@@ -284,22 +283,6 @@ export function register (server, options, next) {
         include: [
           { model: m.User, attributes: ['email', 'name', 'telephone'] },
         ],
-        attributes: {
-          include: [
-            [
-              db.literal(`(
-                SELECT
-                  jsonb_build_object('label', label, 'name', name)
-                FROM
-                  routes
-                WHERE
-                  "routePass".tag = ANY(routes.tags)
-                LIMIT 1
-              )`),
-              'route'
-            ]
-          ]
-        },
         as: itemType
       }, {
         model: m.Transaction,
@@ -317,6 +300,35 @@ export function register (server, options, next) {
 
   const buildRoutePassQuery = buildRoutePassQueryFor('routePass', 'RoutePass')
 
+  const keyBy = field => rows => _(rows)
+    .map(r => [r[field], _.omit(r, field)])
+    .fromPairs()
+    .value()
+
+  const addRouteMetadataTo = async (db, routePassItems) => {
+    const routeTags = _(routePassItems)
+      .map(r => r.routePass.tag)
+      .uniq()
+      .value()
+    if (routeTags.length === 0) {
+      return routePassItems
+    }
+    const routeMetadata = await db
+      .query(
+        `SELECT
+          tag, label, name
+        FROM
+          routes, "routePasses"
+        WHERE
+          "routePasses".tag = ANY(routes.tags)
+          AND "routePasses".tag in (:routeTags)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { routeTags } }
+      ).then(keyBy('tag'))
+    routePassItems.map(r => r.routePass).forEach(r => _.assign(r, { route: routeMetadata[r.tag] }))
+    return routePassItems
+  }
+
   const addPaymentMetadataTo = async (db, routePassItems) => {
     const transactionIds = _(routePassItems)
       .filter(r => r.transaction.type === 'routePassPurchase')
@@ -326,10 +338,6 @@ export function register (server, options, next) {
     if (transactionIds.length === 0) {
       return routePassItems
     }
-    const keyByTransactionId = rows => _(rows)
-      .map(r => [r.transactionId, _.omit(r, 'transactionId')])
-      .fromPairs()
-      .value()
     const refundMetadata = await db
       .query(
         `SELECT
@@ -352,7 +360,7 @@ export function register (server, options, next) {
         `,
         { type: db.QueryTypes.SELECT, replacements: { transactionIds } }
       )
-      .then(keyByTransactionId)
+      .then(keyBy('transactionId'))
 
     const paymentMetadata = await db
       .query(
@@ -372,7 +380,7 @@ export function register (server, options, next) {
         `,
         { type: db.QueryTypes.SELECT, replacements: { transactionIds } }
       )
-      .then(keyByTransactionId)
+      .then(keyBy('transactionId'))
     routePassItems.forEach(r => _.assign(r, refundMetadata[r.transactionId], paymentMetadata[r.transactionId]))
     return routePassItems
   }
@@ -405,6 +413,7 @@ export function register (server, options, next) {
           offset: entryOffset,
           transaction,
         }).then(passes => passes.map(r => r.toJSON()))
+        await addRouteMetadataTo(db, routePassItems)
         return addPaymentMetadataTo(db, routePassItems)
       }
 
@@ -455,7 +464,7 @@ export function register (server, options, next) {
             .header('content-disposition', 'attachment; filename="route_pass_report.csv"')
 
           db.transaction(async transaction => {
-            const perPage = 10
+            const perPage = 20
             var page = 1
             var lastFetchedSize = perPage
             while (lastFetchedSize >= perPage) {
