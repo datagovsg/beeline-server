@@ -481,7 +481,8 @@ export function register (server, options, next) {
             }
           }).catch(err => {
             // corrupt output to indicate error
-            writer.write({id: `Error generating output: ${err}`})
+            console.error(err)
+            writer.write({transactionId: `Error generating output: ${err}`})
           }).finally(() => {
             writer.end()
           })
