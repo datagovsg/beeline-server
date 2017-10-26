@@ -312,78 +312,70 @@ export function register (server, options, next) {
         }],
         where: transactionWhereClause
       }],
-      attributes: {
-        include: [
-          [
-            db.literal(`(
-              SELECT
-                "transactionId"
-              FROM
-                "transactionItems" "refundingTransaction"
-              WHERE
-                "refundingTransaction".notes IS NOT NULL
-                AND "refundingTransaction".notes->>'refundedTransactionId' = "transactionItem"."transactionId"::text
-                AND "refundingTransaction"."itemType" = '${itemType}'
-                AND "refundingTransaction"."itemId" = "transactionItem"."itemId"
-              LIMIT 1
-            )`),
-            'refundingTransactionId'
-          ],
-          [
-            db.literal(`(
-              SELECT
-                "paymentResource"
-              FROM
-                "transactionItems" "paymentItem",
-                "payments"
-              WHERE
-                "paymentItem"."transactionId" = "transactionItem"."transactionId"
-                AND "paymentItem"."itemType" = 'payment'
-                AND "paymentItem"."itemId" = "payments"."id"
-              LIMIT 1
-            )`),
-            'paymentResource'
-          ],
-          [
-            db.literal(`(
-              SELECT
-                "payments".data->'transfer'->>'destination_payment'
-              FROM
-                "transactionItems" "paymentItem",
-                "payments"
-              WHERE
-                "paymentItem"."transactionId" = "transactionItem"."transactionId"
-                AND "paymentItem"."itemType" = 'payment'
-                AND "paymentItem"."itemId" = "payments"."id"
-              LIMIT 1
-            )`),
-            'transferResource'
-          ],
-          [
-            db.literal(`(
-              SELECT
-                "paymentResource"
-              FROM
-                "transactionItems" "refundingTransaction",
-                "transactionItems" "refundPaymentItem",
-                "refundPayments"
-              WHERE
-                "refundingTransaction".notes IS NOT NULL
-                AND "refundingTransaction".notes->>'refundedTransactionId' = "transactionItem"."transactionId"::text
-                AND "refundingTransaction"."itemType" = '${itemType}'
-                AND "refundingTransaction"."itemId" = "transactionItem"."itemId"
-                AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
-                AND "refundPayments".id = "refundPaymentItem"."itemId"
-              LIMIT 1
-            )`),
-            'refundResource'
-          ]
-        ]
-      }
     }
   }
 
   const buildRoutePassQuery = buildRoutePassQueryFor('routePass', 'RoutePass')
+
+  const addPaymentMetadataTo = async (db, routePassItems) => {
+    const transactionIds = _(routePassItems)
+      .filter(r => r.transaction.type === 'routePassPurchase')
+      .map(r => r.transactionId)
+      .uniq()
+      .value()
+    if (transactionIds.length === 0) {
+      return routePassItems
+    }
+    const keyByTransactionId = rows => _(rows)
+      .map(r => [r.transactionId, _.omit(r, 'transactionId')])
+      .fromPairs()
+      .value()
+    const refundMetadata = await db
+      .query(
+        `SELECT
+          ti."transactionId",
+          "refundingTransaction"."transactionId" as "refundingTransactionId",
+          "paymentResource" as "refundResource"
+        FROM
+          "transactionItems" "refundingTransaction",
+          "transactionItems" "refundPaymentItem",
+          "refundPayments",
+          "transactionItems" ti
+        WHERE
+          "refundingTransaction".notes IS NOT NULL
+          AND "refundingTransaction".notes->>'refundedTransactionId' = ti."transactionId"::text
+          AND "refundingTransaction"."itemType" = 'routePass'
+          AND "refundingTransaction"."itemId" = ti."itemId"
+          AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
+          AND "refundPayments".id = "refundPaymentItem"."itemId"
+          AND ti."transactionId" in (:transactionIds)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { transactionIds } }
+      )
+      .then(keyByTransactionId)
+
+    const paymentMetadata = await db
+      .query(
+        `SELECT
+          ti."transactionId",
+          "paymentResource",
+          "payments".data->'transfer'->>'destination_payment' as "transferResource"
+        FROM
+          "transactionItems" "paymentItem",
+          "payments",
+          "transactionItems" ti
+        WHERE
+          "paymentItem"."transactionId" = ti."transactionId"
+          AND "paymentItem"."itemType" = 'payment'
+          AND "paymentItem"."itemId" = "payments"."id"
+          AND ti."transactionId" in (:transactionIds)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { transactionIds } }
+      )
+      .then(keyByTransactionId)
+    routePassItems.forEach(r => _.assign(r, refundMetadata[r.transactionId], paymentMetadata[r.transactionId]))
+    return routePassItems
+  }
 
   server.route({
     method: "GET",
@@ -405,14 +397,15 @@ export function register (server, options, next) {
       }
     },
     async handler (request, reply) {
-      const getTransactionItems = async (m, query, page, perPage, transaction) => {
+      const getTransactionItems = async (m, db, query, page, perPage, transaction) => {
         const entryOffset = (page - 1) * perPage
-        return m.TransactionItem.findAll({
+        const routePassItems = await m.TransactionItem.findAll({
           ...query,
           limit: perPage,
           offset: entryOffset,
           transaction,
-        })
+        }).then(passes => passes.map(r => r.toJSON()))
+        return addPaymentMetadataTo(db, routePassItems)
       }
 
       const routePassCSVFields = [
@@ -466,9 +459,9 @@ export function register (server, options, next) {
             var page = 1
             var lastFetchedSize = perPage
             while (lastFetchedSize >= perPage) {
-              const relatedTransactionItems = await getTransactionItems(m, query, page, perPage, transaction) // eslint-disable-line no-await-in-loop
+              const relatedTransactionItems = await getTransactionItems(m, db, query, page, perPage, transaction) // eslint-disable-line no-await-in-loop
               for (const row of relatedTransactionItems) {
-                if (!writer.write(row.toJSON())) {
+                if (!writer.write(row)) {
                   await new Promise((resolve) => { // eslint-disable-line no-await-in-loop
                     writer.once('drain', resolve)
                   })
@@ -489,7 +482,7 @@ export function register (server, options, next) {
           })
         } else if (request.query.format === 'json') {
           const {page, perPage} = request.query
-          const relatedTransactionItems = await getTransactionItems(m, query, page, perPage)
+          const relatedTransactionItems = await getTransactionItems(m, db, query, page, perPage)
 
           reply(relatedTransactionItems)
         } else {
