@@ -330,18 +330,17 @@ export function register (server, options, next) {
   }
 
   const addPaymentMetadataTo = async (db, routePassItems) => {
-    const transactionIds = _(routePassItems)
+    const ids = _(routePassItems)
       .filter(r => r.transaction.type === 'routePassPurchase')
-      .map(r => r.transactionId)
-      .uniq()
+      .map(r => r.id)
       .value()
-    if (transactionIds.length === 0) {
+    if (ids.length === 0) {
       return routePassItems
     }
     const refundMetadata = await db
       .query(
         `SELECT
-          ti."transactionId",
+          ti.id,
           "refundingTransaction"."transactionId" as "refundingTransactionId",
           "paymentResource" as "refundResource"
         FROM
@@ -356,16 +355,16 @@ export function register (server, options, next) {
           AND "refundingTransaction"."itemId" = ti."itemId"
           AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
           AND "refundPayments".id = "refundPaymentItem"."itemId"
-          AND ti."transactionId" in (:transactionIds)
+          AND ti.id in (:ids)
         `,
-        { type: db.QueryTypes.SELECT, replacements: { transactionIds } }
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
       )
-      .then(keyBy('transactionId'))
+      .then(keyBy('id'))
 
     const paymentMetadata = await db
       .query(
         `SELECT
-          ti."transactionId",
+          ti."id",
           "paymentResource",
           "payments".data->'transfer'->>'destination_payment' as "transferResource"
         FROM
@@ -376,12 +375,12 @@ export function register (server, options, next) {
           "paymentItem"."transactionId" = ti."transactionId"
           AND "paymentItem"."itemType" = 'payment'
           AND "paymentItem"."itemId" = "payments"."id"
-          AND ti."transactionId" in (:transactionIds)
+          AND ti.id in (:ids)
         `,
-        { type: db.QueryTypes.SELECT, replacements: { transactionIds } }
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
       )
-      .then(keyBy('transactionId'))
-    routePassItems.forEach(r => _.assign(r, refundMetadata[r.transactionId], paymentMetadata[r.transactionId]))
+      .then(keyBy('id'))
+    routePassItems.forEach(r => _.assign(r, refundMetadata[r.id], paymentMetadata[r.id]))
     return routePassItems
   }
 
