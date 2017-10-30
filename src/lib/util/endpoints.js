@@ -127,7 +127,9 @@ export const authorizeByRole = (role, lookupId = request => request.params.id) =
 
 export const instToJSONOrNotFound = inst => inst ? inst.toJSON() : Boom.notFound()
 
-export const assertFound = inst => { NotFoundError.assert(inst); return inst }
+export const assertThat = (f, { assert }, msg) => inst => { assert(f(inst), msg); return inst }
+
+export const assertFound = assertThat(inst => inst, NotFoundError, 'Item not found')
 
 export const deleteInst = async inst => {
   if (inst) {
