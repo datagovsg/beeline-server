@@ -1,5 +1,6 @@
 const Boom = require("boom")
 const _ = require("lodash")
+const assert = require("assert")
 
 const {NotFoundError, defaultErrorHandler, getDB, getModels} = require("../util/common")
 const auth = require("../core/auth")
@@ -127,7 +128,10 @@ export const authorizeByRole = (role, lookupId = (passthrough, request) => reque
 
 export const instToJSONOrNotFound = inst => inst ? inst.toJSON() : Boom.notFound()
 
-export const assertThat = (f, { assert }, msg) => inst => { assert(f(inst), msg); return inst }
+export const assertThat = (f, ErrorType, msg) => {
+  assert(Error.prototype.isPrototypeOf(new ErrorType()) && typeof ErrorType.assert === 'function')
+  return inst => { ErrorType.assert(f(inst), msg); return inst }
+}
 
 export const assertFound = assertThat(inst => inst, NotFoundError, 'Item not found')
 
