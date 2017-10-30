@@ -2,7 +2,7 @@ import {expect} from 'code'
 import Lab from 'lab'
 
 import server from '../src/index'
-import {resetTripInstances, createStripeToken} from './test_common'
+import {resetTripInstances, createStripeToken, randomEmail} from './test_common'
 import {createUsersCompaniesRoutesAndTrips} from './test_data'
 
 const {models: m} = require('../src/lib/core/dbschema')()
@@ -71,7 +71,7 @@ lab.experiment('tickets', function () {
   */
   lab.after(async () => resetTripInstances(m, tripInstances))
 
-  lab.test('query tickets with transportCompanyId', {timeout: 10000}, async function () {
+  lab.test('query and update tickets with transportCompanyId', {timeout: 10000}, async function () {
     // pull tickets
     var ticketResponse = await server.inject({
       method: 'GET',
@@ -81,6 +81,31 @@ lab.experiment('tickets', function () {
 
     expect(ticketResponse.statusCode).to.equal(200)
     expect(ticketResponse.result.length).equal(5)
+
+    const adminInstance = await m.Admin.create({
+      email: randomEmail()
+    })
+    await adminInstance.addTransportCompany(companyInstance.id, {permissions: ['issue-tickets']})
+    const adminToken = {authorization: `Bearer ${adminInstance.makeToken()}`}
+
+    const ticketId = ticketResponse.result[0].id
+
+    const ticketStatusTo = async status => server.inject({
+      method: 'PUT',
+      url: `/tickets/${ticketId}/status`,
+      headers: adminToken,
+      payload: { status },
+    })
+
+    const ticket = await m.Ticket.findById(ticketId)
+
+    expect((await ticketStatusTo('failed')).statusCode).equal(400)
+    expect((await ticketStatusTo('void')).statusCode).equal(200)
+    expect((await ticket.reload()).status).equal('void')
+    expect((await ticketStatusTo('valid')).statusCode).equal(200)
+    expect((await ticket.reload()).status).equal('valid')
+    await ticket.update({ status: 'failed' })
+    expect((await ticketStatusTo('void')).statusCode).equal(400)
 
     var transportCompanyId = companyInstance.id + 1
 

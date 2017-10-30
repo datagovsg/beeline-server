@@ -1,6 +1,8 @@
 const Joi = require('joi')
 const Boom = require('boom')
 const common = require('../util/common')
+const { InvalidArgumentError } = require('../util/errors')
+const { handleRequestWith, assertFound, assertThat, authorizeByRole } = require('../util/endpoints')
 
 export function register (server, options, next) {
   server.route({
@@ -109,6 +111,46 @@ export function register (server, options, next) {
         reply(Boom.badImplementation(err))
       }
     }
+  })
+
+  server.route({
+    method: 'PUT',
+    path: '/tickets/{id}/status',
+    config: {
+      tags: ['api'],
+      auth: {access: {scope: ['admin', 'superadmin']}},
+      description: `Update the state of a ticket.
+        Currently limited to changing its status between void and valid for now`,
+      validate: {
+        params: {
+          id: Joi.number()
+        },
+        payload: {
+          status: Joi.string().valid(['void', 'valid']).required()
+        },
+      }
+    },
+    handler: handleRequestWith(
+      (ignored, request, { models }) => models.Ticket.findById(request.params.id, {
+        include: [{
+          model: models.TripStop,
+          as: 'alightStop',
+          attributes: ['tripId'],
+          include: [{
+            model: models.Trip,
+            attributes: ['routeId'],
+            include: [{ model: models.Route, attributes: ['transportCompanyId'] }]
+          }]
+        }]
+      }),
+      assertFound,
+      authorizeByRole('issue-tickets', ticket => ticket.alightStop.trip.route.transportCompanyId),
+      assertThat(
+        ticket => ['void', 'valid'].includes(ticket.status),
+        InvalidArgumentError, 'Ticket status has to be valid or void'
+      ),
+      (ticket, request) => ticket.update({ status: request.payload.status })
+    ),
   })
 
   next()
