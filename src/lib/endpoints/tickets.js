@@ -1,25 +1,18 @@
-var _ = require("lodash")
-var Joi = require("joi")
-var toSVY = require("../util/svy21").toSVY
-var toWGS = require("../util/svy21").toWGS
-var common = require("../util/common")
-var Boom = require("boom")
-var tickets = []
-
-
-// / N.B. stops cannot be retrieved directly
+const Joi = require('joi')
+const Boom = require('boom')
+const common = require('../util/common')
 
 export function register (server, options, next) {
   server.route({
-    method: "GET",
-    path: "/tickets",
+    method: 'GET',
+    path: '/tickets',
     config: {
-      tags: ["api"],
-      description: "Update a route (for admin and superadmin only)",
+      tags: ['api'],
+      description: 'Update a route (for admin and superadmin only)',
       auth: {access: {scope: ['user']}},
       validate: {
         query: Joi.object({
-          startTime: Joi.date().default(() => common.midnightToday(), "0000hrs today"),
+          startTime: Joi.date().default(() => common.midnightToday(), '0000hrs today'),
           transportCompanyId: Joi.number().integer().optional()
         }).unknown()
       }
@@ -31,12 +24,12 @@ export function register (server, options, next) {
       var ticketQuery = {
         where: {
           userId: request.auth.credentials.userId,
-          status: "valid"
+          status: 'valid'
         },
         include: [
           {
             model: m.TripStop,
-            as: "boardStop",
+            as: 'boardStop',
             include: [m.Stop,
               {
                 model: m.Trip,
@@ -55,13 +48,13 @@ export function register (server, options, next) {
           },
           {
             model: m.TripStop,
-            as: "alightStop",
+            as: 'alightStop',
             include: [m.Stop, m.Trip],
             required: false
           }
         ],
         order: [
-          [{model: m.TripStop, as: "boardStop"}, "time", "ASC"]
+          [{model: m.TripStop, as: 'boardStop'}, 'time', 'ASC']
         ]
       }
 
@@ -78,10 +71,10 @@ export function register (server, options, next) {
   })
 
   server.route({
-    method: "GET",
-    path: "/tickets/{id}",
+    method: 'GET',
+    path: '/tickets/{id}',
     config: {
-      tags: ["api"],
+      tags: ['api'],
       auth: {access: {scope: ['user']}},
       validate: {
         params: {
@@ -97,17 +90,17 @@ export function register (server, options, next) {
           where: {
             id: request.params.id,
             userId: request.auth.credentials.userId,
-            status: "valid"
+            status: 'valid'
           },
           include: [
             {
               model: m.TripStop,
-              as: "boardStop",
+              as: 'boardStop',
               include: [m.Stop, m.Trip]
             },
             {
               model: m.TripStop,
-              as: "alightStop",
+              as: 'alightStop',
               include: [m.Stop, m.Trip]
             }
           ]
@@ -122,5 +115,5 @@ export function register (server, options, next) {
 }
 
 register.attributes = {
-  name: "endpoint-tickets"
+  name: 'endpoint-tickets'
 }
