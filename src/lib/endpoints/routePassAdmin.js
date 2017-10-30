@@ -26,7 +26,7 @@ export function register (server, options, next) {
     ),
   })
 
-  const authorizeRouteManager = authorizeByRole('manage-routes', r => r.params.companyId)
+  const authorizeRouteManager = authorizeByRole('manage-routes', (p, r) => r.params.companyId)
 
   server.route({
     method: "GET",

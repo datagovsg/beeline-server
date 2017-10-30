@@ -119,9 +119,9 @@ const reduceCallbacksWith = (initial, request, context, callbacks) => callbacks.
   Promise.resolve(initial)
 )
 
-export const authorizeByRole = (role, lookupId = request => request.params.id) =>
+export const authorizeByRole = (role, lookupId = (passthrough, request) => request.params.id) =>
   (passthrough, request) => {
-    auth.assertAdminRole(request.auth.credentials, role, lookupId(request))
+    auth.assertAdminRole(request.auth.credentials, role, lookupId(passthrough, request))
     return passthrough
   }
 
