@@ -1,5 +1,6 @@
 const Boom = require("boom")
 const _ = require("lodash")
+const assert = require("assert")
 
 const {NotFoundError, defaultErrorHandler, getDB, getModels} = require("../util/common")
 const auth = require("../core/auth")
@@ -119,15 +120,20 @@ const reduceCallbacksWith = (initial, request, context, callbacks) => callbacks.
   Promise.resolve(initial)
 )
 
-export const authorizeByRole = (role, lookupId = request => request.params.id) =>
+export const authorizeByRole = (role, lookupId = (passthrough, request) => request.params.id) =>
   (passthrough, request) => {
-    auth.assertAdminRole(request.auth.credentials, role, lookupId(request))
+    auth.assertAdminRole(request.auth.credentials, role, lookupId(passthrough, request))
     return passthrough
   }
 
 export const instToJSONOrNotFound = inst => inst ? inst.toJSON() : Boom.notFound()
 
-export const assertFound = inst => { NotFoundError.assert(inst); return inst }
+export const assertThat = (f, ErrorType, msg) => {
+  assert(Error.prototype.isPrototypeOf(new ErrorType()) && typeof ErrorType.assert === 'function')
+  return inst => { ErrorType.assert(f(inst), msg); return inst }
+}
+
+export const assertFound = assertThat(inst => inst, NotFoundError, 'Item not found')
 
 export const deleteInst = async inst => {
   if (inst) {

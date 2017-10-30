@@ -1,31 +1,23 @@
+import {expect} from 'code'
+import Lab from 'lab'
+
+import server from '../src/index'
+import {resetTripInstances, createStripeToken} from './test_common'
+import {createUsersCompaniesRoutesAndTrips} from './test_data'
+
 const {models: m} = require('../src/lib/core/dbschema')()
-import {expect} from "code"
-import server from "../src/index"
-import Lab from "lab"
-const {resetTripInstances, createStripeToken} = require("./test_common")
-const {createUsersCompaniesRoutesAndTrips} = require('./test_data')
 
 export var lab = Lab.script()
 
-lab.experiment("tickets", function () {
+lab.experiment('tickets', function () {
   let userInstance
   let companyInstance
   let tripInstances
+  let userToken
 
   lab.before({timeout: 20000}, async () => {
     ({userInstance, companyInstance, tripInstances} = await createUsersCompaniesRoutesAndTrips(m))
-  })
-
-  /*
-    Delete all the tickets after each transaction so that
-    we don't get "user already has ticket" errors, or unexpected
-    capacity errors
-  */
-  lab.afterEach(async () => resetTripInstances(m, tripInstances))
-
-  lab.test("query tickets with transportCompanyId", {timeout: 10000}, async function () {
-    var userId = userInstance.id
-    var userToken = {authorization: "Bearer " + userInstance.makeToken()}
+    userToken = {authorization: `Bearer ${userInstance.makeToken()}`}
 
     const purchaseItems = [{
       tripId: tripInstances[0].id,
@@ -50,8 +42,8 @@ lab.experiment("tickets", function () {
     }]
 
     const previewResponse = await server.inject({
-      method: "POST",
-      url: "/transactions/tickets/quote",
+      method: 'POST',
+      url: '/transactions/tickets/quote',
       payload: {
         trips: purchaseItems,
         stripeToken: await createStripeToken()
@@ -61,8 +53,8 @@ lab.experiment("tickets", function () {
     expect(previewResponse.statusCode).to.equal(200)
 
     const saleResponse = await server.inject({
-      method: "POST",
-      url: "/transactions/tickets/payment",
+      method: 'POST',
+      url: '/transactions/tickets/payment',
       payload: {
         trips: purchaseItems,
         stripeToken: await createStripeToken()
@@ -70,11 +62,20 @@ lab.experiment("tickets", function () {
       headers: userToken
     })
     expect(saleResponse.statusCode).to.equal(200)
+  })
 
+  /*
+    Delete all the tickets after each transaction so that
+    we don't get 'user already has ticket' errors, or unexpected
+    capacity errors
+  */
+  lab.after(async () => resetTripInstances(m, tripInstances))
+
+  lab.test('query tickets with transportCompanyId', {timeout: 10000}, async function () {
     // pull tickets
     var ticketResponse = await server.inject({
-      method: "GET",
-      url: "/tickets",
+      method: 'GET',
+      url: '/tickets',
       headers: userToken
     })
 
@@ -84,8 +85,8 @@ lab.experiment("tickets", function () {
     var transportCompanyId = companyInstance.id + 1
 
     var ticket2Response = await server.inject({
-      method: "GET",
-      url: "/tickets?transportCompanyId=" + transportCompanyId,
+      method: 'GET',
+      url: `/tickets?transportCompanyId=${transportCompanyId}`,
       headers: userToken
     })
 
