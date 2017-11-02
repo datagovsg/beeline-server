@@ -81,6 +81,9 @@ server.connection({
         "Beeline-Device-Platform",
         "Beeline-Device-Manufacturer",
         "Beeline-App-Name"
+      ],
+      additionalExposedHeaders: [
+        'Date'
       ]
     }
   }
