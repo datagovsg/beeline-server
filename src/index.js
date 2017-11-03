@@ -10,7 +10,6 @@ const version = require("../package.json").version
 const config = require("./config.js")
 const routes = require("./lib/routes.js")
 const events = require("./lib/events/events.js")
-const alert = require("./lib/util/alert.js")
 const AnalyticsPlugin = require("./lib/util/analytics.js")
 
 // FORCE DATES TO BE INTEREPRETED AS UTC
@@ -99,80 +98,64 @@ server.on('stop', () => {
 
 // Set up Swagger to allow you to view API documentation
 // at the root of http://<host>/
-server.register([
-  Inert,
-  Vision,
-  {
-    register: HapiSwagger,
-    options: {
-      documentationPath: "/",
-      info: {
-        title: "Beeline API Documentation",
-        version: version
+server
+  .register([
+    Inert,
+    Vision,
+    {
+      register: HapiSwagger,
+      options: {
+        documentationPath: "/",
+        info: {
+          title: "Beeline API Documentation",
+          version: version
+        }
       }
     }
-  }
-])
-.then(() => {
-  console.log("Registered Swagger")
-})
-// Main entry point for routing, connecting with the db, etc
-.then(() => server.register(routes))
-.then(() => {
-  console.log("Registered routes")
-})
-.then(() => server.register(AnalyticsPlugin))
-.then(() => {
-  console.log("Registered Analytics")
-})
-.then(() => server.start())
-.then(() => {
-  console.log("Server started on port " + server.info.port)
-})
-// long run loop to send SMS to driver for assigned trip for now
-// Disable because we are not using SMS to send jobs to drivers
-// .then(()=>{
-//   if (!process.env.NO_DAEMON_MONITORING) {
-//     watchdog();
-//   }
-// })
-// Kill the process if there are any errors in registration or starting
-// Need to do this since node doesn't crash on unhandled promises
-.catch((error) => {
-  events.emit('lifecycle', {stage: 'error'})
-  console.error(error)
+  ])
+  .then(() => {
+    console.log("Registered Swagger")
+  })
+  // Main entry point for routing, connecting with the db, etc
+  .then(() => server.register(routes))
+  .then(() => {
+    console.log("Registered routes")
+  })
+  .then(() => server.register(AnalyticsPlugin))
+  .then(() => {
+    console.log("Registered Analytics")
+  })
+  .then(() => server.start())
+  .then(() => {
+    console.log("Server started on port " + server.info.port)
+  })
+  // long run loop to send SMS to driver for assigned trip for now
+  // Disable because we are not using SMS to send jobs to drivers
+  // .then(()=>{
+  //   if (!process.env.NO_DAEMON_MONITORING) {
+  //     watchdog();
+  //   }
+  // })
+  // Kill the process if there are any errors in registration or starting
+  // Need to do this since node doesn't crash on unhandled promises
+  .catch((error) => {
+    events.emit('lifecycle', {stage: 'error'})
+    console.error(error)
 
-  setTimeout(() => process.exit(1), 5000)
-})
+    setTimeout(() => process.exit(1), 5000)
+  })
 
 process.on('SIGTERM', () => {
   server.stop({timeout: 30 * 1000})
-  .then(() => {
-    console.log("Server shutdown gracefully :)")
-    server.plugins['sequelize'].db.close()
-    process.exit(0)
-  })
-  .catch((err) => {
-    console.log("Ooops!", err)
-  })
+    .then(() => {
+      console.log("Server shutdown gracefully :)")
+      server.plugins['sequelize'].db.close()
+      process.exit(0)
+    })
+    .catch((err) => {
+      console.log("Ooops!", err)
+    })
 })
-
-// startWatchdog()
-async function checkForNotificationsAndSendNotifications () {
-  await alert.sendTodayTrip()
-}
-
-async function watchdog () {
-  while (true) {
-    try {
-      await checkForNotificationsAndSendNotifications()
-    } catch (err) {
-      console.error(err.stack)
-    }
-    // wait 1 min
-    await new Promise((resolve) => setTimeout(resolve, 60000))
-  }
-}
 
 // Export the server as a module for testing purposes
 module.exports = server
