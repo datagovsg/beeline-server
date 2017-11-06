@@ -873,10 +873,12 @@ export var checkValidBookingWindow = (...args) => checkStopsAndBookingWindow(tru
 
 export function checkNoDuplicates () {
   return (dbTrip, rqTrip) => {
-    var dbTripTickets = _.flatten(dbTrip.tripStops.map(ts => ts.tickets))
-
-    if (dbTripTickets.some(ticket => (ticket.status === "valid" || ticket.status === 'pending' || ticket.status === 'bidded') && ticket.userId === rqTrip.userId)) {
-      throw new TransactionError(`User #${rqTrip.userId} already has a ticket for the trip`)
+    const dbTripTickets = _.flatten(dbTrip.tripStops.map(ts => ts.tickets))
+    const existingTicketFromUser = dbTripTickets.find(
+      ticket => (ticket.status === 'valid' || ticket.status === 'pending') && ticket.userId === rqTrip.userId
+    )
+    if (existingTicketFromUser) {
+      throw new TransactionError(`User #${rqTrip.userId} already has ticket [${existingTicketFromUser.id}] for the trip`)
     }
   }
 }
