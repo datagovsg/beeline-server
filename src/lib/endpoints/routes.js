@@ -525,7 +525,7 @@ the \`startDate\` defaults to the time of request.
           request.payload.companyTags = _.uniq(request.payload.companyTags)
         }
 
-        var routeInst = await m.Route.create(request.payload)
+        var routeInst = await m.Route.create(_.omit(request.payload, 'createdAt'))
         reply(routeInst.toJSON())
       } catch (err) {
         defaultErrorHandler(reply)(err)

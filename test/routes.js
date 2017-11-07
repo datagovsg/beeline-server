@@ -3,7 +3,7 @@
 var Lab = require("lab")
 export var lab = Lab.script()
 
-var Code = require("code")
+const { expect } = require("code")
 var server = require("../src/index.js")
 
 var testData = require("./test_data")
@@ -169,8 +169,6 @@ lab.experiment("Route manipulation", function () {
   })
 
   lab.test("List routes", {timeout: 15000}, async function () {
-    const expect = Code.expect
-
     var response = await server.inject({
       method: 'GET',
       url: '/routes?includeDates=true'
@@ -279,12 +277,12 @@ lab.experiment("Route manipulation", function () {
         startDate: stringDate(new Date())
       })
     })
-    Code.expect(response.statusCode).equal(200)
-    Code.expect(response.result.length).above(1)
-    Code.expect(response.result.find(r => r.label === 'R2')).exist()
+    expect(response.statusCode).equal(200)
+    expect(response.result.length).above(1)
+    expect(response.result.find(r => r.label === 'R2')).exist()
     for (let route of response.result) {
-      Code.expect(route.trips).instanceof(Array)
-      Code.expect(route._cached).true()
+      expect(route.trips).instanceof(Array)
+      expect(route._cached).true()
     }
 
     // Test tags, test label
@@ -297,19 +295,17 @@ lab.experiment("Route manipulation", function () {
         startDate: stringDate(new Date())
       })
     })
-    Code.expect(response.statusCode).equal(200)
-    Code.expect(response.result.length).least(1)
-    Code.expect(response.result.find(r => r.label === 'R2')).exist()
+    expect(response.statusCode).equal(200)
+    expect(response.result.length).least(1)
+    expect(response.result.find(r => r.label === 'R2')).exist()
     for (let route of response.result) {
-      Code.expect(route.trips).instanceof(Array)
-      Code.expect(route._cached).true()
+      expect(route.trips).instanceof(Array)
+      expect(route._cached).true()
     }
   })
 
 
   lab.test("Get route", {timeout: 10000}, async function () {
-    const expect = Code.expect
-
     var response = await server.inject({
       method: 'GET',
       url: `/routes/${route.id}?includeDates=true`
@@ -375,7 +371,7 @@ lab.experiment("Route manipulation", function () {
           headers: superadminAuthHeaders
         })
       })
-      .then((resp) => Code.expect(resp.statusCode).equal(200))
+      .then((resp) => expect(resp.statusCode).equal(200))
       .then(() => {
         return server.inject({
           method: "POST",
@@ -385,10 +381,10 @@ lab.experiment("Route manipulation", function () {
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
-        Code.expect(resp.result).to.include("id")
+        expect(resp.statusCode).to.equal(200)
+        expect(resp.result).to.include("id")
 
-        Code.expect(resp.result).to.include(routeInfo)
+        expect(resp.result).to.include(routeInfo)
         routeId = resp.result.id
       })
       // READ
@@ -401,8 +397,8 @@ lab.experiment("Route manipulation", function () {
       .then((resp) => {
         // default scope not include features
         delete routeInfo.features
-        Code.expect(resp.statusCode).to.equal(200)
-        Code.expect(resp.result).to.include(routeInfo)
+        expect(resp.statusCode).to.equal(200)
+        expect(resp.result).to.include(routeInfo)
       })
       // UPDATE
       .then(() => {
@@ -413,7 +409,7 @@ lab.experiment("Route manipulation", function () {
           payload: _.defaults({features: ''}, updatedRouteInfo)
         })
       })
-      .then((resp) => Code.expect(resp.statusCode).equal(200))
+      .then((resp) => expect(resp.statusCode).equal(200))
       .then(() => {
         return server.inject({
           method: "PUT",
@@ -423,9 +419,9 @@ lab.experiment("Route manipulation", function () {
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
+        expect(resp.statusCode).to.equal(200)
         delete updatedRouteInfo.id
-        Code.expect(resp.result).to.include(updatedRouteInfo)
+        expect(resp.result).to.include(updatedRouteInfo)
       })
       .then(() => {
         return server.inject({
@@ -435,7 +431,7 @@ lab.experiment("Route manipulation", function () {
       })
       .then((resp) => {
         delete updatedRouteInfo.features
-        Code.expect(resp.result).to.include(updatedRouteInfo)
+        expect(resp.result).to.include(updatedRouteInfo)
       })
       // DELETE
       .then(() => {
@@ -446,7 +442,7 @@ lab.experiment("Route manipulation", function () {
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
+        expect(resp.statusCode).to.equal(200)
       })
       .then(() => {
         return server.inject({
@@ -455,7 +451,7 @@ lab.experiment("Route manipulation", function () {
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(404)
+        expect(resp.statusCode).to.equal(404)
       })
       .then(cleanup, cleanup)
   })
@@ -517,11 +513,11 @@ lab.experiment("Route manipulation", function () {
       method: 'GET',
       url: `/routes/${routeInstance.id}?includeIndicative=true`
     })
-    Code.expect(response.statusCode).equal(200)
-    Code.expect(response.result).to.include('indicativeTrip')
+    expect(response.statusCode).equal(200)
+    expect(response.result).to.include('indicativeTrip')
 
-    Code.expect(response.result.indicativeTrip.nextTripId).to.equal(tripInstances[0].id)
-    Code.expect(response.result.indicativeTrip.lastTripId).to.equal(tripInstances[1].id)
+    expect(response.result.indicativeTrip.nextTripId).to.equal(tripInstances[0].id)
+    expect(response.result.indicativeTrip.lastTripId).to.equal(tripInstances[1].id)
 
     function intervalToTimeSinceMidnight (interval) {
       var hours = (interval.hours || 0) + 8
@@ -529,21 +525,21 @@ lab.experiment("Route manipulation", function () {
       return hours * 3600000 + minutes * 60000
     }
 
-    Code.expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.nextStartTime))
+    expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.nextStartTime))
       .to.equal(intervalToTimeSinceMidnight({hours: 0, minutes: 0}))
-    Code.expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.lastStartTime))
+    expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.lastStartTime))
       .to.equal(intervalToTimeSinceMidnight({hours: 0, minutes: 0}))
 
-    Code.expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.nextEndTime))
+    expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.nextEndTime))
       .to.equal(intervalToTimeSinceMidnight({hours: 1, minutes: 0}))
-    Code.expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.lastEndTime))
+    expect(intervalToTimeSinceMidnight(response.result.indicativeTrip.lastEndTime))
       .to.equal(intervalToTimeSinceMidnight({hours: 1, minutes: 0}))
 
-    Code.expect(response.result.indicativeTrip.nextStartDescription).to.equal(stopInstances[0].description)
-    Code.expect(response.result.indicativeTrip.lastStartDescription).to.equal(stopInstances[0].description)
+    expect(response.result.indicativeTrip.nextStartDescription).to.equal(stopInstances[0].description)
+    expect(response.result.indicativeTrip.lastStartDescription).to.equal(stopInstances[0].description)
 
-    Code.expect(response.result.indicativeTrip.nextEndDescription).to.equal(stopInstances[1].description)
-    Code.expect(response.result.indicativeTrip.lastEndDescription).to.equal(stopInstances[2].description)
+    expect(response.result.indicativeTrip.nextEndDescription).to.equal(stopInstances[1].description)
+    expect(response.result.indicativeTrip.lastEndDescription).to.equal(stopInstances[2].description)
 
     await routeInstance.destroy()
     await Promise.all(tripInstances.map(tr => tr.destroy()))
@@ -571,9 +567,9 @@ lab.experiment("Route manipulation", function () {
                     }),
       method: "GET"
     })
-    Code.expect(resp.statusCode).to.equal(200)
-    Code.expect(resp.result).to.include("trips")
-    Code.expect(resp.result.trips.length).to.equal(1)
+    expect(resp.statusCode).to.equal(200)
+    expect(resp.result).to.include("trips")
+    expect(resp.result.trips.length).to.equal(1)
 
     for (let trip of trips) {
       await Promise.all(
@@ -668,31 +664,31 @@ lab.experiment("Route manipulation", function () {
                 }),
       method: "GET"
     })
-    Code.expect(resp.statusCode).to.equal(200)
-    Code.expect(resp.result).to.include("trips")
+    expect(resp.statusCode).to.equal(200)
+    expect(resp.result).to.include("trips")
 
     const findTrip = trip => resp.result.trips.find((tr) => tr.id === trip.id)
 
     // check bookings
-    Code.expect(parseInt(findTrip(trips[0]).availability.seatsAvailable))
+    expect(parseInt(findTrip(trips[0]).availability.seatsAvailable))
       .to.equal(trips[0].capacity - 2)
 
-    Code.expect(parseInt(findTrip(trips[0]).availability.seatsBooked))
+    expect(parseInt(findTrip(trips[0]).availability.seatsBooked))
       .to.equal(2)
 
-    Code.expect(parseInt(findTrip(trips[1]).availability.seatsAvailable))
+    expect(parseInt(findTrip(trips[1]).availability.seatsAvailable))
       .to.equal(trips[1].capacity - 1)
 
-    Code.expect(parseInt(findTrip(trips[2]).availability.seatsAvailable))
+    expect(parseInt(findTrip(trips[2]).availability.seatsAvailable))
       .to.equal(trips[2].capacity)
 
     // Check that seatsAvailable + seatsBooked == seatsTotal
     // Check seatsTotal == capacity
     for (let tr of resp.result.trips) {
-      Code.expect(tr.availability.seatsTotal)
+      expect(tr.availability.seatsTotal)
         .to.equal(tr.availability.seatsAvailable + tr.availability.seatsBooked)
 
-      Code.expect(tr.availability.seatsTotal)
+      expect(tr.availability.seatsTotal)
         .to.equal(trips.filter((t) => t.id === tr.id)[0].capacity)
     }
 
@@ -781,7 +777,7 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
 
     // ensure that the stops are returned in sorted order
     for (let route of response.result) {
@@ -790,15 +786,15 @@ lab.experiment("Route manipulation", function () {
           var thisStop = trip.tripStops[i]
           var nextStop = trip.tripStops[i + 1]
 
-          Code.expect(new Date(thisStop.time).getTime())
+          expect(new Date(thisStop.time).getTime())
             .to.be.most(new Date(nextStop.time).getTime())
         }
       }
     }
 
     var routeIds = response.result.map(r => r.id)
-    Code.expect(routeIds).to.not.include(routes[0].id)
-    Code.expect(routeIds).to.include(routes[1].id)
+    expect(routeIds).to.not.include(routes[0].id)
+    expect(routeIds).to.include(routes[1].id)
 
     // check that a reasonable result is returned
     startLatLng = toWGS([1100, 1200]) // nearby trip #1 stop #1
@@ -815,10 +811,10 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
     routeIds = response.result.map(r => r.id)
-    Code.expect(routeIds).to.not.include(routes[1].id)
-    Code.expect(routeIds).to.include(routes[0].id)
+    expect(routeIds).to.not.include(routes[1].id)
+    expect(routeIds).to.include(routes[0].id)
 
     try {
       testInstances = testInstances.map((t) => t.destroy())
@@ -899,9 +895,9 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
-    Code.expect(_.some(response.result, r => r.id === routes[1].id)).true()
-    Code.expect(_.some(response.result, r => r.id === routes[0].id)).false()
+    expect(response.statusCode).to.equal(200)
+    expect(_.some(response.result, r => r.id === routes[1].id)).true()
+    expect(_.some(response.result, r => r.id === routes[0].id)).false()
 
     // check that a reasonable result is returned
     startLatLng = toWGS([10100, 19600]) // nearby trip #2 stop #1
@@ -918,9 +914,9 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
-    Code.expect(_.some(response.result, r => r.id === routes[1].id)).true()
-    Code.expect(_.some(response.result, r => r.id === routes[0].id)).false()
+    expect(response.statusCode).to.equal(200)
+    expect(_.some(response.result, r => r.id === routes[1].id)).true()
+    expect(_.some(response.result, r => r.id === routes[0].id)).false()
   })
 
   lab.test("Search by Lat Lon", async function () {
@@ -1006,11 +1002,11 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
     var matching = response.result.filter((x) => x.id === routeInst.id)
-    Code.expect(matching.length).to.equal(1)
-    Code.expect(Math.abs(matching[0].distanceToQuery - 382.8)).to.be.below(1)
-    Code.expect(Math.abs(matching[0].timeDifference - 0)).to.be.below(1)
+    expect(matching.length).to.equal(1)
+    expect(Math.abs(matching[0].distanceToQuery - 382.8)).to.be.below(1)
+    expect(Math.abs(matching[0].timeDifference - 0)).to.be.below(1)
 
     // ensure that the stops are returned in sorted order
     for (let route of response.result) {
@@ -1019,7 +1015,7 @@ lab.experiment("Route manipulation", function () {
           var thisStop = trip.tripStops[i]
           var nextStop = trip.tripStops[i + 1]
 
-          Code.expect(new Date(thisStop.time).getTime())
+          expect(new Date(thisStop.time).getTime())
             .to.be.most(new Date(nextStop.time).getTime())
         }
       }
@@ -1038,7 +1034,7 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.result
+    expect(response.result
       .filter((x) => x.id === routeInst.id)
       .length).to.equal(0)
 
@@ -1055,7 +1051,7 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.result
+    expect(response.result
       .filter((x) => x.id === routeInst.id)
       .length).to.equal(0)
 
@@ -1141,11 +1137,11 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
 
     var routeIds = response.result.map(r => r.id)
-    Code.expect(routeIds).to.include(routes[0].id)
-    Code.expect(routeIds).to.not.include(routes[1].id)
+    expect(routeIds).to.include(routes[0].id)
+    expect(routeIds).to.not.include(routes[1].id)
 
     // Tag without A
     startLatLng = toWGS([10100, 19600]) // Nearby to both stops
@@ -1162,11 +1158,11 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
 
     routeIds = response.result.map(r => r.id)
-    Code.expect(routeIds).to.include(routes[0].id)
-    Code.expect(routeIds).to.include(routes[1].id)
+    expect(routeIds).to.include(routes[0].id)
+    expect(routeIds).to.include(routes[1].id)
 
     try {
       testInstances = testInstances.map((t) => t.destroy())
@@ -1249,11 +1245,11 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
 
     var routeIds = response.result.map(r => r.id)
-    Code.expect(routeIds).to.include(routes[0].id)
-    Code.expect(routeIds).to.not.include(routes[1].id)
+    expect(routeIds).to.include(routes[0].id)
+    expect(routeIds).to.not.include(routes[1].id)
 
     // no specified transportCompanyId
     startLatLng = toWGS([10100, 19600]) // Nearby to both stops
@@ -1270,11 +1266,11 @@ lab.experiment("Route manipulation", function () {
       }),
       method: "GET"
     })
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
 
     routeIds = response.result.map(r => r.id)
-    Code.expect(routeIds).to.include(routes[0].id)
-    Code.expect(routeIds).to.include(routes[1].id)
+    expect(routeIds).to.include(routes[0].id)
+    expect(routeIds).to.include(routes[1].id)
 
     try {
       testInstances = testInstances.map((t) => t.destroy())
@@ -1352,11 +1348,11 @@ lab.experiment("Route manipulation", function () {
     var queryRoutes = queryResult.result
     var routeIds = queryRoutes.map(r => r.id)
 
-    Code.expect(routeIds).to.include(routeInsts[0].id)
-    Code.expect(routeIds).to.include(routeInsts[1].id)
-    Code.expect(routeIds).to.include(routeInsts[2].id)
-    Code.expect(routeIds).to.include(routeInsts[3].id)
-    Code.expect(routeIds).to.include(routeInsts[4].id)
+    expect(routeIds).to.include(routeInsts[0].id)
+    expect(routeIds).to.include(routeInsts[1].id)
+    expect(routeIds).to.include(routeInsts[2].id)
+    expect(routeIds).to.include(routeInsts[3].id)
+    expect(routeIds).to.include(routeInsts[4].id)
 
     // Querying by tags should return the route
     queryResult = await server.inject({
@@ -1370,11 +1366,11 @@ lab.experiment("Route manipulation", function () {
     queryRoutes = queryResult.result
     routeIds = queryRoutes.map(r => r.id)
 
-    Code.expect(routeIds).to.include(routeInsts[0].id)
-    Code.expect(routeIds).to.not.include(routeInsts[1].id)
-    Code.expect(routeIds).to.include(routeInsts[2].id)
-    Code.expect(routeIds).to.not.include(routeInsts[3].id)
-    Code.expect(routeIds).to.not.include(routeInsts[4].id)
+    expect(routeIds).to.include(routeInsts[0].id)
+    expect(routeIds).to.not.include(routeInsts[1].id)
+    expect(routeIds).to.include(routeInsts[2].id)
+    expect(routeIds).to.not.include(routeInsts[3].id)
+    expect(routeIds).to.not.include(routeInsts[4].id)
 
     queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
@@ -1387,11 +1383,11 @@ lab.experiment("Route manipulation", function () {
     queryRoutes = queryResult.result
     routeIds = queryRoutes.map(r => r.id)
 
-    Code.expect(routeIds).to.not.include(routeInsts[0].id)
-    Code.expect(routeIds).to.include(routeInsts[1].id)
-    Code.expect(routeIds).to.include(routeInsts[2].id)
-    Code.expect(routeIds).to.not.include(routeInsts[3].id)
-    Code.expect(routeIds).to.not.include(routeInsts[4].id)
+    expect(routeIds).to.not.include(routeInsts[0].id)
+    expect(routeIds).to.include(routeInsts[1].id)
+    expect(routeIds).to.include(routeInsts[2].id)
+    expect(routeIds).to.not.include(routeInsts[3].id)
+    expect(routeIds).to.not.include(routeInsts[4].id)
 
     queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
@@ -1404,11 +1400,11 @@ lab.experiment("Route manipulation", function () {
     queryRoutes = queryResult.result
     routeIds = queryRoutes.map(r => r.id)
 
-    Code.expect(routeIds).to.not.include(routeInsts[0].id)
-    Code.expect(routeIds).to.not.include(routeInsts[1].id)
-    Code.expect(routeIds).to.include(routeInsts[2].id)
-    Code.expect(routeIds).to.not.include(routeInsts[3].id)
-    Code.expect(routeIds).to.not.include(routeInsts[4].id)
+    expect(routeIds).to.not.include(routeInsts[0].id)
+    expect(routeIds).to.not.include(routeInsts[1].id)
+    expect(routeIds).to.include(routeInsts[2].id)
+    expect(routeIds).to.not.include(routeInsts[3].id)
+    expect(routeIds).to.not.include(routeInsts[4].id)
 
     await Promise.all(tripInsts.map(t => t.destroy()))
     await Promise.all(stopInsts.map(t => t.destroy()))
@@ -1518,13 +1514,13 @@ lab.experiment("Route manipulation", function () {
       headers: authHeaders
     })
 
-    Code.expect(resp.result[0].id).to.equal(routes[1].id)
-    Code.expect(resp.result[1].id).to.equal(routes[0].id)
+    expect(resp.result[0].id).to.equal(routes[1].id)
+    expect(resp.result[1].id).to.equal(routes[0].id)
 
-    Code.expect(resp.result[0].boardStopStopId).to.equal(tripStops[2].stopId)
-    Code.expect(resp.result[0].alightStopStopId).to.equal(tripStops[3].stopId)
-    Code.expect(resp.result[1].boardStopStopId).to.equal(tripStops[0].stopId)
-    Code.expect(resp.result[1].alightStopStopId).to.equal(tripStops[1].stopId)
+    expect(resp.result[0].boardStopStopId).to.equal(tripStops[2].stopId)
+    expect(resp.result[0].alightStopStopId).to.equal(tripStops[3].stopId)
+    expect(resp.result[1].boardStopStopId).to.equal(tripStops[0].stopId)
+    expect(resp.result[1].alightStopStopId).to.equal(tripStops[1].stopId)
 
     // Reorder the dates...
     // Unfortunately sequelize does not allow us
@@ -1548,8 +1544,8 @@ WHERE id = :id
       headers: authHeaders
     })
 
-    Code.expect(resp.result[0].id).to.equal(routes[0].id)
-    Code.expect(resp.result[1].id).to.equal(routes[1].id)
+    expect(resp.result[0].id).to.equal(routes[0].id)
+    expect(resp.result[1].id).to.equal(routes[1].id)
 
     var objects = [].concat(tickets, tripStops, stops, routes, [user, transportCompany])
 
@@ -1662,19 +1658,19 @@ WHERE id = :id
       headers
     })
     const returnedRouteIds = resp.result.map(r => r.id)
-    Code.expect(returnedRouteIds).include(routes[0].id)
-    Code.expect(returnedRouteIds).include(routes[1].id)
-    Code.expect(returnedRouteIds).include(routes[2].id)
-    Code.expect(returnedRouteIds).include(routes[3].id)
-    Code.expect(returnedRouteIds).not.include(routes[4].id)
-    Code.expect(returnedRouteIds).include(routes[5].id)
+    expect(returnedRouteIds).include(routes[0].id)
+    expect(returnedRouteIds).include(routes[1].id)
+    expect(returnedRouteIds).include(routes[2].id)
+    expect(returnedRouteIds).include(routes[3].id)
+    expect(returnedRouteIds).not.include(routes[4].id)
+    expect(returnedRouteIds).include(routes[5].id)
 
     // Check presence of additional data
-    Code.expect(resp.result[0].boardStopStopId).exist()
-    Code.expect(resp.result[0].alightStopStopId).exist()
-    Code.expect(resp.result[0].isRecentlyBooked).exist()
-    Code.expect(resp.result.find(r => r.id === routes[0].id).isRecentlyBooked).true()
-    Code.expect(resp.result.find(r => r.id === routes[1].id).isRecentlyBooked).false()
+    expect(resp.result[0].boardStopStopId).exist()
+    expect(resp.result[0].alightStopStopId).exist()
+    expect(resp.result[0].isRecentlyBooked).exist()
+    expect(resp.result.find(r => r.id === routes[0].id).isRecentlyBooked).true()
+    expect(resp.result.find(r => r.id === routes[1].id).isRecentlyBooked).false()
 
     // Date time range invalid
     const resp2 = await server.inject({
@@ -1687,12 +1683,12 @@ WHERE id = :id
       headers
     })
     const returnedRouteIds2 = resp2.result.map(r => r.id)
-    Code.expect(returnedRouteIds2).not.include(routes[0].id)
-    Code.expect(returnedRouteIds2).not.include(routes[1].id)
-    Code.expect(returnedRouteIds2).not.include(routes[2].id)
-    Code.expect(returnedRouteIds2).not.include(routes[3].id)
-    Code.expect(returnedRouteIds2).not.include(routes[4].id)
-    Code.expect(returnedRouteIds2).not.include(routes[5].id)
+    expect(returnedRouteIds2).not.include(routes[0].id)
+    expect(returnedRouteIds2).not.include(routes[1].id)
+    expect(returnedRouteIds2).not.include(routes[2].id)
+    expect(returnedRouteIds2).not.include(routes[3].id)
+    expect(returnedRouteIds2).not.include(routes[4].id)
+    expect(returnedRouteIds2).not.include(routes[5].id)
 
     // MaxDistance works -- set limit to 5 metres
     const resp3 = await server.inject({
@@ -1705,12 +1701,12 @@ WHERE id = :id
       headers
     })
     const returnedRouteIds3 = resp3.result.map(r => r.id)
-    Code.expect(returnedRouteIds3).include(routes[0].id)
-    Code.expect(returnedRouteIds3).not.include(routes[1].id)
-    Code.expect(returnedRouteIds3).not.include(routes[2].id)
-    Code.expect(returnedRouteIds3).not.include(routes[3].id)
-    Code.expect(returnedRouteIds3).not.include(routes[4].id)
-    Code.expect(returnedRouteIds3).include(routes[5].id)
+    expect(returnedRouteIds3).include(routes[0].id)
+    expect(returnedRouteIds3).not.include(routes[1].id)
+    expect(returnedRouteIds3).not.include(routes[2].id)
+    expect(returnedRouteIds3).not.include(routes[3].id)
+    expect(returnedRouteIds3).not.include(routes[4].id)
+    expect(returnedRouteIds3).include(routes[5].id)
   })
 
   var routeLabel = "L1"
@@ -1761,8 +1757,8 @@ WHERE id = :id
       headers: authHeaders
     })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
-        Code.expect(resp.result.status).to.equal("valid")
+        expect(resp.statusCode).to.equal(200)
+        expect(resp.result.status).to.equal("valid")
       })
       // READ
       .then(() => {
@@ -1773,9 +1769,9 @@ WHERE id = :id
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
-        Code.expect(resp.result[0].status).to.equal("valid")
-        Code.expect(resp.result[0].routeLabel).to.equal(routeLabel)
+        expect(resp.statusCode).to.equal(200)
+        expect(resp.result[0].status).to.equal("valid")
+        expect(resp.result[0].routeLabel).to.equal(routeLabel)
       })
       // DELETE
       .then(() => {
@@ -1786,8 +1782,8 @@ WHERE id = :id
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
-        Code.expect(resp.result.status).to.equal("invalid")
+        expect(resp.statusCode).to.equal(200)
+        expect(resp.result.status).to.equal("invalid")
       })
       .then(() => {
         return server.inject({
@@ -1797,8 +1793,8 @@ WHERE id = :id
         })
       })
       .then((resp) => {
-        Code.expect(resp.statusCode).to.equal(200)
-        Code.expect(resp.result.length).to.equal(0)
+        expect(resp.statusCode).to.equal(200)
+        expect(resp.result.length).to.equal(0)
       })
       .then(liteRouteCleanup)
   })
@@ -1833,18 +1829,18 @@ WHERE id = :id
       })
     }
     function noLabelAndTags (r) {
-      Code.expect(r.label).null()
-      Code.expect(r.tags).null()
+      expect(r.label).null()
+      expect(r.tags).null()
     }
     function matchesLabelAndTags (r) {
-      Code.expect(r.label).equal(routeInfo.label)
-      Code.expect(r.tags).equal(routeInfo.tags)
+      expect(r.label).equal(routeInfo.label)
+      expect(r.tags).equal(routeInfo.tags)
     }
     function matchesEverythingElse (r) {
-      Code.expect(r.from).equal(routeInfo.from)
-      Code.expect(r.transportCompanyId).equal(routeInfo.transportCompanyId)
-      Code.expect(r.to).equal(routeInfo.to)
-      Code.expect(r.name).equal(routeInfo.name)
+      expect(r.from).equal(routeInfo.from)
+      expect(r.transportCompanyId).equal(routeInfo.transportCompanyId)
+      expect(r.to).equal(routeInfo.to)
+      expect(r.name).equal(routeInfo.name)
     }
 
     // Created by admin, no label and tags
@@ -1855,7 +1851,7 @@ WHERE id = :id
       payload: routeInfo,
       headers: authHeaders
     })
-    Code.expect(response.statusCode).equal(200)
+    expect(response.statusCode).equal(200)
     const routePostByAdmin = await latest()
     noLabelAndTags(routePostByAdmin)
     matchesEverythingElse(routePostByAdmin)
@@ -1867,7 +1863,7 @@ WHERE id = :id
       payload: routeInfo,
       headers: superadminAuthHeaders
     })
-    Code.expect(response.statusCode).equal(200)
+    expect(response.statusCode).equal(200)
     const routePostBySuperadmin = await latest()
     matchesLabelAndTags(routePostBySuperadmin)
     matchesEverythingElse(routePostBySuperadmin)
@@ -1884,11 +1880,11 @@ WHERE id = :id
       }, routeInfo),
       headers: authHeaders
     })
-    Code.expect(response.statusCode).equal(200)
+    expect(response.statusCode).equal(200)
     const routePutByAdmin = await latest()
     matchesLabelAndTags(routePutByAdmin)
     matchesEverythingElse(routePutByAdmin)
-    Code.expect(routePutByAdmin.companyTags).equal(['banana'])
+    expect(routePutByAdmin.companyTags).equal(['banana'])
 
     response = await server.inject({
       method: "PUT",
@@ -1899,11 +1895,11 @@ WHERE id = :id
       }, routeInfo),
       headers: superadminAuthHeaders
     })
-    Code.expect(response.statusCode).equal(200)
+    expect(response.statusCode).equal(200)
     const routePutBySuperadmin = await latest()
     matchesEverythingElse(routePutBySuperadmin)
-    Code.expect(routePutBySuperadmin.label).equal('NewLabel')
-    Code.expect(routePutBySuperadmin.tags).equal(['new', 'tags'])
+    expect(routePutBySuperadmin.label).equal('NewLabel')
+    expect(routePutBySuperadmin.tags).equal(['new', 'tags'])
   })
 
   lab.test("Only unique tags are allowed", async function () {
@@ -1931,12 +1927,12 @@ WHERE id = :id
       headers: superadminAuthHeaders
     })
 
-    Code.expect(createResponse.statusCode).equal(200)
+    expect(createResponse.statusCode).equal(200)
 
     let route = await models.Route.findOne({
       order: [['id', 'desc']]
     })
-    Code.expect(route.tags.length).equal(1)
+    expect(route.tags.length).equal(1)
 
     let updateResponse = await server.inject({
       method: "PUT",
@@ -1948,9 +1944,40 @@ WHERE id = :id
       headers: superadminAuthHeaders
     })
 
-    Code.expect(updateResponse.statusCode).equal(200)
+    expect(updateResponse.statusCode).equal(200)
 
     await route.reload()
-    Code.expect(route.tags.length).equal(1)
+    expect(route.tags.length).equal(1)
+  })
+
+  lab.test("createdAt/updatedAt route timestamps cannot be overridden at POST", async function () {
+    const headers = {
+      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken
+    }
+
+    const payload = {
+      label: 'HelloLabel',
+      tags: ['some', 'tag'],
+      from: 'From',
+      to: 'To',
+      name: 'Sample Route',
+      features: 'Some feature',
+      transportCompanyId: transportCompany.id,
+      createdAt: new Date('1970-01-01'),
+      updatedAt: new Date('1970-01-02'),
+    }
+
+    const response = await server.inject({
+      method: "POST",
+      url: "/routes",
+      payload,
+      headers,
+    })
+    expect(response.statusCode).equal(200)
+
+    const routeId = response.result.id
+    const route = await models.Route.findById(routeId)
+    expect(new Date(route.updatedAt)).not.equal(payload.updatedAt)
+    expect(new Date(route.createdAt)).not.equal(payload.createdAt)
   })
 })
