@@ -61,7 +61,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -88,7 +88,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now - 600000)
@@ -115,7 +115,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now - 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -142,7 +142,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 10000)
     tripInstances[0].tripStops[1].set('time', now + 10000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -168,7 +168,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 20000)
     tripInstances[0].tripStops[1].set('time', now + 20000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -194,7 +194,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 20000)
     tripInstances[0].tripStops[1].set('time', now + 20000)
     tripInstances[0].tripStops[2].set('time', now + 20000)
@@ -220,7 +220,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -237,6 +237,6 @@ lab.experiment("Transactions", function () {
 
     expect(saleResponse.statusCode).not.equal(200)
     expect(saleResponse.result.message)
-        .to.include(new Date(now).toLocaleTimeString({ timeZone: 'Asia/Singapore' }))
+      .to.include(new Date(now).toLocaleTimeString({ timeZone: 'Asia/Singapore' }))
   })
 })

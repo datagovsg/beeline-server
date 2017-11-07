@@ -1,38 +1,26 @@
+/* eslint no-await-in-loop: 0*/
 var Lab = require("lab")
 var lab = exports.lab = Lab.script()
 
 const {expect} = require("code")
 var server = require("../src/index.js")
-var common = require("../src/lib/util/common")
 var _ = require("lodash")
 
-var defaultErrorHandler = common.defaultErrorHandler
-
-const Sequelize = require("sequelize")
-const testCommon = require("./test_common")
-const {db, models} = require("../src/lib/core/dbschema")()
+const {models} = require("../src/lib/core/dbschema")()
 const stripe = require("../src/lib/transactions/payment").stripe
 
 const testMerchantId = process.env.STRIPE_TEST_DESTINATION
 import BlueBird from 'bluebird'
 
 lab.experiment("Concurrent transactions", function () {
-  var authHeaders
-  var testName = "Name for Testing"
-  var updatedTestName = "Updated name for Testing"
-
   var testInstances = []
-  var stopInstances = [], tripInstances = []
+  var stopInstances = []
+  var tripInstances = []
 
-  var pushToInstances = (x) => { testInstances.push(x); return x }
-  var pushToTrips = (x) => { tripInstances.push(x); return x }
 
-  var authHeaders
-
-    /** Additional tests we may/will want to carry out:
-        - Test that booking window works
-        - ...
-    **/
+  // Additional tests we may/will want to carry out:
+  //  - Test that booking window works
+  //  - ...
   function randomSingaporeLngLat () {
     return [
       103.69 + Math.random() * 0.29,
@@ -61,7 +49,7 @@ lab.experiment("Concurrent transactions", function () {
     })
     testInstances.push(company)
 
-        // create a bunch of stops
+    // create a bunch of stops
     routeInstance = await models.Route.create({
       name: "Test route only",
       from: "Test route From",
@@ -99,16 +87,13 @@ lab.experiment("Concurrent transactions", function () {
       tripInstances.push(trip)
     }
     testInstances = testInstances.concat(tripInstances)
-    authHeaders = {
-      authorization: "Bearer " + user.makeToken()
-    }
 
-        // then we are ready to test!
+    // then we are ready to test!
   })
 
-    /* Seems like there IS a deadlock! */
+  /* Seems like there IS a deadlock! */
   lab.test("Deadlock - at least one should succeed", {timeout: 3000}, async function () {
-        // create 11 fake users
+    // create 11 fake users
     var time = new Date().getTime()
     var ids = _.range(0, 5)
     var fakeUsers = await Promise.all(ids.map(i => models.User.create({
@@ -118,16 +103,16 @@ lab.experiment("Concurrent transactions", function () {
 
     var sessionTokens = fakeUsers.map(f => f.makeToken())
 
-        // Inject the ticket purchases
+    // Inject the ticket purchases
     var fakeSales = ids.map((i) => server.inject({
       method: "POST",
       url: "/transactions/tickets/quote",
       payload: {
         trips: [
-          { tripId: tripInstances[1].id,
+          {
+            tripId: tripInstances[1].id,
             boardStopId: tripInstances[1].tripStops[0].id,
             alightStopId: tripInstances[1].tripStops[0].id,
-                        // qty: 1
           }
         ]
       },
@@ -140,9 +125,9 @@ lab.experiment("Concurrent transactions", function () {
     expect(results.map(r => r.statusCode)).to.only.include(200)
   })
 
-    /* Seems like there IS a deadlock! */
+  /* Seems like there IS a deadlock! */
   lab.test("Concurrent payments", {timeout: 10000}, async function () {
-        // create 11 fake users
+    // create 11 fake users
     var time = new Date().getTime()
     var ids = _.range(0, 5)
     var fakeUsers = await Promise.all(ids.map(i => models.User.create({
@@ -153,26 +138,26 @@ lab.experiment("Concurrent transactions", function () {
     var sessionTokens = fakeUsers.map(f => f.makeToken())
 
     var stripeTokens = await Promise.all(ids.map((i) =>
-          // create a stripe token! Using the fake credit card details
-          BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
-            card: {
-              number: "4242424242424242",
-              exp_month: "12",
-              exp_year: "2017",
-              cvc: "123"
-            }
-          })))
+      // create a stripe token! Using the fake credit card details
+      BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
+        card: {
+          number: "4242424242424242",
+          exp_month: "12",
+          exp_year: "2017",
+          cvc: "123"
+        }
+      })))
 
-        // Inject the ticket purchases
+    // Inject the ticket purchases
     var fakeSales = ids.map((i) => server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
         trips: [
-          { tripId: tripInstances[1].id,
+          {
+            tripId: tripInstances[1].id,
             boardStopId: tripInstances[1].tripStops[0].id,
             alightStopId: tripInstances[1].tripStops[0].id,
-                        // qty: 1
           }
         ],
         stripeToken: stripeTokens[i].id
@@ -186,11 +171,8 @@ lab.experiment("Concurrent transactions", function () {
     expect(results.map(r => r.statusCode)).to.include(200)
   })
 
-    /** For this one, because the trips are all different, we expect
-          concurrent access to work...
-    **/
+  // For this one, because the trips are all different, we expect concurrent access to work...
   lab.test("Concurrent transactions on different trips", {timeout: 2000}, async function () {
-        // create 11 fake users
     var time = new Date().getTime()
     var ids = _.range(0, 5)
     var fakeUsers = await Promise.all(ids.map(i => models.User.create({
@@ -200,7 +182,7 @@ lab.experiment("Concurrent transactions", function () {
 
     var sessionTokens = fakeUsers.map(f => f.makeToken())
 
-        // Inject the ticket purchases
+    // Inject the ticket purchases
     var fakeSales = ids.map((i) => server.inject({
       method: "POST",
       url: "/transactions/tickets/quote",
@@ -210,7 +192,6 @@ lab.experiment("Concurrent transactions", function () {
             tripId: tripInstances[i].id,
             boardStopId: tripInstances[i].tripStops[0].id,
             alightStopId: tripInstances[i].tripStops[4].id,
-              // qty: 1
           }
         ]
       },
@@ -227,7 +208,7 @@ lab.experiment("Concurrent transactions", function () {
    * Ensure that concurrent payments on different trips get through
    */
   lab.test("Concurrent payments on different trips", {timeout: 10000}, async function () {
-         // create 11 fake users
+    // create 11 fake users
     var time = new Date().getTime()
     var ids = _.range(0, 5)
     var fakeUsers = await Promise.all(ids.map(i => models.User.create({
@@ -238,26 +219,26 @@ lab.experiment("Concurrent transactions", function () {
     var sessionTokens = fakeUsers.map(f => f.makeToken())
 
     var stripeTokens = await Promise.all(ids.map((i) =>
-           // create a stripe token! Using the fake credit card details
-           BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
-             card: {
-               number: "4242424242424242",
-               exp_month: "12",
-               exp_year: "2017",
-               cvc: "123"
-             }
-           })))
+      // create a stripe token! Using the fake credit card details
+      BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
+        card: {
+          number: "4242424242424242",
+          exp_month: "12",
+          exp_year: "2017",
+          cvc: "123"
+        }
+      })))
 
-         // Inject the ticket purchases
+    // Inject the ticket purchases
     var fakeSales = ids.map((i) => server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
         trips: [
-          { tripId: tripInstances[i].id,
+          {
+            tripId: tripInstances[i].id,
             boardStopId: tripInstances[i].tripStops[0].id,
             alightStopId: tripInstances[i].tripStops[0].id,
-                         // qty: 1
           }
         ],
         stripeToken: stripeTokens[i].id

@@ -27,11 +27,11 @@ lab.experiment("Stop manipulation", async () => {
     type: "xTesting stop type",
     coordinates: { type: "Point", coordinates: [103.99102, 1.350199] }
   }
-  const companyInstance = await m.TransportCompany.create({})
+  await m.TransportCompany.create({})
   const authHeaders = await loginAs("superadmin")
-  .then(resp => {
-    return { authorization: "Bearer " + resp.result.sessionToken }
-  })
+    .then(resp => {
+      return { authorization: "Bearer " + resp.result.sessionToken }
+    })
 
   lab.test("CRUD integration test", async () => {
     // CREATE
