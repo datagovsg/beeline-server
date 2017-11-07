@@ -1949,4 +1949,35 @@ WHERE id = :id
     await route.reload()
     expect(route.tags.length).equal(1)
   })
+
+  lab.test("createdAt/updatedAt route timestamps cannot be overridden at POST", async function () {
+    const headers = {
+      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken
+    }
+
+    const payload = {
+      label: 'HelloLabel',
+      tags: ['some', 'tag'],
+      from: 'From',
+      to: 'To',
+      name: 'Sample Route',
+      features: 'Some feature',
+      transportCompanyId: transportCompany.id,
+      createdAt: new Date('1970-01-01'),
+      updatedAt: new Date('1970-01-02'),
+    }
+
+    const response = await server.inject({
+      method: "POST",
+      url: "/routes",
+      payload,
+      headers,
+    })
+    expect(response.statusCode).equal(200)
+
+    const routeId = response.result.id
+    const route = await models.Route.findById(routeId)
+    expect(new Date(route.updatedAt)).not.equal(payload.updatedAt)
+    expect(new Date(route.createdAt)).not.equal(payload.createdAt)
+  })
 })
