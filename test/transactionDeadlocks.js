@@ -1,7 +1,7 @@
 var Lab = require("lab")
 var lab = exports.lab = Lab.script()
 
-var Code = require("code")
+const {expect} = require("code")
 var server = require("../src/index.js")
 var common = require("../src/lib/util/common")
 var _ = require("lodash")
@@ -137,7 +137,7 @@ lab.experiment("Concurrent transactions", function () {
     }))
 
     var results = await Promise.all(fakeSales)
-    Code.expect(results.map(r => r.statusCode)).to.only.include(200)
+    expect(results.map(r => r.statusCode)).to.only.include(200)
   })
 
     /* Seems like there IS a deadlock! */
@@ -183,7 +183,7 @@ lab.experiment("Concurrent transactions", function () {
     }))
 
     var results = await Promise.all(fakeSales)
-    Code.expect(results.map(r => r.statusCode)).to.include(200)
+    expect(results.map(r => r.statusCode)).to.include(200)
   })
 
     /** For this one, because the trips are all different, we expect
@@ -220,7 +220,7 @@ lab.experiment("Concurrent transactions", function () {
     }))
 
     var results = await Promise.all(fakeSales)
-    Code.expect(results.map(r => r.statusCode)).to.only.include(200)
+    expect(results.map(r => r.statusCode)).to.only.include(200)
   })
 
   /**
@@ -268,6 +268,6 @@ lab.experiment("Concurrent transactions", function () {
     }))
 
     var results = await Promise.all(fakeSales)
-    Code.expect(results.map(r => r.statusCode)).to.only.include(200)
+    expect(results.map(r => r.statusCode)).to.only.include(200)
   })
 })

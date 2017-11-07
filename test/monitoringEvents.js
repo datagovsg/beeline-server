@@ -1,7 +1,7 @@
 const tool = require('../src/lib/daemons/monitoring')
 
 const Lab = require("lab")
-const Code = require('code')
+const {expect} = require('code')
 const _ = require('lodash')
 const {randomSingaporeLngLat} = require("./test_common")
 const {toWGS, toSVY} = require('../src/lib/util/svy21')
@@ -10,7 +10,6 @@ const eventHandlers = require('../src/lib/events/handlers')
 const {db, models: m} = require("../src/lib/core/dbschema")()
 export var lab = Lab.script()
 const eventsDaemon = require('../src/lib/daemons/eventSubscriptions')
-const {expect} = Code
 
 lab.experiment("Integration test for monitoring events", function () {
   var companyInstance, userInstance, driverInstance, vehicleInstance,

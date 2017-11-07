@@ -1,7 +1,7 @@
 var Lab = require("lab")
 var lab = exports.lab = Lab.script()
 
-var Code = require("code")
+const {expect} = require("code")
 var _ = require("lodash")
 
 const {models: m} = require("../src/lib/core/dbschema")()
@@ -41,10 +41,10 @@ lab.experiment("Stop manipulation", async () => {
       payload: stopInfo,
       headers: authHeaders
     })
-    Code.expect(resp.statusCode).to.equal(200)
-    Code.expect(resp.result).to.include("id")
+    expect(resp.statusCode).to.equal(200)
+    expect(resp.result).to.include("id")
 
-    Code.expect(_.isMatch(resp.result, stopInfo)).true()
+    expect(_.isMatch(resp.result, stopInfo)).true()
     stopId = resp.result.id
 
     // READ
@@ -52,16 +52,16 @@ lab.experiment("Stop manipulation", async () => {
       method: "GET",
       url: "/stops/" + stopId
     })
-    Code.expect(resp.statusCode).to.equal(200)
-    Code.expect(_.isMatch(resp.result, stopInfo)).true()
+    expect(resp.statusCode).to.equal(200)
+    expect(_.isMatch(resp.result, stopInfo)).true()
 
     // BULK READ
     resp = await server.inject({
       method: "GET",
       url: "/stops"
     })
-    Code.expect(resp.statusCode).to.equal(200)
-    Code.expect(resp.result.reduce(
+    expect(resp.statusCode).to.equal(200)
+    expect(resp.result.reduce(
       (current, stop) => current || _.isMatch(stop, stopInfo),
       false
     )).true()
@@ -73,16 +73,16 @@ lab.experiment("Stop manipulation", async () => {
       headers: authHeaders,
       payload: updatedStopInfo
     })
-    Code.expect(resp.statusCode).to.equal(200)
+    expect(resp.statusCode).to.equal(200)
     delete updatedStopInfo.id
-    Code.expect(resp.result.id).to.equal(stopId)
-    Code.expect(_.isMatch(resp.result, updatedStopInfo)).true()
+    expect(resp.result.id).to.equal(stopId)
+    expect(_.isMatch(resp.result, updatedStopInfo)).true()
 
     resp = await server.inject({
       method: "GET",
       url: "/stops/" + stopId
     })
-    Code.expect(_.isMatch(resp.result, updatedStopInfo)).true()
+    expect(_.isMatch(resp.result, updatedStopInfo)).true()
 
     // DELETE
     resp = await server.inject({
@@ -90,13 +90,13 @@ lab.experiment("Stop manipulation", async () => {
       url: "/stops/" + stopId,
       headers: authHeaders
     })
-    Code.expect(resp.statusCode).to.equal(200)
-    Code.expect(_.isMatch(resp.result, updatedStopInfo)).true()
+    expect(resp.statusCode).to.equal(200)
+    expect(_.isMatch(resp.result, updatedStopInfo)).true()
 
     resp = await server.inject({
       method: "GET",
       url: "/stops/" + stopId
     })
-    Code.expect(resp.statusCode).to.equal(404)
+    expect(resp.statusCode).to.equal(404)
   })
 })

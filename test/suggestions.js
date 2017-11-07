@@ -1,7 +1,7 @@
 var Lab = require("lab")
 export var lab = Lab.script()
 
-var Code = require("code")
+const {expect} = require("code")
 var server = require("../src/index.js")
 var common = require("../src/lib/util/common")
 const {db, models: m} = require("../src/lib/core/dbschema")()
@@ -77,7 +77,7 @@ lab.experiment("Suggestion manipulation", function () {
     ]
 
     for (let sugg of suggestions) {
-      Code.expect(sugg.statusCode).to.equal(200)
+      expect(sugg.statusCode).to.equal(200)
     }
 
       // Get all suggestions
@@ -86,9 +86,9 @@ lab.experiment("Suggestion manipulation", function () {
       method: "GET",
       headers: authHeaders
     })
-    Code.expect(getSuggestions.statusCode).to.equal(200)
+    expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
-      Code.expect(suggestions.map(s => s.result.id)).to.include(sugg.result.id)
+      expect(suggestions.map(s => s.result.id)).to.include(sugg.result.id)
     }
 
       // Ensure PUT works
@@ -106,18 +106,18 @@ lab.experiment("Suggestion manipulation", function () {
       headers: authHeaders,
       payload: putData
     })
-    Code.expect(putResult.statusCode).to.equal(200)
+    expect(putResult.statusCode).to.equal(200)
     var afterPut = await server.inject({
       method: "GET",
       url: "/suggestions/" + sid,
       headers: authHeaders
     })
-    Code.expect(afterPut.statusCode).to.equal(200)
-    Code.expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
-    Code.expect(afterPut.result.board.coordinates[1]).to.equal(putData.boardLat)
-    Code.expect(afterPut.result.alight.coordinates[0]).to.equal(putData.alightLon)
-    Code.expect(afterPut.result.alight.coordinates[1]).to.equal(putData.alightLat)
-    Code.expect(afterPut.result.time).to.equal(putData.time)
+    expect(afterPut.statusCode).to.equal(200)
+    expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
+    expect(afterPut.result.board.coordinates[1]).to.equal(putData.boardLat)
+    expect(afterPut.result.alight.coordinates[0]).to.equal(putData.alightLon)
+    expect(afterPut.result.alight.coordinates[1]).to.equal(putData.alightLat)
+    expect(afterPut.result.time).to.equal(putData.time)
 
       // Ensure delete works
     for (let sugg of suggestions) {
@@ -127,7 +127,7 @@ lab.experiment("Suggestion manipulation", function () {
         url: "/suggestions/" + sid,
         headers: authHeaders
       })
-      Code.expect(delResult.statusCode).to.equal(200)
+      expect(delResult.statusCode).to.equal(200)
     }
 
       // Get all suggestions
@@ -136,9 +136,9 @@ lab.experiment("Suggestion manipulation", function () {
       method: "GET",
       headers: authHeaders
     })
-    Code.expect(getSuggestions.statusCode).to.equal(200)
+    expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
-      Code.expect(suggestions.map(s => s.id)).to.not.include(sugg.result.id)
+      expect(suggestions.map(s => s.id)).to.not.include(sugg.result.id)
     }
   })
 
@@ -190,11 +190,11 @@ lab.experiment("Suggestion manipulation", function () {
     ]
 
     for (let sugg of suggestions) {
-      Code.expect(sugg.statusCode).to.equal(200)
+      expect(sugg.statusCode).to.equal(200)
     }
 
     let referrers = suggestions.map(x => x.result.referrer)
-    Code.expect(referrers).to.include([null, 'ABC', 'XYZ'])
+    expect(referrers).to.include([null, 'ABC', 'XYZ'])
 
 
       // Get all suggestions
@@ -203,9 +203,9 @@ lab.experiment("Suggestion manipulation", function () {
       method: "GET",
       headers: anonHeaders
     })
-    Code.expect(getSuggestions.statusCode).to.equal(200)
+    expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
-      Code.expect(suggestions.map(s => s.result.id)).to.include(sugg.result.id)
+      expect(suggestions.map(s => s.result.id)).to.include(sugg.result.id)
     }
 
       // Ensure PUT works
@@ -223,18 +223,18 @@ lab.experiment("Suggestion manipulation", function () {
       headers: anonHeaders,
       payload: putData
     })
-    Code.expect(putResult.statusCode).to.equal(200)
+    expect(putResult.statusCode).to.equal(200)
     var afterPut = await server.inject({
       method: "GET",
       url: "/suggestions/" + sid,
       headers: anonHeaders
     })
-    Code.expect(afterPut.statusCode).to.equal(200)
-    Code.expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
-    Code.expect(afterPut.result.board.coordinates[1]).to.equal(putData.boardLat)
-    Code.expect(afterPut.result.alight.coordinates[0]).to.equal(putData.alightLon)
-    Code.expect(afterPut.result.alight.coordinates[1]).to.equal(putData.alightLat)
-    Code.expect(afterPut.result.time).to.equal(putData.time)
+    expect(afterPut.statusCode).to.equal(200)
+    expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
+    expect(afterPut.result.board.coordinates[1]).to.equal(putData.boardLat)
+    expect(afterPut.result.alight.coordinates[0]).to.equal(putData.alightLon)
+    expect(afterPut.result.alight.coordinates[1]).to.equal(putData.alightLat)
+    expect(afterPut.result.time).to.equal(putData.time)
 
       // Ensure delete works
     for (let sugg of suggestions) {
@@ -244,7 +244,7 @@ lab.experiment("Suggestion manipulation", function () {
         url: "/suggestions/" + sid,
         headers: anonHeaders
       })
-      Code.expect(delResult.statusCode).to.equal(200)
+      expect(delResult.statusCode).to.equal(200)
     }
 
       // Get all suggestions
@@ -253,9 +253,9 @@ lab.experiment("Suggestion manipulation", function () {
       method: "GET",
       headers: anonHeaders
     })
-    Code.expect(getSuggestions.statusCode).to.equal(200)
+    expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
-      Code.expect(suggestions.map(s => s.id)).to.not.include(sugg.result.id)
+      expect(suggestions.map(s => s.id)).to.not.include(sugg.result.id)
     }
   })
 
@@ -275,15 +275,15 @@ lab.experiment("Suggestion manipulation", function () {
         time: 7 * 3600 + 30 * 60
       }
     })
-    Code.expect(response1.statusCode).to.equal(200)
+    expect(response1.statusCode).to.equal(200)
 
     var response2 = await server.inject({
       url: "/suggestions",
       headers: {},
       method: "GET"
     })
-    Code.expect(response2.statusCode).to.equal(200)
-    Code.expect(response2.result.length).to.equal(0)
+    expect(response2.statusCode).to.equal(200)
+    expect(response2.result.length).to.equal(0)
   })
 
 
@@ -333,7 +333,7 @@ lab.experiment("Suggestion manipulation", function () {
     ]
 
     for (let sugg of suggestionsResp) {
-      Code.expect(sugg.statusCode).to.equal(200)
+      expect(sugg.statusCode).to.equal(200)
     }
 
       // Convert anonymous to non-anonymous
@@ -358,7 +358,7 @@ lab.experiment("Suggestion manipulation", function () {
       // ensure that the anonymous suggestions have been converted
     var userSuggestionIds = userSuggestions.map(sugg => sugg.id)
     for (let sugg of suggestionsResp) {
-      Code.expect(userSuggestionIds).to.include(sugg.result.id)
+      expect(userSuggestionIds).to.include(sugg.result.id)
     }
   })
 })

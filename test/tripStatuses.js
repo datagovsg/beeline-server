@@ -1,7 +1,7 @@
 var Lab = require("lab")
 export var lab = Lab.script()
 
-var Code = require("code")
+const {expect} = require("code")
 var server = require("../src/index.js")
 var common = require("../src/lib/util/common")
 
@@ -82,10 +82,10 @@ lab.experiment("TripStatus manipulation", function () {
         headers: authHeaders
       })
       var tripStatus = response.result
-      Code.expect(response.statusCode).to.equal(200)
-      Code.expect(tripStatus).to.contain("id")
-      Code.expect(tripStatus.time).to.exist()
-      Code.expect(tripStatus.creator).to.exist()
+      expect(response.statusCode).to.equal(200)
+      expect(tripStatus).to.contain("id")
+      expect(tripStatus.time).to.exist()
+      expect(tripStatus.creator).to.exist()
     }
 
       // GET tripStatuses?
@@ -94,8 +94,8 @@ lab.experiment("TripStatus manipulation", function () {
       url: "/trips/" + trip.id + "/statuses"
     })
     for (let status of statuses) {
-      Code.expect(response.result.map(x => x.status)).to.include(status)
+      expect(response.result.map(x => x.status)).to.include(status)
     }
-    Code.expect(response.result.length).to.equal(statuses.length)
+    expect(response.result.length).to.equal(statuses.length)
   })
 })

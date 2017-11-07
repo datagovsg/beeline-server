@@ -1,7 +1,7 @@
 var Lab = require("lab")
 export var lab = Lab.script()
 
-var Code = require("code")
+const {expect} = require("code")
 var server = require("../src/index.js")
 var common = require("../src/lib/util/common")
 
@@ -43,9 +43,9 @@ lab.experiment("Vehicle manipulation", function () {
       headers: authHeaders
     })
     var vehicle = response.result
-    Code.expect(response.statusCode).to.equal(200)
-    Code.expect(vehicle).to.contain("id")
-    Code.expect(vehicle.driverId).to.equal(driver.id)
+    expect(response.statusCode).to.equal(200)
+    expect(vehicle).to.contain("id")
+    expect(vehicle.driverId).to.equal(driver.id)
 
       // No duplicates!
     var response = await server.inject({
@@ -57,7 +57,7 @@ lab.experiment("Vehicle manipulation", function () {
       headers: authHeaders
     })
     var vehicle2 = response.result
-    Code.expect(response).to.not.equal(200)
+    expect(response).to.not.equal(200)
 
       // Update is not strictly speaking necessary is it?
       // FIXME: HAPI does not support testing file upload
@@ -81,7 +81,7 @@ lab.experiment("Vehicle manipulation", function () {
       headers: authHeaders
     })
     var vehicle = response.result
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
 
     for (let it of destroyList.reverse()) {
       await it.destroy()

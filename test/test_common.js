@@ -1,4 +1,4 @@
-var Code = require("code")
+const {expect} = require("code")
 var config = require("../src/config")
 var testData = require("./test_data")
 import _ from "lodash"
@@ -112,7 +112,7 @@ export function expectEvent (eventName, params) {
     async check () {
       // Delay a while, let the event be propagated
       await new Promise(resolve => setTimeout(resolve, 1000))
-      Code.expect(this.isEmitted).true()
+      expect(this.isEmitted).true()
       this.remove()
     },
     remove: null

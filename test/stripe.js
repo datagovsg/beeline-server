@@ -1,5 +1,5 @@
 const {createStripeToken, calculateAdminFeeInCents, isMicro, stripe} = require("../src/lib/transactions/payment")
-var Code = require("code")
+const {expect} = require("code")
 var Lab = require("lab")
 export var lab = Lab.script()
 
@@ -29,11 +29,11 @@ lab.experiment("Stripe Micro-transactions", function () {
     const STRIPE_AMEXINTL_CHARGE_RATE = parseFloat(process.env.STRIPE_AMEXINTL_CHARGE_RATE)
 
     process.env.STRIPE_MICRO_RATES = 'true'
-    Code.expect(adminFee(500)).equal(Math.round(500 * STRIPE_MICRO_CHARGE_RATE) + STRIPE_MICRO_MIN_CHARGE)
-    Code.expect(adminFee(1500)).equal(Math.round(1500 * STRIPE_AMEXINTL_CHARGE_RATE) + STRIPE_MACRO_MIN_CHARGE)
+    expect(adminFee(500)).equal(Math.round(500 * STRIPE_MICRO_CHARGE_RATE) + STRIPE_MICRO_MIN_CHARGE)
+    expect(adminFee(1500)).equal(Math.round(1500 * STRIPE_AMEXINTL_CHARGE_RATE) + STRIPE_MACRO_MIN_CHARGE)
 
     process.env.STRIPE_MICRO_RATES = 'false'
-    Code.expect(adminFee(500)).equal(Math.round(500 * STRIPE_AMEXINTL_CHARGE_RATE) + STRIPE_MACRO_MIN_CHARGE)
+    expect(adminFee(500)).equal(Math.round(500 * STRIPE_AMEXINTL_CHARGE_RATE) + STRIPE_MACRO_MIN_CHARGE)
 
     process.env.STRIPE_MICRO_RATES = saveEnv
     done()
@@ -61,7 +61,7 @@ lab.experiment("Stripe Micro-transactions", function () {
     var stripeBalanceTxn = await stripe.balance
       .retrieveTransaction(stripeCharge.balance_transaction)
 
-    Code.expect(stripeBalanceTxn.fee)
+    expect(stripeBalanceTxn.fee)
       .equal(application_fee)
 
     // Refund partially...
@@ -77,7 +77,7 @@ lab.experiment("Stripe Micro-transactions", function () {
     stripeBalanceTxn = await stripe.balance
       .retrieveTransaction(stripeRefund.balance_transaction)
 
-    Code.expect(stripeBalanceTxn.fee)
+    expect(stripeBalanceTxn.fee)
       .equal(applicationFeeRefund)
   })
 
@@ -89,7 +89,7 @@ lab.experiment("Stripe Micro-transactions", function () {
     var ism = isMicro(amount)
     var token = await stripeToken()
 
-    Code.expect(ism).equal(false)
+    expect(ism).equal(false)
 
     var chargeDetails = {
       source: token.id,
@@ -105,7 +105,7 @@ lab.experiment("Stripe Micro-transactions", function () {
     var stripeBalanceTxn = await stripe.balance
       .retrieveTransaction(stripeCharge.balance_transaction)
 
-    Code.expect(stripeBalanceTxn.fee).equal(application_fee)
+    expect(stripeBalanceTxn.fee).equal(application_fee)
 
     // Refund partially...
     var applicationFeeRefund = calculateAdminFeeInCents(Math.round((fee1 - refund1) * 100), ism, false) -
@@ -120,6 +120,6 @@ lab.experiment("Stripe Micro-transactions", function () {
     stripeBalanceTxn = await stripe.balance
       .retrieveTransaction(stripeRefund.balance_transaction)
 
-    Code.expect(stripeBalanceTxn.fee).equal(applicationFeeRefund)
+    expect(stripeBalanceTxn.fee).equal(applicationFeeRefund)
   })
 })
