@@ -62,7 +62,7 @@ lab.experiment("Trip manipulation", function () {
       }))
     )
 
-    var route = await m.Route.create({
+    var routeInst = await m.Route.create({
       description: "Some route",
       transportCompanyId: companyId,
     })
@@ -70,7 +70,7 @@ lab.experiment("Trip manipulation", function () {
     var tripInst = await m.Trip.create({
       date: `2018-03-01`,
       capacity: 10,
-      routeId: route.id,
+      routeId: routeInst.id,
       price: (Math.random() * 3 + 3).toFixed(2),
       tripStops: [
         { stopId: stopInstances[0].id, canBoard: true, canAlight: true, time: `2018-03-01T08:30:00+0800`},
@@ -96,7 +96,7 @@ lab.experiment("Trip manipulation", function () {
       status: 'valid',
     })
 
-    return {stopInstances, tripInst, userInst, ticketInst}
+    return {stopInstances, tripInst, userInst, ticketInst, routeInst}
   }
 
   lab.test("Dates in postgres are coerced to UTC timezone", async function () {
@@ -519,6 +519,63 @@ lab.experiment("Trip manipulation", function () {
     expect(ticketReport.statusCode).equal(200)
     expect(ticketReport.result.rows.length).equal(1)
     expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
+  })
+
+  lab.test('ticketSales show route pass txn description', async function () {
+    const {ticketInst, routeInst, userInst} = await createStopsTripsUsersTickets(company.id)
+    const tag = `rp-${Date.now()}`
+
+    await routeInst.update({ tags: [tag] })
+
+    const adminCreds = await loginAs('admin', {
+      transportCompanyId: company.id,
+      permissions: ['view-transactions', 'issue-tickets']
+    })
+
+    const headers = {
+      authorization: `Bearer ${adminCreds.result.sessionToken}`
+    }
+
+    const response = await server.inject({
+      method: "POST",
+      url: "/transactions/route_passes/issue_free",
+      payload: {
+        description: 'Issue 1 Free Pass',
+        userId: userInst.id,
+        routeId: routeInst.id,
+        tag,
+      },
+      headers,
+    })
+
+    let transactionItemsByType = _.groupBy(response.result.transactionItems, ti => ti.itemType)
+    expect(transactionItemsByType.routePass).exist()
+    expect(transactionItemsByType.routePass.length).equal(1)
+    const routePassItemId = transactionItemsByType.routePass[0].itemId
+
+    // Simulate a sale
+    await m.Transaction.create({
+      committed: true,
+      transactionItems: [
+        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 5},
+        {itemType: 'routePass', itemId: routePassItemId, debit: 5}
+      ]
+    }, {
+      include: [m.TransactionItem]
+    })
+
+    var defaultQuery = {
+      ticketId: ticketInst.id
+    }
+    var ticketReport = await server.inject({
+      method: 'GET',
+      url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
+      headers
+    })
+    expect(ticketReport.statusCode).equal(200)
+    expect(ticketReport.result.rows.length).equal(1)
+    expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
+    expect(ticketReport.result.rows[0].routePassPurchaseDescription).exist()
   })
 
   lab.test('CSV reporting works', async function () {
