@@ -419,6 +419,7 @@ export function register (server, options, next) {
       const routePassCSVFields = [
         'transactionId', 'transaction.createdAt',
         'transaction.committed', 'transaction.type',
+        'transaction.description',
         'refundingTransactionId',
         'paymentResource',
         'transferResource',
