@@ -268,7 +268,7 @@ export function register (server, options, next) {
       itemTypeWhereClause.userId = userId
     }
     if (tag) {
-      itemTypeWhereClause.tag = { $overlap: tag.split(',') }
+      itemTypeWhereClause.tag = { $in: tag.split(',') }
     }
 
     return {
