@@ -1,28 +1,19 @@
 var Lab = require("lab")
 var lab = exports.lab = Lab.script()
 
-var Code = require("code")
-var server = require("../src/index.js")
-var common = require("../src/lib/util/common")
+const {expect} = require("code")
+var server = require("../src/index")
 
-var defaultErrorHandler = common.defaultErrorHandler
-
-var Sequelize = require("sequelize")
 var {loginAs, randomEmail, cleanlyDeleteUsers} = require("./test_common")
-const {db, models} = require("../src/lib/core/dbschema")()
+const {models} = require("../src/lib/core/dbschema")()
 const sinon = require('sinon')
 const sms = require("../src/lib/util/sms")
 const emailModule = require("../src/lib/util/email")
 
-import * as auth from "../src/lib/core/auth"
-import * as onesignal from "../src/lib/util/onesignal"
-import qs from "querystring"
-import jwt from "jsonwebtoken"
 import axios from 'axios'
 
 lab.experiment("User manipulation", function () {
   let authHeaders = {}
-  let email = "test" + Date.now() + "@example.com"
   let testPhoneNumbers = ["+6581001860", "+6599999999", "+6501234567", '+6565431234']
   let adminInstance
 
@@ -58,19 +49,19 @@ lab.experiment("User manipulation", function () {
       url: '/users/sendTelephoneVerification?dryRun=true',
       payload: {telephone: '+6581001860'}
     })
-    Code.expect(response.statusCode).equal(200)
+    expect(response.statusCode).equal(200)
 
-      // Ensure User is created after send telephone verification
+    // Ensure User is created after send telephone verification
     var userInst = await models.User.find({
       where: {telephone: '+6581001860'}
     })
-    Code.expect(userInst).exist()
-    Code.expect(userInst.status).equal('unverified')
+    expect(userInst).exist()
+    expect(userInst.status).equal('unverified')
 
-      // Extract the user's code
-    Code.expect(userInst.get('telephoneCode', {raw: true})).to.exist()
+    // Extract the user's code
+    expect(userInst.get('telephoneCode', {raw: true})).to.exist()
 
-      // Delete the code...
+    // Delete the code...
     await userInst.update({
       telephoneCode: '000',
       lastComms: null,
@@ -81,18 +72,16 @@ lab.experiment("User manipulation", function () {
       url: '/users/sendTelephoneVerification?dryRun=true',
       payload: {telephone: '+6581001860'}
     })
-    Code.expect(response2.statusCode).equal(200)
+    expect(response2.statusCode).equal(200)
 
-    var userInst = await models.User.find({
+    userInst = await models.User.find({
       where: {telephone: '+6581001860'}
     })
-    Code.expect(userInst).exist()
-    Code.expect(userInst.get('telephoneCode', {raw: true})).not.equal('000')
+    expect(userInst).exist()
+    expect(userInst.get('telephoneCode', {raw: true})).not.equal('000')
   })
 
   lab.test("User telephone verification", async function () {
-    const {expect} = Code
-    const email = randomEmail()
     const telephone = testPhoneNumbers[3]
     let codeInSMS = null
 
@@ -145,12 +134,10 @@ lab.experiment("User manipulation", function () {
       url: "/users/verifyTelephone",
       payload: {code, telephone}
     })
-    Code.expect(response4.statusCode).not.equal(200)
+    expect(response4.statusCode).not.equal(200)
   })
 
   lab.test("Code expiry", async function () {
-    const {expect} = Code
-    const email = randomEmail()
     const telephone = testPhoneNumbers[3]
     let codeInSMS = null
 
@@ -200,7 +187,6 @@ lab.experiment("User manipulation", function () {
   })
 
   lab.test("Email verification", async function () {
-    const {expect} = Code
     const email = randomEmail()
     const userInst = await models.User.create({
       telephone: testPhoneNumbers[0],
@@ -208,7 +194,7 @@ lab.experiment("User manipulation", function () {
     })
 
     let callArgs = null
-    const stub = sandbox.stub(emailModule, 'sendMail', function (options) {
+    sandbox.stub(emailModule, 'sendMail', function (options) {
       callArgs = options
       return Promise.resolve(null)
     })
@@ -224,8 +210,7 @@ lab.experiment("User manipulation", function () {
     // Get the token
     expect(callArgs.text.indexOf(`https://${process.env.WEB_DOMAIN}/users/verifyEmail?token=`)).not.equal(-1)
 
-    //
-    const match = callArgs.text.match(/(\/users\/verifyEmail\?token=([-_a-zA-Z0-9\.]*))[^-_a-zA-Z0-9\.]/)
+    const match = callArgs.text.match(/(\/users\/verifyEmail\?token=([-_a-zA-Z0-9.]*))[^-_a-zA-Z0-9.]/)
     expect(match[2]).exist()
 
     const token = match[2]
@@ -266,7 +251,7 @@ lab.experiment("User manipulation", function () {
       authorization: "Bearer " + userInst.makeToken()
     }
 
-      // Update the telephone by obtaining the updateToken
+    // Update the telephone by obtaining the updateToken
     var response = await server.inject({
       method: "POST",
       url: "/user/requestUpdateTelephone",
@@ -276,16 +261,16 @@ lab.experiment("User manipulation", function () {
       },
       headers: headers
     })
-    Code.expect(response.statusCode).to.equal(200)
-    Code.expect(response.result).to.include("updateToken")
+    expect(response.statusCode).to.equal(200)
+    expect(response.result).to.include("updateToken")
 
-            // pull the code from the database
+    // pull the code from the database
     userInst = await models.User.findById(userInst.id, {raw: true})
 
-    Code.expect(userInst.telephoneCode).to.exist()
-    Code.expect(userInst.telephone).to.equal("+6581001860")
+    expect(userInst.telephoneCode).to.exist()
+    expect(userInst.telephone).to.equal("+6581001860")
 
-            // really update the telephone
+    // really update the telephone
     var response2 = await server.inject({
       method: "POST",
       url: "/user/updateTelephone",
@@ -295,16 +280,16 @@ lab.experiment("User manipulation", function () {
       },
       headers: headers
     })
-    Code.expect(response2.statusCode).to.equal(200)
+    expect(response2.statusCode).to.equal(200)
 
-            // pull the code from the database
+    // pull the code from the database
     userInst = await models.User.findById(userInst.id, {raw: true})
-    Code.expect(userInst.telephoneCode).to.not.exist()
-    Code.expect(userInst.telephone).to.equal("+6599999999")
+    expect(userInst.telephoneCode).to.not.exist()
+    expect(userInst.telephone).to.equal("+6599999999")
 
-            // expect the other user to have nulled telephone
+    // expect the other user to have nulled telephone
     otherInst = await models.User.findById(otherInst.id, {raw: true})
-    Code.expect(otherInst.telephone).to.equal(null)
+    expect(otherInst.telephone).to.equal(null)
   })
 
   lab.test('One login per user', {timeout: 5000}, async function () {
@@ -315,7 +300,7 @@ lab.experiment("User manipulation", function () {
       name, telephone, telephoneCode: '123456'
     })
 
-      // Try to login as the user
+    // Try to login as the user
     var response1 = await server.inject({
       url: '/users/verifyTelephone',
       method: 'POST',
@@ -324,20 +309,20 @@ lab.experiment("User manipulation", function () {
         code: '123456'
       }
     })
-    Code.expect(response1.statusCode).equal(200)
-    Code.expect(response1.result.sessionToken).exist()
+    expect(response1.statusCode).equal(200)
+    expect(response1.result.sessionToken).exist()
     var userResponse = await server.inject({
       url: '/user',
       method: 'GET',
       headers: { authorization: `Bearer ${response1.result.sessionToken}`}
     })
-    Code.expect(userResponse.statusCode).equal(200)
-    Code.expect(userResponse.result.id).equal(userInst.id)
+    expect(userResponse.statusCode).equal(200)
+    expect(userResponse.result.id).equal(userInst.id)
 
-      // Because of the 1-second granularity with tokens, wait 1.5s
+    // Because of the 1-second granularity with tokens, wait 1.5s
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Login a second time
+    // Login a second time
     await userInst.update({
       telephoneCode: '654321'
     })
@@ -346,25 +331,25 @@ lab.experiment("User manipulation", function () {
       method: 'POST',
       payload: {telephone, code: '654321'}
     })
-    Code.expect(response2.statusCode).equal(200)
-    Code.expect(response2.result.sessionToken).exist()
+    expect(response2.statusCode).equal(200)
+    expect(response2.result.sessionToken).exist()
 
-      // The request with the new token should succeed
+    // The request with the new token should succeed
     userResponse = await server.inject({
       url: '/user',
       method: 'GET',
       headers: {authorization: `Bearer ${response2.result.sessionToken}`}
     })
-    Code.expect(userResponse.statusCode).equal(200)
-    Code.expect(userResponse.result.id).equal(userInst.id)
+    expect(userResponse.statusCode).equal(200)
+    expect(userResponse.result.id).equal(userInst.id)
 
-      // But the request with the old token should not
+    // But the request with the old token should not
     userResponse = await server.inject({
       url: '/user',
       method: 'GET',
       headers: {authorization: `Bearer ${response1.result.sessionToken}`}
     })
-    Code.expect(userResponse.statusCode).equal(403)
+    expect(userResponse.statusCode).equal(403)
   })
 
   lab.test('Get telephoneCode works for superadmins', {timeout: 5000}, async function () {
@@ -381,8 +366,8 @@ lab.experiment("User manipulation", function () {
       method: 'GET',
       headers: authHeaders.super
     })
-    Code.expect(resp1.statusCode).equal(200)
-    Code.expect(resp1.result).equal(code)
+    expect(resp1.statusCode).equal(200)
+    expect(resp1.result).equal(code)
 
     await userInst.update({telephoneCode: null})
 
@@ -391,10 +376,10 @@ lab.experiment("User manipulation", function () {
       method: 'GET',
       headers: authHeaders.super
     })
-    Code.expect(resp2.statusCode).equal(200)
+    expect(resp2.statusCode).equal(200)
 
     await userInst.reload()
-    Code.expect(resp2.result).equal(userInst.dataValues.telephoneCode)
+    expect(resp2.result).equal(userInst.dataValues.telephoneCode)
   })
 
   lab.test('Get telephoneCode fails for all other user types', {timeout: 5000}, async function () {
@@ -420,7 +405,7 @@ lab.experiment("User manipulation", function () {
       method: 'GET',
       headers: authHeaders.admin
     })
-    Code.expect(resp1.statusCode).equal(403)
+    expect(resp1.statusCode).equal(403)
 
     // random user
     let resp2 = await server.inject({
@@ -428,14 +413,14 @@ lab.experiment("User manipulation", function () {
       headers: userAuthHeader,
       method: 'GET',
     })
-    Code.expect(resp2.statusCode).equal(403)
+    expect(resp2.statusCode).equal(403)
 
     // non-logged in
     let resp3 = await server.inject({
       url: `/user/${userInst.id}/telephoneCode`,
       method: 'GET',
     })
-    Code.expect(resp3.statusCode).equal(403)
+    expect(resp3.statusCode).equal(403)
   })
 
   lab.test('Get telephoneCode fails gracefully for bad userId provided', {timeout: 5000}, async function () {
@@ -444,14 +429,14 @@ lab.experiment("User manipulation", function () {
       method: 'GET',
       headers: authHeaders.super
     })
-    Code.expect(resp1.statusCode).equal(404)
+    expect(resp1.statusCode).equal(404)
 
     let resp2 = await server.inject({
       url: `/user/abc/telephoneCode`,
       method: 'GET',
       headers: authHeaders.super
     })
-    Code.expect(resp2.statusCode).equal(400)
+    expect(resp2.statusCode).equal(400)
   })
 
   lab.test('Get User info for admins', {timeout: 5000}, async function () {
@@ -504,20 +489,19 @@ lab.experiment("User manipulation", function () {
       headers: authHeaders.super
     })
 
-    Code.expect(noLoginResponse.statusCode).equal(403)
-    Code.expect(badTokenResponse.statusCode).equal(403)
-    Code.expect(userResponse.statusCode).equal(403)
-    Code.expect(badUserResponse.statusCode).equal(404)
+    expect(noLoginResponse.statusCode).equal(403)
+    expect(badTokenResponse.statusCode).equal(403)
+    expect(userResponse.statusCode).equal(403)
+    expect(badUserResponse.statusCode).equal(404)
 
-    Code.expect(adminResponse.statusCode).equal(200)
-    Code.expect(superAdminResponse.statusCode).equal(200)
+    expect(adminResponse.statusCode).equal(200)
+    expect(superAdminResponse.statusCode).equal(200)
 
-    Code.expect(adminResponse.result.id).equal(userInst.id)
-    Code.expect(superAdminResponse.result.id).equal(userInst.id)
+    expect(adminResponse.result.id).equal(userInst.id)
+    expect(superAdminResponse.result.id).equal(userInst.id)
   })
 
   lab.test('Email verification hooks', async function () {
-    const {expect} = Code
     const email1 = randomEmail()
     const email2 = randomEmail()
 
@@ -534,7 +518,6 @@ lab.experiment("User manipulation", function () {
   })
 
   lab.test('Create push notification tag', async function () {
-    const {expect} = Code
     const userInst = await models.User.create({
       email: `testuser${new Date().getTime()}@example.com`,
       name: "Test user",
@@ -556,7 +539,6 @@ lab.experiment("User manipulation", function () {
   })
 
   lab.test('Send push notification', {timeout: 10000}, async function () {
-    const {expect} = Code
     const userInst = await models.User.create({
       email: `testuser${new Date().getTime()}@example.com`,
       name: "Test user",

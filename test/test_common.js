@@ -1,10 +1,8 @@
-var Code = require("code")
-var config = require("../src/config")
-var testData = require("./test_data")
+const {expect} = require("code")
 import _ from "lodash"
 import jwt from "jsonwebtoken"
 import * as Payment from '../src/lib/transactions/payment'
-const {db, models} = require("../src/lib/core/dbschema")()
+const {models} = require("../src/lib/core/dbschema")()
 const events = require('../src/lib/events/events')
 
 export async function loginAs (type, options) {
@@ -29,7 +27,7 @@ export async function loginAs (type, options) {
     }
     return {result: {sessionToken: adminInst.makeToken()}, statusCode: 200}
   } else if (type === 'user') {
-    var tokenPayload = {role: 'user'}
+    tokenPayload = {role: 'user'}
     if (typeof options === 'number') {
       _.extend(tokenPayload, {userId: options})
     } else {
@@ -40,7 +38,7 @@ export async function loginAs (type, options) {
       name: `TestDriver${Date.now()}`,
       telephone: `TestDriver${Date.now()}`,
     })
-    var tokenPayload = {
+    tokenPayload = {
       role: 'driver',
       driverId: driverInst.id,
     }
@@ -102,8 +100,7 @@ export async function createStripeToken (cardNo) {
     exp_month: "12",
     exp_year: "2017",
     cvc: "123"
-  })
-  .then(stripeToken => stripeToken.id)
+  }).then(stripeToken => stripeToken.id)
 }
 
 export function expectEvent (eventName, params) {
@@ -112,7 +109,7 @@ export function expectEvent (eventName, params) {
     async check () {
       // Delay a while, let the event be propagated
       await new Promise(resolve => setTimeout(resolve, 1000))
-      Code.expect(this.isEmitted).true()
+      expect(this.isEmitted).true()
       this.remove()
     },
     remove: null
@@ -162,12 +159,11 @@ export async function resetTripInstances (models, tripInstances) {
       where: { boardStopId: stop.id }
     }))
 
-  const resetTrip = trip =>
-    Promise.all(destroyTickets(trip))
-           .then(() => models.Trip.update(
-             { seatsAvailable: trip.capacity },
-             { where: { id: trip.id } }
-           ))
+  const resetTrip = trip => Promise.all(destroyTickets(trip))
+    .then(() => models.Trip.update(
+      { seatsAvailable: trip.capacity },
+      { where: { id: trip.id } }
+    ))
 
   return Promise.all(tripInstances.map(resetTrip))
 }

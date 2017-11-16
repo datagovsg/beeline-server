@@ -1,22 +1,23 @@
 var Lab = require("lab")
 export var lab = Lab.script()
 
-var Code = require("code")
-var server = require("../src/index.js")
-var common = require("../src/lib/util/common")
+const {expect} = require("code")
+var server = require("../src/index")
 
-const {db, models: m} = require("../src/lib/core/dbschema")()
-import _ from 'lodash'
-import {loginAs, defaultErrorHandler} from './test_common'
+const {models: m} = require("../src/lib/core/dbschema")()
 
 lab.experiment("Vehicle manipulation", function () {
-  var authHeaders
-
+  var destroyList = []
   lab.before({timeout: 10000}, async function () {
   })
 
+  lab.after({timeout: 10000}, async function () {
+    for (let it of destroyList.reverse()) {
+      await it.destroy() // eslint-disable-line no-await-in-loop
+    }
+  })
+
   lab.test("Pair vehicle", async function () {
-    var destroyList = []
     var companyInstance = await m.TransportCompany.create({
       name: "Test Transport Company"
     })
@@ -43,12 +44,12 @@ lab.experiment("Vehicle manipulation", function () {
       headers: authHeaders
     })
     var vehicle = response.result
-    Code.expect(response.statusCode).to.equal(200)
-    Code.expect(vehicle).to.contain("id")
-    Code.expect(vehicle.driverId).to.equal(driver.id)
+    expect(response.statusCode).to.equal(200)
+    expect(vehicle).to.contain("id")
+    expect(vehicle.driverId).to.equal(driver.id)
 
-      // No duplicates!
-    var response = await server.inject({
+    // No duplicates!
+    response = await server.inject({
       method: "POST",
       url: "/vehicles",
       payload: {
@@ -56,35 +57,30 @@ lab.experiment("Vehicle manipulation", function () {
       },
       headers: authHeaders
     })
-    var vehicle2 = response.result
-    Code.expect(response).to.not.equal(200)
+    expect(response).to.not.equal(200)
 
-      // Update is not strictly speaking necessary is it?
-      // FIXME: HAPI does not support testing file upload
-//            var identicon = Identicon.generateSync({
-//                id: 'RandomTest' + Math.random(),
-//                size: 100,
-//            });
-//            var response = await server.inject({
-//                method: 'POST',
-//                url: '/vehicles/' + vehicle.id + '/photo',
-//                payload: {
-//
-//                },
-//
-//            });
+    // Update is not strictly speaking necessary is it?
+    // FIXME: HAPI does not support testing file upload
+    //            var identicon = Identicon.generateSync({
+    //                id: 'RandomTest' + Math.random(),
+    //                size: 100,
+    //            });
+    //            var response = await server.inject({
+    //                method: 'POST',
+    //                url: '/vehicles/' + vehicle.id + '/photo',
+    //                payload: {
+    //
+    //                },
+    //
+    //            });
 
-      // Delete
-    var response = await server.inject({
+    // Delete
+    response = await server.inject({
       method: "DELETE",
       url: "/vehicles/" + vehicle.id,
       headers: authHeaders
     })
-    var vehicle = response.result
-    Code.expect(response.statusCode).to.equal(200)
-
-    for (let it of destroyList.reverse()) {
-      await it.destroy()
-    }
+    vehicle = response.result
+    expect(response.statusCode).to.equal(200)
   })
 })

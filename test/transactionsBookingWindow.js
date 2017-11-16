@@ -1,7 +1,7 @@
 const Lab = require("lab")
 const lab = exports.lab = Lab.script()
 
-const Code = require("code")
+const {expect} = require('code')
 const server = require("../src/index.js")
 const _ = require("lodash")
 
@@ -22,7 +22,7 @@ lab.experiment("Transactions", function () {
       await createUsersCompaniesRoutesAndTrips(models, prices))
 
     var loginResponse = await loginAs("user", user.id)
-    Code.expect(loginResponse.statusCode).to.equal(200)
+    expect(loginResponse.statusCode).to.equal(200)
 
     authHeaders = {
       authorization: "Bearer " + loginResponse.result.sessionToken
@@ -61,7 +61,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -76,7 +76,7 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).equal(200)
+    expect(saleResponse.statusCode).equal(200)
   })
 
 
@@ -88,7 +88,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now - 600000)
@@ -103,7 +103,7 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).equal(200)
+    expect(saleResponse.statusCode).equal(200)
   })
 
 
@@ -115,7 +115,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now - 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -130,7 +130,7 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).not.equal(200)
+    expect(saleResponse.statusCode).not.equal(200)
   })
 
 
@@ -142,7 +142,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 10000)
     tripInstances[0].tripStops[1].set('time', now + 10000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -157,7 +157,7 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).not.equal(200)
+    expect(saleResponse.statusCode).not.equal(200)
   })
 
   lab.test("Booking window by stop. 10s success", async function () {
@@ -168,7 +168,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 20000)
     tripInstances[0].tripStops[1].set('time', now + 20000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -183,7 +183,7 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).equal(200)
+    expect(saleResponse.statusCode).equal(200)
   })
 
   lab.test("Booking window by firstStop. 10s success", async function () {
@@ -194,7 +194,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 20000)
     tripInstances[0].tripStops[1].set('time', now + 20000)
     tripInstances[0].tripStops[2].set('time', now + 20000)
@@ -209,7 +209,7 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).equal(200)
+    expect(saleResponse.statusCode).equal(200)
   })
 
   lab.test("Booking window by firstStop. 10s failure", async function () {
@@ -220,7 +220,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].save()
     var now = Date.now()
 
-      // ensure success
+    // ensure success
     tripInstances[0].tripStops[0].set('time', now + 600000)
     tripInstances[0].tripStops[1].set('time', now + 600000)
     tripInstances[0].tripStops[2].set('time', now + 600000)
@@ -235,8 +235,8 @@ lab.experiment("Transactions", function () {
       headers: authHeaders
     })
 
-    Code.expect(saleResponse.statusCode).not.equal(200)
-    Code.expect(saleResponse.result.message)
-        .to.include(new Date(now).toLocaleTimeString({ timeZone: 'Asia/Singapore' }))
+    expect(saleResponse.statusCode).not.equal(200)
+    expect(saleResponse.result.message)
+      .to.include(new Date(now).toLocaleTimeString({ timeZone: 'Asia/Singapore' }))
   })
 })

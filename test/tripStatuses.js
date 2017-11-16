@@ -1,24 +1,17 @@
+/* eslint no-await-in-loop: 0 */
 var Lab = require("lab")
 export var lab = Lab.script()
 
-var Code = require("code")
+const {expect} = require("code")
 var server = require("../src/index.js")
-var common = require("../src/lib/util/common")
 
-const {db, models: m} = require("../src/lib/core/dbschema")()
-import _ from 'lodash'
-import qs from "querystring"
-import {loginAs, defaultErrorHandler} from './test_common'
+const {models: m} = require("../src/lib/core/dbschema")()
 
 lab.experiment("TripStatus manipulation", function () {
-  var authHeaders
   var destroyList = []
   var driver, vehicle, trip, company
 
   lab.before({timeout: 10000}, async function () {
-    var err
-
-
     company = await m.TransportCompany.create({
       name: "Test Transport Company"
     })
@@ -66,12 +59,12 @@ lab.experiment("TripStatus manipulation", function () {
 
     var statuses = ["OK", "+5min", "+15min", "+30min"]
 
-      // Trip status can be updated by the driver,
-      // provided he is the driver for the trip
+    // Trip status can be updated by the driver,
+    // provided he is the driver for the trip
     trip.driverId = driver.id
     await trip.save()
 
-      // create some tripStatuses...
+    // create some tripStatuses...
     for (let status of statuses) {
       var response = await server.inject({
         method: "POST",
@@ -82,20 +75,20 @@ lab.experiment("TripStatus manipulation", function () {
         headers: authHeaders
       })
       var tripStatus = response.result
-      Code.expect(response.statusCode).to.equal(200)
-      Code.expect(tripStatus).to.contain("id")
-      Code.expect(tripStatus.time).to.exist()
-      Code.expect(tripStatus.creator).to.exist()
+      expect(response.statusCode).to.equal(200)
+      expect(tripStatus).to.contain("id")
+      expect(tripStatus.time).to.exist()
+      expect(tripStatus.creator).to.exist()
     }
 
-      // GET tripStatuses?
-    var response = await server.inject({
+    // GET tripStatuses?
+    response = await server.inject({
       method: "GET",
       url: "/trips/" + trip.id + "/statuses"
     })
     for (let status of statuses) {
-      Code.expect(response.result.map(x => x.status)).to.include(status)
+      expect(response.result.map(x => x.status)).to.include(status)
     }
-    Code.expect(response.result.length).to.equal(statuses.length)
+    expect(response.result.length).to.equal(statuses.length)
   })
 })

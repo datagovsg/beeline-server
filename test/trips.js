@@ -1,6 +1,6 @@
 const Lab = require("lab")
 const lab = exports.lab = Lab.script()
-const Code = require("code")
+const {expect, fail} = require('code')
 
 const server = require("../src/index.js")
 const {db, models: m} = require("../src/lib/core/dbschema")()
@@ -34,7 +34,7 @@ lab.experiment("Trip manipulation", function () {
       }
     )
 
-    Code.expect(response.statusCode).to.equal(200)
+    expect(response.statusCode).to.equal(200)
     authHeaders = {
       authorization: "Bearer " + response.result.sessionToken
     }
@@ -101,7 +101,7 @@ lab.experiment("Trip manipulation", function () {
 
   lab.test("Dates in postgres are coerced to UTC timezone", async function () {
     var result = await db.query(`SELECT '2016-01-01'::date AS a`, {type: db.QueryTypes.SELECT})
-    Code.expect(result[0].a.valueOf()).equal(new Date('2016-01-01T00:00:00Z').valueOf())
+    expect(result[0].a.valueOf()).equal(new Date('2016-01-01T00:00:00Z').valueOf())
   })
 
   lab.test("Get trips", function () {
@@ -110,7 +110,7 @@ lab.experiment("Trip manipulation", function () {
       url: "/trips",
       headers: authHeaders
     }).then((resp) => {
-      Code.expect(resp.statusCode).to.equal(200)
+      expect(resp.statusCode).to.equal(200)
     })
   })
 
@@ -153,19 +153,19 @@ lab.experiment("Trip manipulation", function () {
 
     var compareResponses = function (a, b) {
       // check object equality...
-      Code.expect(a.capacity).to.equal(b.capacity)
-      // Code.expect(a.transportCompanyId).to.equal(b.transportCompanyId)
-      Code.expect(a.driverId).to.equal(b.driverId)
-      Code.expect(a.vehicleId).to.equal(b.vehicleId)
-      Code.expect(a.price).to.equal(b.price)
-      Code.expect(a.status).to.equal(b.status)
-      Code.expect(a.tripStops.length).to.equal(b.tripStops.length)
-      Code.expect(new Date(a.date).getTime()).to.equal(b.date)
+      expect(a.capacity).to.equal(b.capacity)
+      // expect(a.transportCompanyId).to.equal(b.transportCompanyId)
+      expect(a.driverId).to.equal(b.driverId)
+      expect(a.vehicleId).to.equal(b.vehicleId)
+      expect(a.price).to.equal(b.price)
+      expect(a.status).to.equal(b.status)
+      expect(a.tripStops.length).to.equal(b.tripStops.length)
+      expect(new Date(a.date).getTime()).to.equal(b.date)
 
-      Code.expect(a.seatsAvailable).to.equal(b.capacity)
+      expect(a.seatsAvailable).to.equal(b.capacity)
 
       for (var i = 0; i < 4; i++) {
-        Code.expect(a.tripStops.filter((ts) => {
+        expect(a.tripStops.filter((ts) => {
           return ts.stopId === b.tripStops[i].stopId
         }).length).to.equal(1)
       }
@@ -173,9 +173,9 @@ lab.experiment("Trip manipulation", function () {
 
     var postResponse = await server.inject(options)
 
-    Code.expect(postResponse.statusCode).to.equal(200)
+    expect(postResponse.statusCode).to.equal(200)
     // check object equality...
-    Code.expect(postResponse.result).to.include("id")
+    expect(postResponse.result).to.include("id")
     compareResponses(postResponse.result, trip)
 
     var getResponse = await server.inject({
@@ -189,13 +189,13 @@ lab.experiment("Trip manipulation", function () {
       var thisStop = getResponse.result.tripStops[i]
       var nextStop = getResponse.result.tripStops[i + 1]
 
-      Code.expect(new Date(thisStop.time).getTime())
+      expect(new Date(thisStop.time).getTime())
         .to.be.lessThan(new Date(nextStop.time).getTime())
     }
 
-    Code.expect(getResponse.statusCode).to.equal(200)
+    expect(getResponse.statusCode).to.equal(200)
     // check object equality...
-    Code.expect(getResponse.result).to.include("id")
+    expect(getResponse.result).to.include("id")
     compareResponses(getResponse.result, trip)
 
     // Check trip PUT
@@ -212,9 +212,9 @@ lab.experiment("Trip manipulation", function () {
         tripStops: getResponse.result.tripStops
       }, trip), ['routeId', 'date'])
     })
-    Code.expect(putResponse.result.bookingInfo.childTicketPrice).equal(2)
-    Code.expect(putResponse.result.bookingInfo.windowType).equal('firstStop')
-    Code.expect(putResponse.result.bookingInfo.windowSize).equal(30000)
+    expect(putResponse.result.bookingInfo.childTicketPrice).equal(2)
+    expect(putResponse.result.bookingInfo.windowType).equal('firstStop')
+    expect(putResponse.result.bookingInfo.windowSize).equal(30000)
 
     var deleteResponse = await server.inject({
       method: "DELETE",
@@ -222,7 +222,7 @@ lab.experiment("Trip manipulation", function () {
       headers: authHeaders
     })
 
-    Code.expect(deleteResponse.statusCode).to.equal(200)
+    expect(deleteResponse.statusCode).to.equal(200)
   })
 
   const testCapacityChange = options => async function () {
@@ -253,15 +253,15 @@ lab.experiment("Trip manipulation", function () {
       headers: authHeaders,
       payload: payload,
     })
-    Code.expect(putResponse.statusCode).equal(options.statusCode)
+    expect(putResponse.statusCode).equal(options.statusCode)
     if (options.statusCode === 200) {
-      Code.expect(putResponse.result.capacity).equal(initialCapacity + capacityChange)
-      Code.expect(putResponse.result.seatsAvailable).equal(options.expectedSeatsAvailable)
+      expect(putResponse.result.capacity).equal(initialCapacity + capacityChange)
+      expect(putResponse.result.seatsAvailable).equal(options.expectedSeatsAvailable)
 
       const trip = await m.Trip.findById(tripInst.id)
 
-      Code.expect(trip.capacity).equal(initialCapacity + capacityChange)
-      Code.expect(trip.seatsAvailable).equal(options.expectedSeatsAvailable)
+      expect(trip.capacity).equal(initialCapacity + capacityChange)
+      expect(trip.seatsAvailable).equal(options.expectedSeatsAvailable)
     }
   }
 
@@ -316,7 +316,7 @@ lab.experiment("Trip manipulation", function () {
         payload: payloadWithDate,
       })
 
-      Code.expect(putResponse.statusCode).equal(400)
+      expect(putResponse.statusCode).equal(400)
 
       await ticketInst.destroy()
 
@@ -327,13 +327,12 @@ lab.experiment("Trip manipulation", function () {
         payload: payloadWithDate,
       })
 
-      Code.expect(putResponse2.statusCode).equal(200)
+      expect(putResponse2.statusCode).equal(200)
     }
   )
 
   lab.test('Message passengers', async function () {
     const {tripInst} = await createStopsTripsUsersTickets(company.id)
-    const {expect} = Code
 
     const sendSMSStub = sandbox.stub(sms, 'sendSMS', async function (options) {})
 
@@ -376,7 +375,6 @@ lab.experiment("Trip manipulation", function () {
 
   lab.test('Messages should be from BeelineSG by default', async function () {
     const {tripInst} = await createStopsTripsUsersTickets(company.id)
-    const {expect} = Code
 
     const sendSMSStub = sandbox.stub(sms, 'sendSMS', async function (options) {
       expect(options.message.from).equal('BeelineSG')
@@ -393,7 +391,6 @@ lab.experiment("Trip manipulation", function () {
       smsOpCode: smsOpCode,
     })
     const {tripInst} = await createStopsTripsUsersTickets(smsCompany.id)
-    const {expect} = Code
 
     const sendSMSStub = sandbox.stub(sms, 'sendSMS', async function (options) {
       expect(options.message.from).equal(smsOpCode)
@@ -409,7 +406,7 @@ lab.experiment("Trip manipulation", function () {
       name: "XYZ Company",
       smsOpCode: smsOpCode,
     })
-    const {expect} = Code
+
     const {tripInst, userInst} = await createStopsTripsUsersTickets(smsCompany.id)
 
     const message = 'This is a test run'
@@ -474,8 +471,8 @@ lab.experiment("Trip manipulation", function () {
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
       headers
     })
-    Code.expect(ticketReport.statusCode).equal(200)
-    Code.expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
+    expect(ticketReport.statusCode).equal(200)
+    expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
 
     // Dates not OK
     ticketReport = await server.inject({
@@ -486,7 +483,7 @@ lab.experiment("Trip manipulation", function () {
         }, defaultQuery)),
       headers
     })
-    Code.expect(ticketReport.statusCode).equal(400)
+    expect(ticketReport.statusCode).equal(400)
   })
 
   lab.test('Querying by ticket id works', async function () {
@@ -519,9 +516,9 @@ lab.experiment("Trip manipulation", function () {
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
       headers
     })
-    Code.expect(ticketReport.statusCode).equal(200)
-    Code.expect(ticketReport.result.rows.length).equal(1)
-    Code.expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
+    expect(ticketReport.statusCode).equal(200)
+    expect(ticketReport.result.rows.length).equal(1)
+    expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
   })
 
   lab.test('CSV reporting works', async function () {
@@ -561,9 +558,9 @@ lab.experiment("Trip manipulation", function () {
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
       headers
     })
-    Code.expect(ticketReport.headers['content-type']).startsWith('text/csv')
-    Code.expect(ticketReport.statusCode).equal(200)
-    Code.expect(ticketReport.result.split('\n').length).least(3)
+    expect(ticketReport.headers['content-type']).startsWith('text/csv')
+    expect(ticketReport.statusCode).equal(200)
+    expect(ticketReport.result.split('\n').length).least(3)
   })
 
   lab.test("Tickets should not be cascade deletable", async function () {
@@ -571,7 +568,7 @@ lab.experiment("Trip manipulation", function () {
 
     await tripInst.destroy()
       .then(() => {
-        Code.fail("Trip instance should not have been successfully destroyed")
+        fail("Trip instance should not have been successfully destroyed")
       }, () => {
         console.log('Test passed: ticket prevented trip destruction')
       })
@@ -583,7 +580,7 @@ lab.experiment("Trip manipulation", function () {
       url: '/trips/44444444',
     })
 
-    Code.expect(response.statusCode).equal(404)
+    expect(response.statusCode).equal(404)
   })
 
   lab.test("Invalid trip DELETE request -> 404", async function () {
@@ -600,6 +597,6 @@ lab.experiment("Trip manipulation", function () {
       headers,
     })
 
-    Code.expect(response.statusCode).equal(404)
+    expect(response.statusCode).equal(404)
   })
 })
