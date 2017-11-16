@@ -384,47 +384,6 @@ export function register (server, options, next) {
     return routePassItems
   }
 
-  const addBoardStopMetadataTo = async (db, routePassItems) => {
-    const ids = _(routePassItems)
-      .filter(r => r.transaction.type === 'ticketPurchase')
-      .map(r => r.id)
-      .value()
-    if (ids.length === 0) {
-      return routePassItems
-    }
-    const boardStopMetadata = await db
-      .query(
-        `SELECT
-          ti."id",
-          "tripStops".time
-        FROM
-          "transactionItems" "ticketSale",
-          "tickets",
-          "tripStops",
-          "transactionItems" ti
-        WHERE
-          "ticketSale"."transactionId" = ti."transactionId"
-          AND "ticketSale"."itemType" = 'ticketSale'
-          AND "ticketSale"."itemId" = "tickets"."id"
-          AND "tickets"."boardStopId" = "tripStops".id
-          AND ti.id in (:ids)
-        `,
-        { type: db.QueryTypes.SELECT, replacements: { ids } }
-      )
-      .then(keyBy('id'))
-    routePassItems.forEach(r => {
-      const boardStop = boardStopMetadata[r.id]
-      if (boardStop) {
-        // Use the Sri Lanka locale for ISO date format, ensuring
-        // that timezone is set to Singapore
-        const tripDate = boardStop.time.toLocaleDateString('si-LK', {timeZone: 'Asia/Singapore'})
-        _.assign(r, { tripDate })
-      }
-      return r
-    })
-    return routePassItems
-  }
-
   server.route({
     method: "GET",
     path: "/companies/{companyId}/transaction_items/route_passes",
@@ -454,7 +413,6 @@ export function register (server, options, next) {
           transaction,
         }).then(passes => passes.map(r => r.toJSON()))
         await addRouteMetadataTo(db, routePassItems)
-        await addBoardStopMetadataTo(db, routePassItems)
         return addPaymentMetadataTo(db, routePassItems)
       }
 
@@ -469,7 +427,6 @@ export function register (server, options, next) {
         'routePass.id',
         'routePass.expiresAt', 'routePass.status',
         'routePass.notes.ticketId',
-        'tripDate',
         'routePass.route.label', 'routePass.route.name',
         'routePass.tag',
         'routePass.user.name',
