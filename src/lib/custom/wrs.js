@@ -718,7 +718,7 @@ export function register (server, options, next) {
     const routePassPurchaseDescriptionTuples = await db.query(
       `SELECT
         "ticketSale"."itemId" AS "ticketId",
-        "transactions".description as "routePassPurchaseDescription"
+        "transactions".description || ' [txn ' || "routePassSale"."transactionId" || ']' as "routePassPurchaseDescription"
       FROM
         "transactionItems" "ticketSale"
         INNER JOIN "transactionItems" "routePass" ON "routePass"."transactionId" = "ticketSale"."transactionId" AND "routePass"."itemType" = 'routePass'
