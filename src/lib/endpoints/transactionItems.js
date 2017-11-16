@@ -1,19 +1,26 @@
-const _ = require("lodash")
-const Joi = require("joi")
-const Boom = require("boom")
+const _ = require('lodash')
+const Joi = require('joi')
+const Boom = require('boom')
 const stream = require('stream')
 const fastCSV = require('fast-csv')
+const moment = require('moment-timezone')
 
-const {getModels, getDB, defaultErrorHandler, InvalidArgumentError} = require("../util/common")
+const {getModels, getDB, defaultErrorHandler, InvalidArgumentError} = require('../util/common')
 
 import fs from 'fs'
 import Handlebars from 'handlebars'
 import path from 'path'
 import * as auth from '../core/auth'
-import leftPad from 'left-pad'
 import BlueBird from 'bluebird'
 
 export function register (server, options, next) {
+  const toSGTDateString = date => moment(date)
+    .tz('Asia/Singapore')
+    .format('YYYY-MM-DD')
+
+  const sgtStringIfDate = value => value instanceof Date
+    ? toSGTDateString(value) : value
+
   server.route({
     method: "GET",
     path: "/transaction_items",
@@ -195,17 +202,7 @@ export function register (server, options, next) {
           }).transform((row) => {
             var rv = {}
             for (let f of fields) {
-              let value = _.get(row, f)
-              if (value instanceof Date) {
-                rv[f] = `${leftPad(value.getFullYear(), 4, '0')}-` +
-                    `${leftPad(value.getMonth() + 1, 2, '0')}-` +
-                    `${leftPad(value.getDate(), 2, '0')} ` +
-                    `${leftPad(value.getHours(), 2, '0')}:` +
-                    `${leftPad(value.getMinutes(), 2, '0')}:` +
-                    `${leftPad(value.getSeconds(), 2, '0')}`
-              } else {
-                rv[f] = value
-              }
+              rv[f] = sgtStringIfDate(_.get(row, f))
             }
             return rv
           })
@@ -384,6 +381,45 @@ export function register (server, options, next) {
     return routePassItems
   }
 
+  const addBoardStopMetadataTo = async (db, routePassItems) => {
+    const ids = _(routePassItems)
+      .filter(r => r.transaction.type === 'ticketPurchase')
+      .map(r => r.id)
+      .value()
+    if (ids.length === 0) {
+      return routePassItems
+    }
+    const boardStopMetadata = await db
+      .query(
+        `SELECT
+          ti."id",
+          "tripStops".time
+        FROM
+          "transactionItems" "ticketSale",
+          "tickets",
+          "tripStops",
+          "transactionItems" ti
+        WHERE
+          "ticketSale"."transactionId" = ti."transactionId"
+          AND "ticketSale"."itemType" = 'ticketSale'
+          AND "ticketSale"."itemId" = "tickets"."id"
+          AND "tickets"."boardStopId" = "tripStops".id
+          AND ti.id in (:ids)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
+      )
+      .then(keyBy('id'))
+    routePassItems.forEach(r => {
+      const boardStop = boardStopMetadata[r.id]
+      if (boardStop) {
+        const tripDate = toSGTDateString(boardStop.time)
+        _.assign(r, { tripDate })
+      }
+      return r
+    })
+    return routePassItems
+  }
+
   server.route({
     method: "GET",
     path: "/companies/{companyId}/transaction_items/route_passes",
@@ -413,6 +449,7 @@ export function register (server, options, next) {
           transaction,
         }).then(passes => passes.map(r => r.toJSON()))
         await addRouteMetadataTo(db, routePassItems)
+        await addBoardStopMetadataTo(db, routePassItems)
         return addPaymentMetadataTo(db, routePassItems)
       }
 
@@ -427,6 +464,7 @@ export function register (server, options, next) {
         'routePass.id',
         'routePass.expiresAt', 'routePass.status',
         'routePass.notes.ticketId',
+        'tripDate',
         'routePass.route.label', 'routePass.route.name',
         'routePass.tag',
         'routePass.user.name',
@@ -437,10 +475,8 @@ export function register (server, options, next) {
       ]
 
       const routePassJSONToCSV = row => {
-        const isoStringIfDate = value => value instanceof Date
-          ? value.toISOString() : value
         const csv = _(routePassCSVFields)
-          .map(f => [f, isoStringIfDate(_.get(row, f))])
+          .map(f => [f, sgtStringIfDate(_.get(row, f))])
           .fromPairs()
           .value()
         return csv
