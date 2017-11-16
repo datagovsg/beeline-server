@@ -545,6 +545,7 @@ export function register (server, options, next) {
 
       'ticketRefund.transaction.description',
       'ticketExpense.transaction.description',
+      'routePassPurchaseDescription',
 
       'boardStop.trip.date',
       'user.name',
@@ -626,7 +627,7 @@ export function register (server, options, next) {
         q.limit = batchSize
 
         const tickets = await m.Ticket.findAll(q) // eslint-disable-line no-await-in-loop
-        await augmentTicketsWithTransactionItems(m, tickets, { // eslint-disable-line no-await-in-loop
+        await augmentTicketsWithTransactionItems({m, db}, tickets, { // eslint-disable-line no-await-in-loop
           transaction: t,
         })
 
@@ -665,7 +666,7 @@ export function register (server, options, next) {
   // Given tickets, augment with
   // - ticketSale / ticketRefund / ticketExpense transactions
   // - Further augment with discount transactions
-  async function augmentTicketsWithTransactionItems (m, rows, options = {}) {
+  async function augmentTicketsWithTransactionItems ({m, db}, rows, options = {}) {
     const ticketIds = _.uniq(rows.map(r => r.id))
 
     // Transaction Item
@@ -714,13 +715,38 @@ export function register (server, options, next) {
       }
     }
 
+    const routePassPurchaseDescriptionTuples = await db.query(
+      `SELECT
+        "ticketSale"."itemId" AS "ticketId",
+        "transactions".description as "routePassPurchaseDescription"
+      FROM
+        "transactionItems" "ticketSale"
+        INNER JOIN "transactionItems" "routePass" ON "routePass"."transactionId" = "ticketSale"."transactionId" AND "routePass"."itemType" = 'routePass'
+        INNER JOIN "transactionItems" "routePassSale" ON "routePassSale"."itemId" = "routePass"."itemId" AND "routePassSale"."itemType" = 'routePass'
+        INNER JOIN "transactions" ON "routePassSale"."transactionId" = "transactions".id
+      WHERE
+        "transactions".type in ('routePassPurchase', 'freeRoutePass')
+        AND "ticketSale"."itemType" = 'ticketSale'
+        AND "ticketSale"."itemId" in (:ticketIds)
+      `,
+      { type: db.QueryTypes.SELECT, replacements: { ticketIds } }
+    )
+
+    const routePassPurchaseDescriptionByTicketId = _(routePassPurchaseDescriptionTuples)
+      .map(({ticketId, routePassPurchaseDescription}) => [ticketId, routePassPurchaseDescription])
+      .fromPairs()
+      .value()
+
     // match them...
     for (let ticket of rows) {
-      let relatedDiscountItem = discountItemsByTicketId[ticket.id]
-
-      if (!relatedDiscountItem) continue
-
-      ticket.dataValues['discount'] = relatedDiscountItem
+      const relatedDiscountItem = discountItemsByTicketId[ticket.id]
+      if (relatedDiscountItem) {
+        ticket.dataValues.discount = relatedDiscountItem
+      }
+      const routePassPurchaseDescription = routePassPurchaseDescriptionByTicketId[ticket.id]
+      if (routePassPurchaseDescription) {
+        ticket.dataValues.routePassPurchaseDescription = routePassPurchaseDescription
+      }
     }
   }
 
@@ -745,7 +771,7 @@ export function register (server, options, next) {
     ])
 
     // Now load the transaction item, and transaction
-    await augmentTicketsWithTransactionItems(m, rows)
+    await augmentTicketsWithTransactionItems({m, db}, rows)
 
     var tickets = rows.map(t => t.toJSON())
 
