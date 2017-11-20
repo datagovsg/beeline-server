@@ -41,7 +41,7 @@ export function defaultErrorHandler (cb) {
       return cb(boom.forbidden(err.message))
     }
 
-    cb(boom.badImplementation(err))
+    return cb(boom.badImplementation(err))
   }
 }
 
