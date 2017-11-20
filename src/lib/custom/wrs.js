@@ -545,7 +545,10 @@ export function register (server, options, next) {
 
       'ticketRefund.transaction.description',
       'ticketExpense.transaction.description',
-      'routePassPurchaseDescription',
+
+      'routePass.transactionId',
+      'routePass.id',
+      'routePass.discount',
 
       'boardStop.trip.date',
       'user.name',
@@ -715,10 +718,12 @@ export function register (server, options, next) {
       }
     }
 
-    const routePassPurchaseDescriptionTuples = await db.query(
+    const routePassMetadataTuples = await db.query(
       `SELECT
         "ticketSale"."itemId" AS "ticketId",
-        "transactions".description || ' [txn ' || "routePassSale"."transactionId" || ']' as "routePassPurchaseDescription"
+        "routePassSale"."transactionId",
+        "routePassSale"."itemId" as "id",
+        "routePassSale".notes->'routePass'->'notes'->'discountValue' as discount
       FROM
         "transactionItems" "ticketSale"
         INNER JOIN "transactionItems" "routePass" ON "routePass"."transactionId" = "ticketSale"."transactionId" AND "routePass"."itemType" = 'routePass'
@@ -732,8 +737,8 @@ export function register (server, options, next) {
       { type: db.QueryTypes.SELECT, replacements: { ticketIds } }
     )
 
-    const routePassPurchaseDescriptionByTicketId = _(routePassPurchaseDescriptionTuples)
-      .map(({ticketId, routePassPurchaseDescription}) => [ticketId, routePassPurchaseDescription])
+    const routePassMetadataByTicketId = _(routePassMetadataTuples)
+      .map(r => [r.ticketId, r])
       .fromPairs()
       .value()
 
@@ -743,9 +748,9 @@ export function register (server, options, next) {
       if (relatedDiscountItem) {
         ticket.dataValues.discount = relatedDiscountItem
       }
-      const routePassPurchaseDescription = routePassPurchaseDescriptionByTicketId[ticket.id]
-      if (routePassPurchaseDescription) {
-        ticket.dataValues.routePassPurchaseDescription = routePassPurchaseDescription
+      const routePassMetadata = routePassMetadataByTicketId[ticket.id]
+      if (routePassMetadata) {
+        ticket.dataValues.routePass = routePassMetadata
       }
     }
   }
