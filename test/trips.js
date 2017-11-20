@@ -575,7 +575,7 @@ lab.experiment("Trip manipulation", function () {
     expect(ticketReport.statusCode).equal(200)
     expect(ticketReport.result.rows.length).equal(1)
     expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
-    expect(ticketReport.result.rows[0].routePassPurchaseDescription).exist()
+    expect(ticketReport.result.rows[0].routePass).exist()
   })
 
   lab.test('CSV reporting works', async function () {
