@@ -111,6 +111,6 @@ lab.experiment("Stop manipulation", async () => {
       url: "/stops/" + stopId,
       headers: authHeaders
     })
-    expect(resp.statusCode).to.equal(500)
+    expect(resp.statusCode).to.equal(409)
   })
 })
