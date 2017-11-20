@@ -7,6 +7,7 @@ var _ = require("lodash")
 const {models: m} = require("../src/lib/core/dbschema")()
 const server = require("../src/index.js")
 const {loginAs} = require("./test_common")
+const {createUsersCompaniesRoutesAndTrips} = require('./test_data')
 
 lab.experiment("Stop manipulation", async () => {
   var testName = "Name for Testing"
@@ -33,7 +34,7 @@ lab.experiment("Stop manipulation", async () => {
       return { authorization: "Bearer " + resp.result.sessionToken }
     })
 
-  lab.test("CRUD integration test", async () => {
+  lab.test("CRUD integration test", {timeout: 15000}, async () => {
     // CREATE
     var resp = await server.inject({
       method: "POST",
@@ -98,5 +99,18 @@ lab.experiment("Stop manipulation", async () => {
       url: "/stops/" + stopId
     })
     expect(resp.statusCode).to.equal(404)
+  })
+
+  lab.test('should throw a 500 on hitting trip stops constraint errors', {timeout: 15000}, async () => {
+    const {stopInstances} = await createUsersCompaniesRoutesAndTrips(m)
+
+    const stopId = stopInstances[0].id
+
+    const resp = await server.inject({
+      method: "DELETE",
+      url: "/stops/" + stopId,
+      headers: authHeaders
+    })
+    expect(resp.statusCode).to.equal(409)
   })
 })

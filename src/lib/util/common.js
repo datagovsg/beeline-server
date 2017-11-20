@@ -3,6 +3,8 @@ const request = require("request")
 const leftPad = require('left-pad')
 const assert = require('assert')
 const jwt = require('jsonwebtoken')
+const Sequelize = require("sequelize")
+
 const {
   SecurityError, NotFoundError,
   RateLimitError, InvalidArgumentError,
@@ -25,8 +27,6 @@ export function defaultErrorHandler (cb) {
       return cb(boom.tooManyRequests(err.message))
     } else if (err instanceof NotFoundError) {
       return cb(boom.notFound(err.message))
-    } else if (err instanceof NotFoundError) {
-      return cb(boom.notFound(err.message))
     } else if (err instanceof InvalidArgumentError) {
       return cb(boom.badRequest(err.message))
     } else if (err instanceof ChargeError) {
@@ -39,9 +39,13 @@ export function defaultErrorHandler (cb) {
       return cb(response)
     } else if (err instanceof jwt.JsonWebTokenError) {
       return cb(boom.forbidden(err.message))
+    } else if (err instanceof Sequelize.ForeignKeyConstraintError) {
+      return cb(boom.conflict(err.message))
+    } else if (err instanceof Sequelize.UniqueConstraintError) {
+      return cb(boom.conflict(err.message))
     }
 
-    cb(boom.badImplementation(err))
+    return cb(boom.badImplementation(err))
   }
 }
 
