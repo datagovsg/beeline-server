@@ -732,7 +732,7 @@ export function register (server, options, next) {
       WHERE
         "transactions".type in ('routePassPurchase', 'freeRoutePass')
         AND "ticketSale"."itemType" = 'ticketSale'
-        AND "ticketSale"."itemId" in (:ticketIds)
+        AND "ticketSale"."itemId" = ANY(ARRAY[:ticketIds]::int[])
       `,
       { type: db.QueryTypes.SELECT, replacements: { ticketIds } }
     )
