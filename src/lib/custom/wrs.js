@@ -730,7 +730,7 @@ export function register (server, options, next) {
         INNER JOIN "transactionItems" "routePassSale" ON "routePassSale"."itemId" = "routePass"."itemId" AND "routePassSale"."itemType" = 'routePass'
         INNER JOIN "transactions" ON "routePassSale"."transactionId" = "transactions".id
       WHERE
-        "transactions".type in ('routePassPurchase', 'freeRoutePass')
+        "transactions".type in ('routePassPurchase', 'freeRoutePass', 'conversion')
         AND "ticketSale"."itemType" = 'ticketSale'
         AND "ticketSale"."itemId" = ANY(ARRAY[:ticketIds]::int[])
       `,
