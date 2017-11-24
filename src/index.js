@@ -31,6 +31,7 @@ var required_variables = [
   'TWILIO_ACCOUNT_SID',
   'TWILIO_AUTH_TOKEN',
   'DATABASE_URL',
+  'AUTH0_SECRET',
 ]
 var warn_variables = [
   'STRIPE_PK',
@@ -38,8 +39,6 @@ var warn_variables = [
   'STRIPE_SK',
   'AUTH0_CID',
   'AUTH0_DOMAIN',
-  'AUTH0_SECRET',
-  'AUTH0_TOKEN_USERREAD',
 ]
 for (let v of required_variables) {
   if (!process.env[v]) {
