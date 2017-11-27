@@ -35,12 +35,6 @@ export function register (server, options, next) {
           },
           include: [
             {
-              model: m.Region,
-              attributes: {
-                exclude: ["polygon"]
-              }
-            },
-            {
               model: m.Trip,
               include: [{
                 model: m.TripStop,
@@ -48,7 +42,11 @@ export function register (server, options, next) {
               }],
               // performance optimization
               separate: true,
-            }]
+            }
+          ],
+          attributes: {
+            exclude: ['path']
+          }
         }
         if (request.query.transportCompanyId) {
           crowdstartQuery.where.transportCompanyId = request.query.transportCompanyId
