@@ -93,7 +93,7 @@ function dbLogin () {
     const parts = replica.match(/^postgres:\/\/(.+):(.+)@(.+):([0-9]{1,6})\/(.+)$/)
     assert(parts)
     const [, username, password, host, port, database] = parts
-    return {host, port: port || '5432', username, password, database}
+    return {host, port, username, password, database}
   }
   if (replicas.length > 0) {
     sequelizeOptions = {
