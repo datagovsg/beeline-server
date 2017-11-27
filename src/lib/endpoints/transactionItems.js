@@ -499,7 +499,7 @@ export function register (server, options, next) {
             .header('Content-type', 'text/csv')
             .header('content-disposition', 'attachment; filename="route_pass_report.csv"')
 
-          db.transaction(async transaction => {
+          db.transaction({readOnly: true}, async transaction => {
             const perPage = 20
             var page = 1
             var lastFetchedSize = perPage

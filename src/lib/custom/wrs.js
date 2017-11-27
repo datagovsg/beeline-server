@@ -620,7 +620,7 @@ export function register (server, options, next) {
 
     writer.pipe(io)
 
-    db.transaction(async (t) => {
+    db.transaction({readOnly: true}, async (t) => {
       let offset = 0
       let batchSize = 100
       while (true) {

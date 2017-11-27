@@ -83,7 +83,7 @@ export function register (server, options, next) {
           io.end()
         } else {
           io.write('[\n')
-          db.transaction(async (t) => {
+          db.transaction({readOnly: true}, async (t) => {
             let offset = 0
             const limit = 1000
             var numWritten = 0
