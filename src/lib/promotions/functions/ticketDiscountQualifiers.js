@@ -140,6 +140,11 @@ export const qualifyingFunctions = {
       const contactList = await transactionBuilder.models.ContactList
         .findById(validatedParams.contactListId, {transaction: transactionBuilder.transaction})
 
+      if (!contactList) {
+        console.warn(`limitByContactList - Unrecognised contact list id: ${validatedParams.contactListId}`)
+        return []
+      }
+
       const telephoneListKeyed = _.keyBy(contactList.telephones)
       const emailListKeyed = _.keyBy(contactList.emails)
 

@@ -1,5 +1,7 @@
 const _ = require('lodash')
 const Sequelize = require("sequelize")
+const assert = require('assert')
+
 const config = require("../../config")
 
 var cache = null
@@ -22,7 +24,7 @@ module.exports = function () {
 
 const ModelCache = require('./modelCache').default
 
-function genModelAndTasks (seq, Sequelize) {
+function genModelAndTasks (seq) {
   var modelCache = new ModelCache(seq)
 
   modelCache.require('TransportCompany')
@@ -78,6 +80,30 @@ function dbLogin () {
   var sequelizeOptions = _.extend({}, config.sequelizeOptions, {
     logging: process.env.SHUTUP ? false : console.log,
   })
+
+  // Find read replicas
+  let replicas = []
+  for (let key in process.env) {
+    if (key.startsWith('HEROKU_POSTGRESQL')) {
+      replicas.push(process.env[key])
+    }
+  }
+  function parseReplica (replica) {
+    // postgres URLs take the form postgres://user:password@host:port/database
+    const parts = replica.match(/^postgres:\/\/(.+):(.+)@(.+):([0-9]{1,6})\/(.+)$/)
+    assert(parts)
+    const [, username, password, host, port, database] = parts
+    return {host, port, username, password, database}
+  }
+  if (replicas.length > 0) {
+    sequelizeOptions = {
+      ...sequelizeOptions,
+      replication: {
+        read: replicas.map(parseReplica),
+        write: parseReplica(process.env.DATABASE_URL)
+      }
+    }
+  }
 
   // Throw an error if we don't have a databse url to connect to
   if (!process.env.DATABASE_URL) {
