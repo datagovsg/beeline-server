@@ -1,5 +1,7 @@
 const _ = require('lodash')
 const Sequelize = require("sequelize")
+const assert = require('assert')
+
 const config = require("../../config")
 
 var cache = null
@@ -87,7 +89,9 @@ function dbLogin () {
     }
   }
   function parseReplica (replica) {
-    let parts = replica.match(/^postgres:\/\/(.*):(.*)@(.*):([0-9]{0,6})\/(.*)$/)
+    // postgres URLs take the form postgres://user:password@host:port/database
+    const parts = replica.match(/^postgres:\/\/(.+):(.+)@(.+):([0-9]{1,6})\/(.+)$/)
+    assert(parts)
     const [, username, password, host, port, database] = parts
     return {host, port: port || '5432', username, password, database}
   }
