@@ -2,12 +2,16 @@
 var Lab = require("lab")
 export var lab = Lab.script()
 
-const {expect} = require("code")
+import {expect} from "code"
+import sinon from "sinon"
+
+import _ from 'lodash'
+import qs from "querystring"
+import axios from "axios"
+
 const server = require("../src/index.js")
 
 const {models: m} = require("../src/lib/core/dbschema")()
-import _ from 'lodash'
-import qs from "querystring"
 
 lab.experiment("Ping manipulation", function () {
   var destroyList = []
@@ -65,7 +69,7 @@ lab.experiment("Ping manipulation", function () {
       authorization: `Bearer ${driver.makeToken()}`
     }
 
-      // create some pings...
+    // create some pings...
     for (var i = 0; i < 10; i++) {
       var response = await server.inject({
         method: "POST",
@@ -165,5 +169,38 @@ lab.experiment("Ping manipulation", function () {
 
     expect(response.result.pings[0].id).to.equal(pingInstances[9].id)
     expect(response.result.statuses[0].id).to.equal(statusInstances[9].id)
+  })
+
+  lab.test("Ping is forwarded", async function () {
+    process.env.TRACKING_URL = 'https://mockurl.com'
+    const mockPost = sinon.stub(axios, 'post')
+    mockPost.returns({ catch: () => {} })
+
+    const payload = {
+      vehicleId: vehicle.id,
+      latitude: 1,
+      longitude: 103,
+    }
+    const headers = {
+      authorization: `Bearer ${driver.makeToken()}`
+    }
+
+    try {
+      await server.inject({
+        method: "POST",
+        url: `/trips/${trip.id}/pings`,
+        payload,
+        headers,
+      })
+      expect(mockPost.calledOnce).true()
+      expect(mockPost.args[0]).equal([
+        `${process.env.TRACKING_URL}/trips/${trip.id}/pings/latest`,
+        payload,
+        { headers }
+      ])
+    } finally {
+      delete process.env.TRACKING_URL
+      mockPost.restore()
+    }
   })
 })
