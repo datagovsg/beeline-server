@@ -171,7 +171,7 @@ lab.experiment("Ping manipulation", function () {
     expect(response.result.statuses[0].id).to.equal(statusInstances[9].id)
   })
 
-  lab.test("Ping is forwarded", async function () {
+  lab.test("Ping is forwarded if TRACKING_URL set", async function () {
     process.env.TRACKING_URL = 'https://mockurl.com'
     const mockPost = sinon.stub(axios, 'post')
     mockPost.returns({ catch: () => {} })
@@ -198,6 +198,33 @@ lab.experiment("Ping manipulation", function () {
         payload,
         { headers }
       ])
+    } finally {
+      delete process.env.TRACKING_URL
+      mockPost.restore()
+    }
+  })
+
+  lab.test("Ping not forwarded if TRACKING_URL unset", async function () {
+    const mockPost = sinon.stub(axios, 'post')
+    mockPost.returns({ catch: () => {} })
+
+    const payload = {
+      vehicleId: vehicle.id,
+      latitude: 1,
+      longitude: 103,
+    }
+    const headers = {
+      authorization: `Bearer ${driver.makeToken()}`
+    }
+
+    try {
+      await server.inject({
+        method: "POST",
+        url: `/trips/${trip.id}/pings`,
+        payload,
+        headers,
+      })
+      expect(mockPost.called).false()
     } finally {
       delete process.env.TRACKING_URL
       mockPost.restore()
