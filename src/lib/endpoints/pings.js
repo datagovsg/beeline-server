@@ -1,6 +1,8 @@
-var Joi = require("joi")
-var {getModels} = require("../util/common")
-var Boom = require("boom")
+const Joi = require("joi")
+const Boom = require("boom")
+const axios = require("axios")
+
+const {getModels} = require("../util/common")
 
 export function register (server, options, next) {
   server.route({
@@ -206,8 +208,20 @@ export function register (server, options, next) {
                 request.payload.latitude
               ]
             } : null
-
         })
+
+        if (process.env.TRACKING_URL) {
+          // Forward the payload asynchronously to tracking, log if error
+          axios
+            .post(
+              `${process.env.TRACKING_URL}/trips/${trip.id}/pings/latest`,
+              request.payload,
+              { headers: { authorization: request.headers.authorization } }
+            )
+            .catch(e => console.error(
+              `Failed to forward ${JSON.stringify(request.payload)} for ${trip.id}: ${e}`
+            ))
+        }
 
         reply(ping.toJSON())
       } catch (err) {
