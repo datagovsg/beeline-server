@@ -191,7 +191,7 @@ Regards,
 Beeline Team
 `
         var sendResult = await emailModule.sendMail({
-          from: `admin@$beeline.sg`,
+          from: `admin@beeline.sg`,
           to: userInst.email,
           subject: "Beeline Email Verification",
           text: message
