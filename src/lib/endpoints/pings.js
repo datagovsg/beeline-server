@@ -195,33 +195,39 @@ export function register (server, options, next) {
           return reply(Boom.badRequest("Vehicle does not belong to driver"))
         }
 
-        var ping = await m.Ping.create({
-          driverId: driver.id,
-          tripId: trip.id,
-          vehicleId: request.payload.vehicleId,
-          coordinates: (isFinite(request.payload.latitude) &&
-                        isFinite(request.payload.longitude))
-            ? {
-              type: "POINT",
-              coordinates: [
-                request.payload.longitude,
-                request.payload.latitude
-              ]
-            } : null
-        })
+        const tasks = [
+          m.Ping.create({
+            driverId: driver.id,
+            tripId: trip.id,
+            vehicleId: request.payload.vehicleId,
+            coordinates: (isFinite(request.payload.latitude) &&
+                          isFinite(request.payload.longitude))
+              ? {
+                type: "POINT",
+                coordinates: [
+                  request.payload.longitude,
+                  request.payload.latitude
+                ]
+              } : null
+          })
+        ]
 
         if (process.env.TRACKING_URL) {
-          // Forward the payload asynchronously to tracking, log if error
-          axios
-            .post(
-              `${process.env.TRACKING_URL}/trips/${trip.id}/pings/latest`,
-              request.payload,
-              { headers: { authorization: request.headers.authorization } }
-            )
-            .catch(e => console.error(
-              `Failed to forward ${JSON.stringify(request.payload)} for ${trip.id}: ${e}`
-            ))
+          // Forward the payload to tracking, log but don't throw if error
+          tasks.push(
+            axios
+              .post(
+                `${process.env.TRACKING_URL}/trips/${trip.id}/pings/latest`,
+                request.payload,
+                { headers: { authorization: request.headers.authorization } }
+              )
+              .catch(e => console.error(
+                `Failed to forward ${JSON.stringify(request.payload)} for ${trip.id}: ${e}`
+              ))
+          )
         }
+
+        const [ping] = await Promise.all(tasks)
 
         reply(ping.toJSON())
       } catch (err) {
