@@ -403,6 +403,7 @@ export function register (server, options, next) {
           "ticketSale"."transactionId" = ti."transactionId"
           AND "ticketSale"."itemType" = 'ticketSale'
           AND "ticketSale"."itemId" = "tickets"."id"
+          AND "ti"."notes"->'tickets'->"tickets"."id"::text is not null
           AND "tickets"."boardStopId" = "tripStops".id
           AND ti.id in (:ids)
         `,
