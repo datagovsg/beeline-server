@@ -2,9 +2,17 @@ const Joi = require('joi')
 const Boom = require('boom')
 const common = require('../util/common')
 const { InvalidArgumentError } = require('../util/errors')
-const { handleRequestWith, assertFound, assertThat, authorizeByRole } = require('../util/endpoints')
+const { handleRequestWith, instToJSONOrNotFound, assertFound, assertThat, authorizeByRole } = require('../util/endpoints')
 
 export function register (server, options, next) {
+  const addTripCodeToTicket = (ticket) => {
+    if (ticket) {
+      const tripCode = ticket.boardStop.trip.getCode(true)
+      ticket.setDataValue('tripCode', tripCode)
+    }
+    return ticket
+  }
+
   server.route({
     method: 'GET',
     path: '/tickets',
@@ -65,7 +73,13 @@ export function register (server, options, next) {
       }
 
       try {
-        reply((await m.Ticket.findAll(ticketQuery).map(tick => tick.toJSON())))
+        const tickets = await m.Ticket.findAll(ticketQuery)
+
+        reply(
+          tickets
+            .map(addTripCodeToTicket)
+            .map(tick => tick.toJSON())
+        )
       } catch (err) {
         reply(Boom.badImplementation(err))
       }
@@ -84,33 +98,29 @@ export function register (server, options, next) {
         }
       }
     },
-    handler: async function (request, reply) {
-      var m = common.getModels(request)
-
-      try {
-        reply((await m.Ticket.findOne({
-          where: {
-            id: request.params.id,
-            userId: request.auth.credentials.userId,
-            status: 'valid'
+    handler: handleRequestWith(
+      (ignored, request, {models}) => models.Ticket.findOne({
+        where: {
+          id: request.params.id,
+          userId: request.auth.credentials.userId,
+          status: 'valid'
+        },
+        include: [
+          {
+            model: models.TripStop,
+            as: 'boardStop',
+            include: [models.Stop, models.Trip]
           },
-          include: [
-            {
-              model: m.TripStop,
-              as: 'boardStop',
-              include: [m.Stop, m.Trip]
-            },
-            {
-              model: m.TripStop,
-              as: 'alightStop',
-              include: [m.Stop, m.Trip]
-            }
-          ]
-        })).toJSON())
-      } catch (err) {
-        reply(Boom.badImplementation(err))
-      }
-    }
+          {
+            model: models.TripStop,
+            as: 'alightStop',
+            include: [models.Stop, models.Trip]
+          }
+        ]
+      }),
+      addTripCodeToTicket,
+      instToJSONOrNotFound
+    ),
   })
 
   server.route({

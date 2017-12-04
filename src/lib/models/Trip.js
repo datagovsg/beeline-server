@@ -132,9 +132,9 @@ export default function (modelCache) {
     instanceMethods: {
       /* Returns the trip code. Will check the date if specified */
       getCode (checkDate = false) {
+        const runDate = this.date
         if (checkDate) {
           var now = Date.now()
-          var runDate = this.date
 
           if (runDate && runDate.getTime() - 8 * 60 * 60 * 1000 > now) {
             return null
