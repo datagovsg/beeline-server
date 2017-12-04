@@ -304,8 +304,7 @@ Trip's company ID and driver's company ID must match.
     }
   })
 
-  var GET_passengers
-  server.route(GET_passengers = {
+  server.route({
     method: "GET",
     path: "/trips/{id}/passengers",
     config: {
@@ -339,10 +338,6 @@ Trip's company ID and driver's company ID must match.
       }
     }
   })
-  // FOR BACKWARD COMPATIBILITY
-  server.route(_(_(GET_passengers).clone())
-    .set('path', '/trips/{id}/get_passengers')
-    .set('config.tags[1]', 'deprecated').value())
 
   server.route({
     method: "GET",
