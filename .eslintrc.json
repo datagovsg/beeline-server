@@ -57,7 +57,6 @@
         "no-octal-escape": 1,
         "no-path-concat": 1,
         "no-proto": 1,
-        "no-redeclare": 1,
         "no-return-assign": [1, "except-parens"],
         "no-self-compare": 1,
         "no-sequences": 1,
