@@ -172,7 +172,8 @@ export function register (server, options, next) {
           vehicleId: Joi.number().integer().allow(null),
           driverId: Joi.number().integer().allow(null),
 
-          tripStops: Joi.array().items({
+          // A trip has at least two stops - boarding and alighting
+          tripStops: Joi.array().min(2).items({
             stopId: Joi.number().integer().required(),
             time: Joi.date().required(),
             canBoard: Joi.boolean().required(),
@@ -426,7 +427,8 @@ Trip's company ID and driver's company ID must match.
       validate: {
         // FIXME: Use PATCH semantics for tripStops, capacity
         payload: {
-          tripStops: Joi.array().items(Joi.object({
+          // A trip has at least two stops - boarding and alighting
+          tripStops: Joi.array().min(2).items(Joi.object({
             id: Joi.number().integer().allow(null).required(),
             time: Joi.date().optional(),
             stopId: Joi.number().integer().optional(),
@@ -591,7 +593,7 @@ Trip's company ID and driver's company ID must match.
 
         await auth.assertAdminRole(request.auth.credentials, 'message-passengers', tripInst.route.transportCompanyId)
 
-        const numMessagesSent = await tripInst.messagePassengers(request.payload.message, {
+        await tripInst.messagePassengers(request.payload.message, {
           sender: request.auth.credentials.email,
         })
 
