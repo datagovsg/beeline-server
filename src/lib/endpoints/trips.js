@@ -591,7 +591,7 @@ Trip's company ID and driver's company ID must match.
 
         await auth.assertAdminRole(request.auth.credentials, 'message-passengers', tripInst.route.transportCompanyId)
 
-        const numMessagesSent = await tripInst.messagePassengers(request.payload.message, {
+        await tripInst.messagePassengers(request.payload.message, {
           sender: request.auth.credentials.email,
         })
 
