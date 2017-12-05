@@ -172,7 +172,7 @@ export function register (server, options, next) {
           vehicleId: Joi.number().integer().allow(null),
           driverId: Joi.number().integer().allow(null),
 
-          tripStops: Joi.array().items({
+          tripStops: Joi.array().min(2).items({
             stopId: Joi.number().integer().required(),
             time: Joi.date().required(),
             canBoard: Joi.boolean().required(),
