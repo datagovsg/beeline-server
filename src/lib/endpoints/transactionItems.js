@@ -377,7 +377,31 @@ export function register (server, options, next) {
         { type: db.QueryTypes.SELECT, replacements: { ids } }
       )
       .then(keyBy('id'))
-    routePassItems.forEach(r => _.assign(r, refundMetadata[r.id], paymentMetadata[r.id]))
+
+    const discountMetadata = await db
+      .query(
+        `SELECT
+          ti."id",
+          "discounts"."code",
+          "discounts"."promotionId",
+          "discounts"."description"
+        FROM
+          "transactionItems" "discountItem",
+          "discounts",
+          "transactionItems" ti
+        WHERE
+          "discountItem"."transactionId" = ti."transactionId"
+          AND "discountItem"."itemType" = 'discount'
+          AND "discountItem"."itemId" = "discounts"."id"
+          AND ti.id in (:ids)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
+      )
+      .then(discounts => discounts.map(discount => ({ id: discount.id, discount })))
+      .then(keyBy('id'))
+    routePassItems.forEach(r => _.assign(
+      r, refundMetadata[r.id], paymentMetadata[r.id], discountMetadata[r.id]
+    ))
     return routePassItems
   }
 
@@ -472,7 +496,10 @@ export function register (server, options, next) {
         'routePass.user.email',
         'routePass.user.telephone',
         'credit',
-        'routePass.notes.discountValue'
+        'routePass.notes.discountValue',
+        'discount.promotionId',
+        'discount.code',
+        'discount.description',
       ]
 
       const routePassJSONToCSV = row => {
