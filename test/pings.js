@@ -158,11 +158,9 @@ lab.experiment("Ping manipulation", function () {
     // GET pings?
     var response = await server.inject({
       method: "GET",
-      url: "/trips/" + trip.id + "/latestInfo"
+      url: "/trips/" + trip.id + "/latest_info"
     })
     expect(response.result).to.include("trip")
-    expect(response.result.trip.transportCompany).exist()
-    expect(response.result.trip.tripDriver).exist()
     expect(response.result).to.include("pings")
     expect(response.result).to.include("statuses")
     expect(response.result).to.include("code")

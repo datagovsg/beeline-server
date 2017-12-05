@@ -5,7 +5,7 @@ const assert = require('assert')
 
 const auth = require("../core/auth")
 const {getModels, getDB, defaultErrorHandler} = require("../util/common")
-const {handleRequestWith, instToJSONOrNotFound, deleteInst} = require('../util/endpoints')
+const {handleRequestWith, instToJSONOrNotFound, deleteInst, routeRequestsTo} = require('../util/endpoints')
 
 import * as events from '../events/events'
 
@@ -305,8 +305,7 @@ Trip's company ID and driver's company ID must match.
     }
   })
 
-  var GET_passengers
-  server.route(GET_passengers = {
+  server.route({
     method: "GET",
     path: "/trips/{id}/passengers",
     config: {
@@ -340,14 +339,9 @@ Trip's company ID and driver's company ID must match.
       }
     }
   })
-  // FOR BACKWARD COMPATIBILITY
-  server.route(_(_(GET_passengers).clone())
-    .set('path', '/trips/{id}/get_passengers')
-    .set('config.tags[1]', 'deprecated').value())
 
-  server.route({
+  routeRequestsTo(server, ["/trips/{id}/latestInfo", "/trips/{id}/latest_info"], {
     method: "GET",
-    path: "/trips/{id}/latestInfo",
     config: {
       tags: ["api"],
       auth: false,
@@ -363,16 +357,10 @@ Trip's company ID and driver's company ID must match.
         var m = getModels(request)
 
         var trip = await m.Trip.findById(request.params.id, {
+          attributes: ['id', 'status', 'date', 'driverId'],
           include: [
-            { model: m.Vehicle, include: [m.Driver]},
+            { model: m.Vehicle },
             { model: m.Driver },
-            { model: m.TripDriver },
-            {
-              model: m.Route,
-              include: [
-                { model: m.TransportCompany, attributes: { exclude: ['logo', 'features'] } }
-              ]
-            }
           ]
         })
 
@@ -403,7 +391,6 @@ Trip's company ID and driver's company ID must match.
         ])
 
         const tripJSON = trip.toJSON()
-        tripJSON.transportCompany = trip.route.transportCompany
 
         reply({
           trip: tripJSON,
