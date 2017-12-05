@@ -1,7 +1,6 @@
-export var auth0Secret = process.env.AUTH0_SECRET.trim()
+export var auth0Secret = process.env.AUTH0_SECRET
 export var secretKey = auth0Secret
 export var emailVerificationKey = auth0Secret
-export var auth0Auth = process.env.AUTH0_TOKEN_USERREAD
 export var auth0Domain = process.env.AUTH0_DOMAIN
 
 const Joi = require("joi")
