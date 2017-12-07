@@ -21,6 +21,9 @@ export function register (server, options, next) {
       validate: {
         params: {
           id: Joi.number().integer()
+        },
+        query: {
+          limit: Joi.number().integer().min(1).max(20).default(10)
         }
       }
     },
