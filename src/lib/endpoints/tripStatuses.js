@@ -104,7 +104,7 @@ export function register (server, options, next) {
           creator,
           tripId: request.params.id
         })
-        var [tripUpdate, tripStatusInst] = await Promise.all([
+        var [, tripStatusInst] = await Promise.all([
           // update the trip object
           tripInst.update({
             status: request.payload.status
