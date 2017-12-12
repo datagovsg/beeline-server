@@ -53,7 +53,6 @@ function genModelAndTasks (seq) {
   modelCache.require('TripStatus')
   modelCache.require('Alert')
   modelCache.require('Asset')
-  modelCache.require('TripTicket')
   modelCache.require('AdminCompany')
   modelCache.require('DriverCompany')
   modelCache.require('Subscription')
