@@ -61,7 +61,6 @@ function genModelAndTasks (seq) {
   modelCache.require('Credit')
   modelCache.require('RouteCredit')
   modelCache.require('RoutePass')
-  modelCache.require('TripDriver')
   modelCache.require('ReferralCredit')
   modelCache.require('PromoUsage')
   modelCache.require('ContactList')
