@@ -319,21 +319,46 @@ Trip's company ID and driver's company ID must match.
     },
     async handler (request, reply) {
       try {
-        var m = getModels(request)
-        var trip = await m.Trip.findById(request.params.id, {
-          include: [{
-            model: m.TripTicket,
-            where: {status: "valid"},
-            required: false
-          }, {
-            model: m.Route,
-            attributes: ['transportCompanyId'],
-          }]
-        })
-
+        const tripId = request.params.id
+        const models = getModels(request)
+        const trip = await models.Trip.findById(
+          tripId,
+          {
+            attributes: ['routeId'],
+            include: [{
+              model: models.Route,
+              attributes: ['transportCompanyId'],
+            }]
+          }
+        )
         await auth.assertAdminRole(request.auth.credentials, 'view-passengers', trip.route.transportCompanyId)
 
-        reply(trip && trip.toJSON().tripTickets)
+        const db = getDB(request)
+        const tripTickets = await db.query(
+          `SELECT
+            "users"."id",
+            "users"."email" AS "email",
+            "users"."name" AS "name",
+            "users"."telephone" AS "telephone",
+            "tickets"."userId" AS "userId",
+            "tickets"."id" AS "ticketId",
+            "tickets"."boardStopId" AS "boardStopId",
+            "tickets"."alightStopId" AS "alightStopId",
+            "tripStops"."tripId" AS "tripId"
+          FROM
+            "tickets", users, "tripStops"
+          WHERE
+            "tickets"."status" = 'valid' AND
+            "tripId" = :tripId AND
+            "users".id = "tickets"."userId" AND
+            "tripStops".id = "tickets"."boardStopId"`,
+          {
+            type: db.QueryTypes.SELECT,
+            replacements: { tripId },
+          }
+        )
+
+        reply(tripTickets)
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }

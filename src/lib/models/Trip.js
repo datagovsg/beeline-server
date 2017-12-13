@@ -293,7 +293,6 @@ export default function (modelCache) {
 export function makeAssociation (modelCache) {
   var Trip = modelCache.require('Trip')
   var TripStop = modelCache.require('TripStop')
-  var TripTicket = modelCache.require('TripTicket')
   var TripStatus = modelCache.require('TripStatus')
   var Ping = modelCache.require('Ping')
   var Driver = modelCache.require('Driver')
@@ -302,9 +301,6 @@ export function makeAssociation (modelCache) {
   Trip.hasMany(TripStop, {
     foreignKey: "tripId",
     onDelete: "CASCADE"
-  })
-  Trip.hasMany(TripTicket, {
-    foreignKey: "tripId"
   })
   // Trip, ping statuses
   Trip.hasMany(TripStatus, {
