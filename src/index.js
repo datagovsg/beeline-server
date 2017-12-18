@@ -1,5 +1,4 @@
 require("source-map-support").install()
-require('newrelic')
 // REQUIRED BY TELEGRAM
 require('bluebird').config({cancellation: true})
 const Hapi = require("hapi")
