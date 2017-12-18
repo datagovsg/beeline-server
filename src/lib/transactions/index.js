@@ -365,8 +365,8 @@ export const prepareRoutePassRefund = options => async transaction => {
     `This transaction item has debit > 0, and thus is unlikely to relate to a route pass purchase`
   )
   TransactionError.assert(
-    routePass.status === 'valid' || routePass.status === 'void',
-    `Only valid or void route passes can be refunded. This route pass is [${routePass.status}]`
+    routePass.status === 'valid' || routePass.status === 'void' || routePass.status === 'expired',
+    `Only valid, void or expired route passes can be refunded. This route pass is [${routePass.status}]`
   )
 
   const priceAfterDiscount = +transactionItem.credit - _.get(routePass, 'notes.discountValue', 0)
