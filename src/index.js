@@ -23,7 +23,7 @@ require('pg').types.setTypeParser(1082, (dateString) => {
 
 // Check environment variables. Exit if any of the
 // required ones don't exist
-var required_variables = [
+const requiredVariables = [
   'SMTP_HOST',
   'SMTP_PORT',
   'SMTP_USER',
@@ -33,20 +33,43 @@ var required_variables = [
   'DATABASE_URL',
   'AUTH0_SECRET',
 ]
-var warn_variables = [
+
+// If DATABASE_URL is absent, check if we can put one together
+// from AWS RDS equivalents
+const rdsVariables = [
+  'RDS_USERNAME',
+  'RDS_PASSWORD',
+  'RDS_HOSTNAME',
+  'RDS_PORT',
+  'RDS_DB_NAME',
+]
+
+const warnVariables = [
   'STRIPE_PK',
   'STRIPE_CID',
   'STRIPE_SK',
   'AUTH0_CID',
   'AUTH0_DOMAIN',
 ]
-for (let v of required_variables) {
+
+const checkExists = vars => vars.forEach(v => {
   if (!process.env[v]) {
     console.log(`${v} environment variable is not set!`)
     throw new Error(`${v} environment variable is not set!`)
   }
+})
+
+if (!process.env.DATABASE_URL) {
+  console.warn('Attempting to construct DATABASE_URL from AWS RDS config')
+  checkExists(rdsVariables)
+  process.env.DATABASE_URL =
+    `postgres://${process.env.RDS_USERNAME}:${process.env.RDS_PASSWORD}` +
+    `@${process.env.RDS_HOSTNAME}:${process.env.RDS_PORT}/${process.env.RDS_DB_NAME}`
 }
-for (let v of warn_variables) {
+
+checkExists(requiredVariables)
+
+for (let v of warnVariables) {
   if (!process.env[v]) {
     console.warn(`${v} environment variable is not set! This is not fatal, but you'd better not be in production!`)
   }
