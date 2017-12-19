@@ -30,6 +30,7 @@ before_deploy:
       docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER;
       docker push $REPO;
       sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json;
+      rm -f Dockerfile;
     fi
 deploy:
   - provider: lambda
@@ -64,6 +65,7 @@ deploy:
       condition: "$BABEL_ENV = awslambda"
 
   - provider: elasticbeanstalk
+    skip_cleanup: true
     access_key_id: $AWS_ACCESS_KEY_ID
     secret_access_key: $AWS_SECRET_ACCESS_KEY
     region: "ap-southeast-1"
