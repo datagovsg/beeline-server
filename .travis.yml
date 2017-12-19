@@ -49,6 +49,17 @@ deploy:
     on:
       branch: production
       condition: "$BABEL_ENV = awslambda"
+
+  - provider: elasticbeanstalk
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    region: "ap-southeast-1"
+    app: "beeline-server"
+    env: "beeline-server-dev"
+    bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
+    on:
+      branch: $DEV_BRANCH
+      condition: "$BABEL_ENV = web"
 addons:
   postgresql: '9.6'
   apt:
