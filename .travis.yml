@@ -1,3 +1,6 @@
+services:
+  - docker
+
 language: node_js
 node_js:
 - '8'
@@ -16,8 +19,18 @@ script:
   - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
   - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
 before_deploy:
-  - npm install -g babel
-  - npm run build
+  - if [ "$BABEL_ENV" == "awslambda" ]; then npm install && npm run build -g babel; fi
+  - if [ "$BABEL_ENV" == "web" ]; then
+      docker login -u $DOCKER_USER -p $DOCKER_PASSWORD;
+      export REPO=$TRAVIS_REPO_SLUG;
+      export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`;
+      echo "Building image $REPO:$TAG";
+      docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT .;
+      docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG;
+      docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER;
+      docker push $REPO;
+      sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json;
+    fi
 deploy:
   - provider: lambda
     function_name: expireStaleRoutePasses-staging
