@@ -9,6 +9,8 @@ env:
   - CXX=g++-4.8
   - SHUTUP=1
   - TZ=Asia/Singapore
+  # Declare two Babel envs, web and awslambda. The latter transpiles to
+  # node 6.x compatible code, which AWS Lambda understands
   matrix:
   - BABEL_ENV=awslambda
   - BABEL_ENV=web
@@ -20,6 +22,8 @@ script:
   - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
 before_deploy:
   - if [ "$BABEL_ENV" == "awslambda" ]; then npm install && npm run build -g babel; fi
+  # If building for the web, build out a docker image, push it to Docker Hub,
+  # then tell Elastic Beanstalk (later) of the recently pushed image
   - if [ "$BABEL_ENV" == "web" ]; then
       docker login -u $DOCKER_USER -p $DOCKER_PASSWORD;
       export REPO=$TRAVIS_REPO_SLUG;
