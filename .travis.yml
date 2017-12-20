@@ -21,7 +21,7 @@ script:
   - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
   - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
 before_deploy:
-  - if [ "$BABEL_ENV" == "awslambda" ]; then npm install && npm run build -g babel; fi
+  - if [ "$BABEL_ENV" == "awslambda" ]; then npm install -g babel && npm run build; fi
   # If building for the web, build out a docker image, push it to Docker Hub,
   # then tell Elastic Beanstalk (later) of the recently pushed image
   - if [ "$BABEL_ENV" == "web" ]; then
