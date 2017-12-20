@@ -1,6 +1,5 @@
 import Joi from 'joi'
 import _ from 'lodash'
-import * as auth from '../core/auth'
 import assert from 'assert'
 
 const RouteNotificationParams = {

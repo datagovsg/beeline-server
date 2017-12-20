@@ -1,3 +1,6 @@
+services:
+  - docker
+
 language: node_js
 node_js:
 - '8'
@@ -6,6 +9,8 @@ env:
   - CXX=g++-4.8
   - SHUTUP=1
   - TZ=Asia/Singapore
+  # Declare two Babel envs, web and awslambda. The latter transpiles to
+  # node 6.x compatible code, which AWS Lambda understands
   matrix:
   - BABEL_ENV=awslambda
   - BABEL_ENV=web
@@ -16,8 +21,23 @@ script:
   - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
   - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
 before_deploy:
-  - npm install -g babel
-  - npm run build
+  - if [ "$BABEL_ENV" == "awslambda" ]; then npm install && npm run build -g babel; fi
+  # If building for the web, build out a docker image, push it to Docker Hub,
+  # then tell Elastic Beanstalk (later) of the recently pushed image
+  - if [ "$BABEL_ENV" == "web" ]; then
+      docker login -u $DOCKER_USER -p $DOCKER_PASSWORD;
+      export REPO=$TRAVIS_REPO_SLUG;
+      export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`;
+      echo "Building image $REPO:$TAG";
+      docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT .;
+      docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG;
+      docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER;
+      docker push $REPO;
+      sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json;
+      git ls-files --ignored --exclude-from=.ebignore -z | xargs -0 git rm -f;
+      git ls-files --ignored --exclude-from=.ebignore -z | xargs -0 rm -f;
+      git rm -f .ebignore;
+    fi
 deploy:
   - provider: lambda
     function_name: expireStaleRoutePasses-staging
@@ -49,6 +69,18 @@ deploy:
     on:
       branch: production
       condition: "$BABEL_ENV = awslambda"
+
+  - provider: elasticbeanstalk
+    skip_cleanup: true
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    region: "ap-southeast-1"
+    app: "beeline-server"
+    env: "beeline-server-dev"
+    bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
+    on:
+      branch: $DEV_BRANCH
+      condition: "$BABEL_ENV = web"
 addons:
   postgresql: '9.6'
   apt:
