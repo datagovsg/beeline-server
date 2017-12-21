@@ -34,9 +34,8 @@ before_deploy:
       docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER;
       docker push $REPO;
       sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json;
-      git ls-files --ignored --exclude-from=.ebignore -z | xargs -0 git rm -f;
-      git ls-files --ignored --exclude-from=.ebignore -z | xargs -0 rm -f;
-      git rm -f .ebignore;
+      git rm -f --ignore-unmatch Dockerfile;
+      rm -f Dockerfile;
     fi
 deploy:
   - provider: lambda
