@@ -6,6 +6,9 @@ WORKDIR /app
 # These layers are only rebuilt if package.json changes
 COPY package.json  .
 
+# Install tzdata so that we can easily get the local datetime
+RUN apk add tzdata
+
 RUN apk add vips-dev fftw-dev --update-cache \
   --repository https://dl-3.alpinelinux.org/alpine/edge/testing/
 
