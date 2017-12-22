@@ -1,5 +1,9 @@
 #!/bin/bash
-# this script is meant to be run using `pg_virtualenv`
+# This script is meant to be run using `pg_virtualenv`
+# Alternatively, set PGUSER, PGPASSWORD, PGHOST, PGPORT and PGDATABASE
+# before running this script
+
+set -eou pipefail
 
 export DATABASE_URL=postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
 export PGSSLMODE=allow
@@ -39,53 +43,39 @@ export ROUTES_REFRESH_INTERVAL=1 # cache routes only for 1 ms
 
 # Import the live data for testing
 refresh_cache() {
-  if [ -z "$DATABASE_SOURCE" ]; then
+  if [ -z "${DATABASE_SOURCE:-}" ]; then
       DATABASE_SOURCE='postgres://postgres:SePRSWpG+ER6NTGoCH1vBUf15IA@staging.beeline.sg:5432/beelinetest'
   fi
   echo "Updating database dump"
   pg_dump -x -O "$DATABASE_SOURCE" > database_dump.sql
 }
-if [ "$PULL_DATABASE" = "live" ]
+
+if [ "${PULL_DATABASE:-}" = "live" ]
 then
   refresh_cache
-  [ "$?" = 0 ] || exit 1
-
   cat database_dump.sql | psql $DATABASE_URL
-  [ "$?" = 0 ] || exit 1
   cat scripts/post_dump.sql | psql $DATABASE_URL
-  [ "$?" = 0 ] || exit 1
   node scripts/update_sequences.js
-  [ "$?" = 0 ] || exit 1
-elif [ "$PULL_DATABASE" = "cache" ]
+elif [ "${PULL_DATABASE:-}" = "cache" ]
 then
   if [ ! -e database_dump.sql ]
   then
     refresh_cache
-    [ "$?" = 0 ] || exit 1
   fi
   cat database_dump.sql | psql $DATABASE_URL
-  [ "$?" = 0 ] || exit 1
   cat scripts/post_dump.sql | psql $DATABASE_URL
-  [ "$?" = 0 ] || exit 1
   node scripts/update_sequences.js
-  [ "$?" = 0 ] || exit 1
 else
   echo "CREATE EXTENSION postgis" | psql $DATABASE_URL
-  [ "$?" = 0 ] || exit 1
   babel-node scripts/db_init.js
-  [ "$?" = 0 ] || exit 1
 fi
 echo 'Database initialized'
 
-if [ "$TESTS" = "" ]
+if [ -z "${TESTS:-}" ]
 then
   TESTS=test/
 fi
 
 # npm run actual_test
-node_modules/lab/bin/lab $LAB_OPTIONS -T node_modules/lab-babel --globals __core-js_shared__ -S $TESTS
+node_modules/lab/bin/lab ${LAB_OPTIONS:-} -T node_modules/lab-babel --globals __core-js_shared__ -S $TESTS
 
-# if [ "$INTERACTIVE" = "1" ]
-# then
-#     PS1="DBG> $PS1" bash
-# fi
