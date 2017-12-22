@@ -7,12 +7,12 @@ WORKDIR /app
 COPY package.json  .
 
 # Install tzdata so that we can easily get the local datetime
-RUN apk add tzdata
+RUN apk update && apk add tzdata
 
-RUN apk add vips-dev fftw-dev --update-cache \
+RUN apk update && apk add vips-dev fftw-dev --update-cache \
   --repository https://dl-3.alpinelinux.org/alpine/edge/testing/
 
-RUN apk add --no-cache make gcc g++ python && \
+RUN apk update && apk add --no-cache make gcc g++ python && \
   npm install && \
   apk del make gcc g++ python
 
