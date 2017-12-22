@@ -143,7 +143,7 @@ export async function createCrowdstartRouteDetails (
       signage: '??',
       noPasses: 15,
       crowdstartExpiry: new Date(Date.now() + DEFAULT_CROWDSTART_VALIDITY * 24 * 3600e3).toISOString(),
-      tier: {pax: 15, price: DEFAULT_CROWDSTART_PRICE}
+      tier: [{pax: 15, price: DEFAULT_CROWDSTART_PRICE}]
     },
     features: `
 - This route is currently **tentative**. Travel time, price and start date is

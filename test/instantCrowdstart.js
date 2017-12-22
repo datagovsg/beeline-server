@@ -142,6 +142,9 @@ lab.experiment("Instant Crowdstarts", function () {
     expect(new Date(route.notes.crowdstartExpiry).getTime()).most(
       Date.now() + 15.01 * 24 * 3600e3
     )
+    expect(route.notes.noPasses).equal(15)
+    expect(route.notes.tier[0].pax).equal(15)
+    expect(route.notes.tier[0].price).equal(5)
     expect(route.trips[0].date).most(
       Date.now() + 31.01 * 24 * 3600e3
     )
