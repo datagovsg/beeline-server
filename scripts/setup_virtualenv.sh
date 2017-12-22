@@ -6,6 +6,7 @@
 set -eou pipefail
 
 export DATABASE_URL=postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+export ROUTING_SERVER_URL=https://routing.beeline.sg
 export PGSSLMODE=allow
 
 # Fake credentials for the other services

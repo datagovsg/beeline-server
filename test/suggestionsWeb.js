@@ -2,11 +2,8 @@ var Lab = require("lab")
 export var lab = Lab.script()
 var {expect} = require("code")
 var server = require("../src/index.js")
-var common = require("../src/lib/util/common")
-var defaultErrorHandler = common.defaultErrorHandler
 
-var Sequelize = require("sequelize")
-const {db, models: m} = require("../src/lib/core/dbschema")()
+const {models: m} = require("../src/lib/core/dbschema")()
 const {updateTravelTime} = require('../src/lib/endpoints/suggestionsWeb.js')
 const _ = require("lodash") // from 'lodash'
 const {randomSingaporeLngLat, randomEmail} = require("./test_common")
@@ -31,13 +28,15 @@ lab.experiment("Suggestions from the web", function () {
 
     let messageEmailURL
     let emailModule = require('../src/lib/util/email')
-    const emailStub = sandbox.stub(emailModule, 'sendMail', (options) => {
+
+    // Verify that the email contains certain magic strings
+    sandbox.stub(emailModule, 'sendMail', (options) => {
       expect(options.to).equal(email)
       expect(options.text.indexOf(`https://${process.env.WEB_DOMAIN}/suggestions/web/verify?token=`)).not.equal(-1)
       console.log(options.html)
       expect(options.html.indexOf(`https://${process.env.WEB_DOMAIN}/suggestions/web/verify?token&#x3D;`)).not.equal(-1)
 
-      const match = options.html.match(/(\/suggestions\/web\/verify\?token&#x3D;[-_a-zA-Z0-9\.]*)[^-_a-zA-Z0-9\.]/)
+      const match = options.html.match(/(\/suggestions\/web\/verify\?token&#x3D;[-_a-zA-Z0-9.]*)[^-_a-zA-Z0-9.]/)
 
       expect(match).exist()
       messageEmailURL = match[1]

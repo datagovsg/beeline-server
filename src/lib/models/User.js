@@ -2,6 +2,7 @@ import assert from 'assert'
 import * as auth from '../core/auth'
 import * as onesignal from '../util/onesignal.js'
 import ssaclAttributeRoles from 'ssacl-attribute-roles'
+import {stripe} from '../transactions/payment'
 const _ = require("lodash")
 
 export default function (modelCache) {
@@ -39,7 +40,8 @@ export default function (modelCache) {
       type: DataTypes.STRING,
       roles: false,
     },
-    type: DataTypes.STRING(10), /* What should this mean? "TRANSIENT" / "REGISTERED" ? */
+    /* What should `type` mean? "TRANSIENT" / "REGISTERED" ? */
+    type: DataTypes.STRING(10), // eslint-disable-line babel/new-cap
     status: DataTypes.STRING,
     lastComms: DataTypes.DATE,
     lastLogin: DataTypes.DATE,
@@ -205,6 +207,40 @@ export default function (modelCache) {
           return refCodeInst
         }
       },
+
+      async getOrCreatePaymentInfo () {
+        if (this.savedPaymentInfo) {
+          return this.savedPaymentInfo
+        } else {
+          const customerInfo = await stripe.customers.create({
+            metadata: {
+              userId: this.id
+            }
+          })
+
+          this.savedPaymentInfo = customerInfo
+          return customerInfo
+        }
+      },
+
+      async refreshPaymentInfo () {
+        const customerInfo = await stripe.customers.retrieve(this.savedPaymentInfo.id)
+
+        this.savedPaymentInfo = customerInfo
+        return customerInfo
+      },
+
+      async addPaymentSource (stripeToken) {
+        const paymentInfo = await this.getOrCreatePaymentInfo()
+
+        // FIXME support more than 10 credit cards
+        // Return the list of credit cards...
+        await stripe.customers.createSource(paymentInfo.id, {
+          source: stripeToken
+        })
+
+        return this.refreshPaymentInfo()
+      }
     },
     classMethods: {
       // Returns a 6 character alphanumeric string (uppercase only) to be used as referral codes.

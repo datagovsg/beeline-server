@@ -29,35 +29,13 @@ export function register (server, options, next) {
 
         var userInst = await m.User.findById(request.params.userId)
 
-        // Check if there's already customer info
-        var customerInfo = userInst.savedPaymentInfo
-
-        if (!customerInfo) {
-          customerInfo = await stripe.customers.create({
-            metadata: {
-              userId: userInst.id
-            }
-          })
-        }
-
         try {
-          // Attach the card...
-          var creditCard = await stripe.customers.createSource(customerInfo.id, {
-            source: request.payload.stripeToken
-          })
-
-          // FIXME support more than 10 credit cards
-          // Return the list of credit cards...
-          var newCustomerInfo = await stripe.customers.retrieve(customerInfo.id)
-
-          userInst.savedPaymentInfo = newCustomerInfo
+          const newCustomerInfo = await userInst.addPaymentSource(request.payload.stripeToken)
           await userInst.save()
-
           reply(newCustomerInfo)
         } catch (err) {
           // try to re-sync payment source info if above calls have errors
-          var newCustomerInfo = await stripe.customers.retrieve(customerInfo.id)
-          userInst.savedPaymentInfo = newCustomerInfo
+          await userInst.refreshPaymentInfo()
           await userInst.save()
           throw err
         }
@@ -105,7 +83,8 @@ export function register (server, options, next) {
 
         try {
           // Delete the card...
-          var creditCard = await stripe.customers.deleteCard(customerInfo.id, request.params.sourceId)
+          await stripe.customers.deleteCard(customerInfo.id, request.params.sourceId)
+
           // Return the result
           var newCustomerInfo = await stripe.customers.retrieve(customerInfo.id)
 
@@ -115,8 +94,7 @@ export function register (server, options, next) {
           reply(newCustomerInfo)
         } catch (err) {
           // try to re-sync payment source info if above calls have errors
-          var newCustomerInfo = await stripe.customers.retrieve(customerInfo.id)
-          userInst.savedPaymentInfo = newCustomerInfo
+          await userInst.refreshPaymentInfo()
           await userInst.save()
           throw (err)
         }
@@ -183,20 +161,20 @@ export function register (server, options, next) {
           currentSourceId = customerInfo.sources.data[0].id
         }
         try {
-          var creditCard = await stripe.customers.createSource(customerInfo.id, {
+          await stripe.customers.createSource(customerInfo.id, {
             source: request.payload.stripeToken
           })
           if (currentSourceId) {
-            creditCard = await stripe.customers.deleteCard(customerInfo.id, currentSourceId)
+            await stripe.customers.deleteCard(customerInfo.id, currentSourceId)
           }
+
           var newCustomerInfo = await stripe.customers.retrieve(customerInfo.id)
           userInst.savedPaymentInfo = newCustomerInfo
           await userInst.save()
           reply(newCustomerInfo)
         } catch (error) {
           // re-sync user save payment infor if there is error
-          var newCustomerInfo = await stripe.customers.retrieve(customerInfo.id)
-          userInst.savedPaymentInfo = newCustomerInfo
+          await userInst.refreshPaymentInfo()
           await userInst.save()
           throw error
         }

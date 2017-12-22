@@ -13,11 +13,9 @@ import Handlebars from 'handlebars'
 import fs from 'fs'
 import * as auth from '../core/auth'
 import * as email from '../util/email'
-import {anonymizeEmail} from '../util/email'
 import {toSVY} from "../util/svy21"
 import {NotFoundError, InvalidArgumentError} from '../util/errors'
-import {handleRequestWith, assertFound, instToJSONOrNotFound} from '../util/endpoints'
-import BlueBird from 'bluebird'
+import {handleRequestWith, assertFound} from '../util/endpoints'
 
 var getModels = common.getModels
 var getDB = common.getDB
@@ -121,7 +119,7 @@ export function register (server, options, next) {
         } else {
           return {
             ...suggestion,
-            email: anonymizeEmail(suggestion.email)
+            email: email.anonymizeEmail(suggestion.email)
           }
         }
       }
@@ -444,7 +442,7 @@ export function register (server, options, next) {
         })
 
         sugg = sugg.map(s => _.defaults({
-          email: anonymizeEmail(s.email),
+          email: email.anonymizeEmail(s.email),
           ipAddress: null,
         }, s))
         reply(sugg)
@@ -479,13 +477,13 @@ export function updateTravelTime (suggestion) {
     arrival_time: Math.floor(imputedTime / 1000),
     key: process.env.GOOGLE_MAPS_API_KEY
   }))
-  .then((response) => {
-    let result = response.data
+    .then((response) => {
+      let result = response.data
 
-    console.log(result)
+      console.log(result)
 
-    return suggestion.update({
-      travelTime: _.sum(result.routes[0].legs.map(leg => leg.duration.value))
+      return suggestion.update({
+        travelTime: _.sum(result.routes[0].legs.map(leg => leg.duration.value))
+      })
     })
-  })
 }

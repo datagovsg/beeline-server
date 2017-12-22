@@ -1,3 +1,6 @@
+import _ from 'lodash'
+import {InvalidArgumentError, TransactionError, ChargeError} from "../util/errors"
+
 export default function (modelCache) {
   const VOID_STATUSES = ['void', 'withdrawn', 'failed']
   const VALID_STATUSES = ['pending', 'bidded']
@@ -24,7 +27,7 @@ export default function (modelCache) {
       allowNull: false,
     },
     price: {
-      type: DataTypes.DECIMAL(10, 2),
+      type: DataTypes.DECIMAL(10, 2), // eslint-disable-line babel/new-cap
       allowNull: false,
     },
     priceF: {
@@ -42,7 +45,49 @@ export default function (modelCache) {
     indexes: [
       {fields: ["userId"]},
       {fields: ["routeId"]}
-    ]
+    ],
+
+    classMethods: {
+      async createForUserAndRoute (userInst, routeInst, price, options = {}) {
+        const m = modelCache.models
+
+        // User must first have saved his card details
+        ChargeError.assert(
+          userInst.savedPaymentInfo && userInst.savedPaymentInfo.default_source,
+          "You need to provide payment information.")
+        TransactionError.assert(
+          routeInst.tags.includes('crowdstart'),
+          'Selected route is not a crowdstart route')
+
+        const crowdstartExpiry = _.get(routeInst, 'notes.crowdstartExpiry')
+        const isOpenForBids = !crowdstartExpiry ||
+          Date.now() < new Date(crowdstartExpiry).getTime()
+
+        TransactionError.assert(
+          isOpenForBids,
+          'Selected route is no longer open for bidding')
+
+        const existingBid = await m.Bid.findOne({
+          where: {
+            routeId: routeInst.id,
+            userId: userInst.id,
+            status: 'bidded'
+          },
+          ...options
+        })
+
+        InvalidArgumentError.assert(!existingBid, 'A bid has already been made for this route')
+
+        const bid = await m.Bid.create({
+          routeId: routeInst.id,
+          userId: userInst.id,
+          price: price,
+          status: 'bidded',
+        }, {...options})
+
+        return bid
+      }
+    }
   })
 }
 

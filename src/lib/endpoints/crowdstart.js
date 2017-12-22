@@ -212,39 +212,13 @@ marking all bids on this route as 'failed'
       var m = getModels(request)
 
       try {
-        var userInst = await m.User.findById(request.auth.credentials.userId)
+        const userInst = await m.User.findById(request.auth.credentials.userId)
+        const routeInst = await m.Route.findById(request.params.routeId)
 
-        // User must first have saved his card details
-        ChargeError.assert(
-          userInst.savedPaymentInfo && userInst.savedPaymentInfo.default_source,
-          "You need to provide payment information.")
+        const bidInst = await m.Bid.createForUserAndRoute(userInst, routeInst, request.payload.price)
 
-        const route = await m.Route.findById(request.params.routeId)
-
-        TransactionError.assert(route.tags.includes('crowdstart'), 'Selected route is not a crowdstart route')
-
-        const crowdstartExpiry = _.get(route, 'notes.crowdstartExpiry')
-        const isOpenForBids = !crowdstartExpiry || Date.now() < new Date(crowdstartExpiry).getTime()
-        TransactionError.assert(isOpenForBids, 'Selected route is no longer open for bidding')
-
-        const existingBid = await m.Bid.findOne({
-          where: {
-            routeId: route.id,
-            userId: userInst.id,
-            status: 'bidded'
-          },
-        })
-
-        InvalidArgumentError.assert(!existingBid, 'A bid has already been made for this route')
-        const bid = await m.Bid.create({
-          routeId: route.id,
-          userId: userInst.id,
-          price: request.payload.price,
-          status: 'bidded',
-        })
-
-        emit('crowdstart', { label: route.label })
-        reply(bid.toJSON())
+        emit('crowdstart', { label: routeInst.label })
+        reply(bidInst.toJSON())
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }

@@ -33,6 +33,7 @@ module.exports = (server, options, next) => {
     require("./endpoints/credits"),
     require("./endpoints/loader"),
     require("./endpoints/crowdstart"),
+    require("./endpoints/instantCrowdstart"),
     require("./custom/wrs"),
     require("./custom/userSuggestedRoutes"),
     require("./daemons/eventSubscriptions"),
