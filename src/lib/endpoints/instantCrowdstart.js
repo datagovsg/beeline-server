@@ -23,11 +23,11 @@ function _createMockCreate () {
   let id = -1000000
   let autogenId = () => { id += 1; return id }
 
-  function mockCreate (model, data) {
-    return Promise.resolve({
+  function mockCreate (model, data, options) {
+    return Promise.resolve(model.build({
       ...data,
       id: autogenId()
-    })
+    }, {isNewRecord: true, ...options}))
   }
 
   return mockCreate
@@ -38,7 +38,8 @@ function _createMockCreate () {
  * and returns the resulting instance
  */
 function _createModelCreate (defaultOptions) {
-  return (model, data, options) => model.create(data, {...defaultOptions, options})
+  const modelCreate = (model, data, options) => model.create(data, {...defaultOptions, ...options})
+  return modelCreate
 }
 
 async function fetchRoutingData (stops) {
@@ -95,6 +96,14 @@ export async function createCrowdstartRouteDetails (
             ST_Transform(ST_GeomFromText('POINT(${stop.coordinates[0]} ${stop.coordinates[1]})', 4326), 3414)
           ) < 5`
         ],
+        order: [
+          [
+            db.literal(`ST_distance(
+              ST_Transform(ST_SetSRID(stop.coordinates, 4326), 3414),
+              ST_Transform(ST_GeomFromText('POINT(${stop.coordinates[0]} ${stop.coordinates[1]})', 4326), 3414)
+            )`)
+          ]
+        ],
         transaction
       }
     )
@@ -122,9 +131,9 @@ export async function createCrowdstartRouteDetails (
   }
 
   const route = await createFunc(m.Route, {
-    name: `${bestMatch[0].description} to ${bestMatch[bestMatch.length - 1].description}`,
-    from: bestMatch[0].description,
-    to: bestMatch[1].description,
+    name: `${bestMatch[0].stop.description} to ${bestMatch[bestMatch.length - 1].stop.description}`,
+    from: bestMatch[0].stop.description,
+    to: bestMatch[bestMatch.length - 1].stop.description,
     path: null,
     transportCompanyId: _.get(await m.TransportCompany.find({where: {name: 'Beeline'}}), 'id', null),
     label: 'AUTO-' + Date.now(),
@@ -147,12 +156,6 @@ the campaign.
   const trip = await createFunc(m.Trip, {
     // One month from now
     date: new Date(Date.now() + DEFAULT_CROWDSTART_START * 24 * 3600e3),
-    tripStops: bestMatch.map(({stop, arrivalTime}, index) => ({
-      stopId: stop.id,
-      canBoard: index < dropOffIndex,
-      canAlight: index >= dropOffIndex,
-      time: dateAtTime(arrivalTime),
-    })),
     capacity: DEFAULT_CROWDSTART_CAPACITY,
     price: DEFAULT_CROWDSTART_PRICE * 10,
     status: null,
@@ -161,9 +164,16 @@ the campaign.
       windowSize: -5 * 60e3
     },
     routeId: route.id,
-  }, {include: [m.TripStop]})
+    tripStops: bestMatch.map(({stop, arrivalTime}, index) =>
+      ({
+        stopId: stop.id,
+        canBoard: index < dropOffIndex,
+        canAlight: index >= dropOffIndex,
+        time: dateAtTime(arrivalTime),
+      }))
+  }, {include: [{model: m.TripStop}]})
 
-  return {route, trip}
+  return {route, trip, stops: bestMatch.map(s => s.stop)}
 }
 
 export function register (server, options, next) {
@@ -256,7 +266,7 @@ Previews the crowdstart route that will be created with the given options
       try {
         const {busStops, relatedRequests, travelTimes} = await fetchRoutingData(request.query.stops)
 
-        const {route, trip} = await createCrowdstartRouteDetails(
+        const {route, trip, stops} = await createCrowdstartRouteDetails(
           {stops: request.query.stops, arrivalTime: request.query.arrivalTime},
           {busStops, relatedRequests, travelTimes},
           {
@@ -264,7 +274,16 @@ Previews the crowdstart route that will be created with the given options
           }
         )
 
-        reply({...route, trips: [trip]})
+        reply({
+          ...route.toJSON(),
+          trips: [{
+            ...trip.toJSON(),
+            tripStops: trip.tripStops.map(ts => ({
+              ...ts.toJSON(),
+              stop: stops.find(s => s.id === ts.stopId).toJSON()
+            }))
+          }]
+        })
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }

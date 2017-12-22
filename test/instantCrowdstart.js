@@ -75,13 +75,14 @@ lab.experiment("Instant Crowdstarts", function () {
     // ending in the city, to ensure we exceed the threshold
     const stops = [3073, 3071, 3065, 3051, 129, 116, 106, 211]
     const user = await m.User.create({telephone: randomEmail()})
+    const ARRIVAL_TIME = 7.5 * 3600 * 1000
 
     const defaultInjectOptions = {
       method: 'POST',
       url: `/crowdstart/instant`,
       payload: {
         stops: stops,
-        arrivalTime: 7.5 * 3600 * 1000,
+        arrivalTime: ARRIVAL_TIME,
       },
       headers: {
         authorization: `Bearer ${user.makeToken()}`
@@ -145,10 +146,26 @@ lab.experiment("Instant Crowdstarts", function () {
       Date.now() + 31.01 * 24 * 3600e3
     )
 
+    expect(route.name).equal(`Bus Stop 3073 to Bus Stop 211`)
+    expect(route.from).equal(`Bus Stop 3073`)
+    expect(route.to).equal(`Bus Stop 211`)
+
+    const tripStops = route.trips[0].tripStops
+
+    expect(tripStops.length).equal(stops.length)
+    expect(midnightOffset(tripStops[tripStops.length - 1].time)).equal(7.5 * 3600 * 1000)
+    expect(midnightOffset(tripStops[0].time)).equal(7.5 * 3600 * 1000 - 1600 - 60000 * 7)
+
     route.trips[0].tripStops.slice(0, 4)
       .forEach(ts => expect(ts.canBoard && !ts.canAlight).true())
     route.trips[0].tripStops.slice(4)
       .forEach(ts => expect(!ts.canBoard && ts.canAlight).true())
+
+    // Check the stop description
+    stops.forEach(sindex => {
+      expect(route.trips[0].tripStops.some(ts => ts.stop.description === `Bus Stop ${sindex}`)).true()
+    })
+    expect(route.trips[0].tripStops.length).equal(stops.length)
   })
 
   lab.test("Anyone can preview crowdstart route", {timeout: 30000}, async function () {
@@ -170,21 +187,21 @@ lab.experiment("Instant Crowdstarts", function () {
     const route = previewResponse.result
     const tripStops = _.sortBy(route.trips[0].tripStops, ts => ts.time)
 
-    // Check the route time
-    const midnightOffset = (date) => {
-      const midnight = new Date(date.getTime())
-      midnight.setHours(0, 0, 0, 0)
-
-      return date.getTime() - midnight.getTime()
-    }
-
     expect(midnightOffset(tripStops[tripStops.length - 1].time)).equal(7.5 * 3600 * 1000)
     expect(midnightOffset(tripStops[0].time)).equal(7.5 * 3600 * 1000 - 1600 - 60000 * 7)
 
-    // // Check the stop description
-    // stops.forEach(sindex => {
-    //   expect(tripStops.some(ts => ts.stop.description === `Bus Stop ${sindex}`)).true()
-    // })
-    // expect(tripStops.length).equal(stops.length)
+    // Check the stop description
+    stops.forEach(sindex => {
+      expect(tripStops.some(ts => ts.stop.description === `Bus Stop ${sindex}`)).true()
+    })
+    expect(tripStops.length).equal(stops.length)
   })
 })
+
+// Check the route time
+function midnightOffset (date) {
+  const midnight = new Date(date.getTime())
+  midnight.setHours(0, 0, 0, 0)
+
+  return date.getTime() - midnight.getTime()
+}
