@@ -9,6 +9,7 @@ const {createStripeToken, randomEmail} = require("./test_common")
 const sinon = require('sinon')
 import axios from 'axios'
 import querystring from 'querystring'
+import * as polyline from 'polyline'
 
 lab.experiment("Instant Crowdstarts", function () {
   let sandbox
@@ -25,8 +26,9 @@ lab.experiment("Instant Crowdstarts", function () {
     sandbox.stub(axios, 'get', async (url) => {
       const stopsJoinedWithSlash = stops.join('/')
       const travelTimesURL = `https://routing.beeline.sg/travel_times/${stopsJoinedWithSlash}`
+      const pathURL = `https://routing.beeline.sg/paths/${stopsJoinedWithSlash}`
       const busStopsURL = `https://routing.beeline.sg/bus_stops/${stopsJoinedWithSlash}`
-      const pathsURL = `https://routing.beeline.sg/path_requests/${stopsJoinedWithSlash}?maxDistance=400`
+      const requestsURL = `https://routing.beeline.sg/path_requests/${stopsJoinedWithSlash}?maxDistance=400`
 
       const fakeBusStops = stops
         .map(i => ({
@@ -59,10 +61,27 @@ lab.experiment("Instant Crowdstarts", function () {
           data: fakeBusStops,
           statusCode: 200
         }
-      } else if (url === pathsURL) {
+      } else if (url === requestsURL) {
         return {
           data: fakeRequests,
           statusCode: 200,
+        }
+      } else if (url === pathURL) {
+        return {
+          data: fakeBusStops.reduce(
+            ([paths, lastStop], currentStop) => {
+              if (lastStop === null) {
+                return [paths, currentStop]
+              } else {
+                paths.push(
+                  [{lat: lastStop.coordinates[1], lng: lastStop.coordinates[0]}],
+                  [{lat: currentStop.coordinates[1], lng: currentStop.coordinates[0]}],
+                )
+                return [paths, currentStop]
+              }
+            },
+            [[], null]
+          )
         }
       } else {
         throw new Error(`Unexpected URL ${url}`)
@@ -169,6 +188,10 @@ lab.experiment("Instant Crowdstarts", function () {
       expect(tripStops.some(ts => ts.stop.description === `Bus Stop ${sindex}`)).true()
     })
     expect(tripStops.length).equal(stops.length)
+
+    // Cursorily check the path
+    expect(polyline.decode(route.path)
+      .every(([lat, lng]) => (Math.abs(lat) < 90 && Math.abs(lng) < 180))).true()
   })
 
   lab.test("Anyone can preview crowdstart route", {timeout: 30000}, async function () {
@@ -198,6 +221,10 @@ lab.experiment("Instant Crowdstarts", function () {
       expect(tripStops.some(ts => ts.stop.description === `Bus Stop ${sindex}`)).true()
     })
     expect(tripStops.length).equal(stops.length)
+
+    // Cursorily check the path
+    expect(polyline.decode(route.path)
+      .every(([lat, lng]) => (Math.abs(lat) < 90 && Math.abs(lng) < 180))).true()
   })
 })
 

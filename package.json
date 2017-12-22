@@ -51,6 +51,7 @@
     "node-telegram-bot-api": "^0.27.1",
     "nodemailer": "^2.5.0",
     "pg": "^6.1.0",
+    "polyline": "^0.2.0",
     "proj4": "^2.3.12",
     "promise": "^7.1.1",
     "q": "^1.4.1",
