@@ -17,6 +17,7 @@ RUN apk update && apk add --no-cache make gcc g++ python && \
   apk del make gcc g++ python
 
 # Copy rest of source code into image
+COPY data/ data/
 COPY src/ src/
 COPY .babelrc .
 
