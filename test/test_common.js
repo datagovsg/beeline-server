@@ -98,7 +98,7 @@ export async function createStripeToken (cardNo) {
   return await Payment.createStripeToken({
     number: cardNo || "4242424242424242",
     exp_month: "12",
-    exp_year: "2017",
+    exp_year: "2019",
     cvc: "123"
   }).then(stripeToken => stripeToken.id)
 }
