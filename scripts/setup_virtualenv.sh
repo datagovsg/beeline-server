@@ -78,5 +78,4 @@ then
 fi
 
 # npm run actual_test
-node_modules/lab/bin/lab ${LAB_OPTIONS:-} -T node_modules/lab-babel --globals __core-js_shared__ -S $TESTS
-
+node_modules/lab/bin/lab ${LAB_OPTIONS:-} -T node_modules/lab-babel --globals SharedArrayBuffer,Atomics,WebAssembly,__core-js_shared__ -S $TESTS
