@@ -5,7 +5,7 @@ const assert = require('assert')
 
 const auth = require("../core/auth")
 const {getModels, getDB, defaultErrorHandler} = require("../util/common")
-const {handleRequestWith, instToJSONOrNotFound, deleteInst, routeRequestsTo} = require('../util/endpoints')
+const {handleRequestWith, instToJSONOrNotFound, deleteInst} = require('../util/endpoints')
 
 import * as events from '../events/events'
 
@@ -365,8 +365,9 @@ Trip's company ID and driver's company ID must match.
     }
   })
 
-  routeRequestsTo(server, ["/trips/{id}/latestInfo", "/trips/{id}/latest_info"], {
+  server.route({
     method: "GET",
+    path: "/trips/{id}/latest_info",
     config: {
       tags: ["api"],
       auth: false,
