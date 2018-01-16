@@ -6,7 +6,7 @@ const {models} = require("../src/lib/core/dbschema")()
 
 const lab = exports.lab = Lab.script()
 
-var createMasterStripeToken = async function () {
+let createMasterStripeToken = async function () {
   return createStripeToken("5555555555554444")
 }
 
@@ -23,21 +23,21 @@ lab.experiment("Payment info manipulation", function () {
   lab.test('CRUD Payment info', {timeout: 20000}, async function () {
     /* Cleanly delete the user */
     await cleanlyDeleteUsers({
-      telephone: '+6581001860'
+      telephone: '+6581001860',
     })
 
     const userInst = await models.User.create({
-      telephone: '+6581001860'
+      telephone: '+6581001860',
     })
     const headers = {
-      authorization: `Bearer ${userInst.makeToken()}`
+      authorization: `Bearer ${userInst.makeToken()}`,
     }
 
     // get the card details... should have nothing
     const getResponse = await server.inject({
       method: 'GET',
       url: `/users/${userInst.id}/creditCards`,
-      headers
+      headers,
     })
     expect(getResponse.statusCode).equal(200)
     expect(getResponse.result).not.exist()
@@ -48,8 +48,8 @@ lab.experiment("Payment info manipulation", function () {
       url: `/users/${userInst.id}/creditCards`,
       headers,
       payload: {
-        stripeToken: await createStripeToken()
-      }
+        stripeToken: await createStripeToken(),
+      },
     })
     expect(postResponse.statusCode).equal(200)
     expect(postResponse.result.sources.data[0]).exist()
@@ -63,8 +63,8 @@ lab.experiment("Payment info manipulation", function () {
       url: `/users/${userInst.id}/creditCards/replace`,
       headers,
       payload: {
-        stripeToken: await createMasterStripeToken()
-      }
+        stripeToken: await createMasterStripeToken(),
+      },
     })
     expect(putResponse.statusCode).equal(200)
     expect(putResponse.result.sources.data[0]).exist()
@@ -76,7 +76,7 @@ lab.experiment("Payment info manipulation", function () {
     const getResponse2 = await server.inject({
       method: 'GET',
       url: `/users/${userInst.id}/creditCards`,
-      headers
+      headers,
     })
     expect(getResponse2.statusCode).equal(200)
     expect(getResponse2.result).exist()
@@ -88,7 +88,7 @@ lab.experiment("Payment info manipulation", function () {
     const deleteResponse = await server.inject({
       method: 'DELETE',
       url: `/users/${userInst.id}/creditCards/${getResponse2.result.sources.data[0].id}`,
-      headers
+      headers,
     })
     expect(deleteResponse.statusCode).equal(200)
     expect(deleteResponse.result).exist()
