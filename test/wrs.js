@@ -1,10 +1,8 @@
 import Lab from "lab"
 import {expect} from "code"
-import BlueBird from 'bluebird'
 import _ from "lodash"
-import {loginAs, resetTripInstances} from "./test_common"
+import {loginAs, resetTripInstances, createStripeToken} from "./test_common"
 import {createUsersCompaniesRoutesAndTrips} from './test_data'
-import {stripe} from "../src/lib/transactions/payment"
 
 export const lab = Lab.script()
 
@@ -92,14 +90,7 @@ lab.experiment("WRS", function () {
 
     try {
       // create a stripe token! Using the fake credit card details
-      var stripeToken = await BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
-        card: {
-          number: "4242424242424242",
-          exp_month: "12",
-          exp_year: "2017",
-          cvc: "123"
-        }
-      })
+      const stripeToken = await createStripeToken()
 
       // Inject the ticket purchases
       var saleResponse = await server.inject({
@@ -122,7 +113,7 @@ lab.experiment("WRS", function () {
           name: 'Mr Test',
           email: `mrtest${Date.now()}@example.com`,
           telephone: '81234567',
-          stripeToken: stripeToken.id
+          stripeToken,
         },
       })
       expect(saleResponse.statusCode).to.equal(200)
@@ -220,14 +211,7 @@ lab.experiment("WRS", function () {
 
     try {
       // create a stripe token! Using the fake credit card details
-      var stripeToken = await stripe.tokens.create({
-        card: {
-          number: "4242424242424242",
-          exp_month: "12",
-          exp_year: "2017",
-          cvc: "123"
-        }
-      })
+      const stripeToken = await createStripeToken()
 
       // Inject the ticket purchases
       var saleResponse = await server.inject({
@@ -251,7 +235,7 @@ lab.experiment("WRS", function () {
           name: 'Mr Test',
           email: `mrtest${Date.now()}@example.com`,
           telephone: '81234567',
-          stripeToken: stripeToken.id
+          stripeToken,
         },
       })
       expect(saleResponse.statusCode).to.equal(200)
@@ -368,15 +352,8 @@ lab.experiment("WRS", function () {
   })
 
   // Stripe takes a while to respond, so we set a longer timeout
-  lab.test("Useful error messages", {timeout: 10000}, async function () {
-    var stripeToken = await stripe.tokens.create({
-      card: {
-        number: "4000000000000341",
-        exp_month: "12",
-        exp_year: "2020",
-        cvc: "123"
-      }
-    })
+  lab.test("Useful error messages", {timeout: 20000}, async function () {
+    const stripeToken = await createStripeToken("4000000000000341")
     var email = `mrtest${Date.now()}@example.com`
 
     // Inject the ticket purchases
@@ -400,7 +377,7 @@ lab.experiment("WRS", function () {
         name: 'Mr Test',
         email,
         telephone: '81234567',
-        stripeToken: stripeToken.id
+        stripeToken,
       },
     })
     expect(saleResponse.statusCode).equal(402)

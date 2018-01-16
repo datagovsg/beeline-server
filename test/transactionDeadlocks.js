@@ -7,10 +7,9 @@ var server = require("../src/index.js")
 var _ = require("lodash")
 
 const {models} = require("../src/lib/core/dbschema")()
-const stripe = require("../src/lib/transactions/payment").stripe
+const {createStripeToken} = require("./test_common")
 
 const testMerchantId = process.env.STRIPE_TEST_DESTINATION
-import BlueBird from 'bluebird'
 
 lab.experiment("Concurrent transactions", function () {
   var testInstances = []
@@ -137,16 +136,7 @@ lab.experiment("Concurrent transactions", function () {
 
     var sessionTokens = fakeUsers.map(f => f.makeToken())
 
-    var stripeTokens = await Promise.all(ids.map((i) =>
-      // create a stripe token! Using the fake credit card details
-      BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
-        card: {
-          number: "4242424242424242",
-          exp_month: "12",
-          exp_year: "2017",
-          cvc: "123"
-        }
-      })))
+    const stripeTokens = await Promise.all(ids.map((i) => createStripeToken()))
 
     // Inject the ticket purchases
     var fakeSales = ids.map((i) => server.inject({
@@ -160,7 +150,7 @@ lab.experiment("Concurrent transactions", function () {
             alightStopId: tripInstances[1].tripStops[0].id,
           }
         ],
-        stripeToken: stripeTokens[i].id
+        stripeToken: stripeTokens[i]
       },
       headers: {
         authorization: "Bearer " + sessionTokens[i]
@@ -218,16 +208,7 @@ lab.experiment("Concurrent transactions", function () {
 
     var sessionTokens = fakeUsers.map(f => f.makeToken())
 
-    var stripeTokens = await Promise.all(ids.map((i) =>
-      // create a stripe token! Using the fake credit card details
-      BlueBird.promisify(stripe.tokens.create, {context: stripe.tokens})({
-        card: {
-          number: "4242424242424242",
-          exp_month: "12",
-          exp_year: "2017",
-          cvc: "123"
-        }
-      })))
+    const stripeTokens = await Promise.all(ids.map((i) => createStripeToken()))
 
     // Inject the ticket purchases
     var fakeSales = ids.map((i) => server.inject({
@@ -241,7 +222,7 @@ lab.experiment("Concurrent transactions", function () {
             alightStopId: tripInstances[i].tripStops[0].id,
           }
         ],
-        stripeToken: stripeTokens[i].id
+        stripeToken: stripeTokens[i]
       },
       headers: {
         authorization: "Bearer " + sessionTokens[i]

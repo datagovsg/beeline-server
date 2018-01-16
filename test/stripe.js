@@ -8,7 +8,7 @@ lab.experiment("Stripe Micro-transactions", function () {
     return createStripeToken({
       number: "4242424242424242",
       exp_month: "12",
-      exp_year: "2017",
+      exp_year: "2019",
       cvc: "123"
     })
   }
