@@ -58,7 +58,7 @@
     "q": "^1.4.1",
     "seedrandom": "^2.4.2",
     "sequelize": "^3.23.0",
-    "sharp": "^0.18.1",
+    "sharp": "^0.19.0",
     "sinon": "^1.17.7",
     "smtp-connection": "^2.3.1",
     "smtp-server": "^1.9.0",
