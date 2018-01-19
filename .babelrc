@@ -1,8 +1,7 @@
 {
     "plugins": [
       "transform-runtime",
-      "transform-es2015-modules-commonjs",
-      "transform-object-rest-spread"
+      "transform-es2015-modules-commonjs"
     ],
     "sourceMaps": "inline",
     "env": {
