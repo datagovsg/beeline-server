@@ -1,9 +1,9 @@
 import _ from "lodash"
 
-import {TransactionError} from '../transactions'
-import {TransactionBuilder} from '../transactions/builder'
+import { TransactionError } from "../transactions"
+import { TransactionBuilder } from "../transactions/builder"
 
-export async function applyPromoCode (tb, promoCode, type) {
+export async function applyPromoCode(tb, promoCode, type) {
   const clone = new TransactionBuilder(tb)
 
   // Identify applicable promotions
@@ -12,10 +12,14 @@ export async function applyPromoCode (tb, promoCode, type) {
     transaction: tb.transaction,
     raw: true,
   })
-  const promotionCalculations = promotionInstances
-    .map(promoDef => createCalculation(
-      promoDef.type, tb, promoDef.params, promoCode.options,
-      promoDef.description, promoDef.id
+  const promotionCalculations = promotionInstances.map(promoDef =>
+    createCalculation(
+      promoDef.type,
+      tb,
+      promoDef.params,
+      promoCode.options,
+      promoDef.description,
+      promoDef.id
     )
   )
 
@@ -23,59 +27,82 @@ export async function applyPromoCode (tb, promoCode, type) {
 
   const qualifiedPromotions = _(promotionCalculations)
     .filter(promo => promo.isQualified())
-    .orderBy([promotion => _.sum(promotion.computeDiscountsAndRefunds()[0])], ['desc'])
+    .orderBy(
+      [promotion => _.sum(promotion.computeDiscountsAndRefunds()[0])],
+      ["desc"]
+    )
     .value()
 
-  if (promoCode.code === '' && qualifiedPromotions.length === 0) {
+  if (promoCode.code === "" && qualifiedPromotions.length === 0) {
     return tb // No Change
   } else if (qualifiedPromotions.length === 0) {
-    const hasOutstandingItems = tb.items.filter(ti => !ti.transactionItem || ti.transactionItem.notes.outstanding > 0).length > 0
+    const hasOutstandingItems =
+      tb.items.filter(
+        ti => !ti.transactionItem || ti.transactionItem.notes.outstanding > 0
+      ).length > 0
     if (!hasOutstandingItems) {
       return tb
     } else {
-      throw new TransactionError(`Sorry, the promo code entered is invalid`, { source: 'promoCode' })
+      throw new TransactionError(`Sorry, the promo code entered is invalid`, {
+        source: "promoCode",
+      })
     }
   }
 
   const promotion = qualifiedPromotions[0]
-  const {description, promotionId} = promotion
+  const { description, promotionId } = promotion
 
-  const userIds = _(tb.items.map(i => i.userId)).uniq().value()
+  const userIds = _(tb.items.map(i => i.userId))
+    .uniq()
+    .value()
   const userId = userIds[0]
 
   // Check if usage limit for promotion code has been reached
   // Ensure that promotions have a usageLimit defined, catch them otherwise
-  TransactionError.assert(promotion.params && promotion.params.usageLimit,
-    'Error processing promoCode: undefined usageLimit', { source: 'promoCode' })
+  TransactionError.assert(
+    promotion.params && promotion.params.usageLimit,
+    "Error processing promoCode: undefined usageLimit",
+    { source: "promoCode" }
+  )
 
   const { globalLimit, userLimit } = promotion.params.usageLimit
 
   // Terminate transaction if user is using a disabled promoCode
   TransactionError.assert(
-    (globalLimit > 0 || globalLimit === null) && (userLimit > 0 || userLimit === null),
-      `The promo code is inactive`, { source: 'promoCode' }
+    (globalLimit > 0 || globalLimit === null) &&
+      (userLimit > 0 || userLimit === null),
+    `The promo code is inactive`,
+    { source: "promoCode" }
   )
 
   if (globalLimit) {
     let globalUsed = await tb.models.PromoUsage.getGlobalPromoUsage(
-      promotionId, {transaction: tb.transaction}
+      promotionId,
+      { transaction: tb.transaction }
     )
-    TransactionError.assert(globalLimit > globalUsed,
-      `This promotion has been fully redeemed`, { source: 'promoCode' })
+    TransactionError.assert(
+      globalLimit > globalUsed,
+      `This promotion has been fully redeemed`,
+      { source: "promoCode" }
+    )
   }
 
   let userUsed = await tb.models.PromoUsage.getUserPromoUsage(
-    promotionId, userId, {transaction: tb.transaction}
+    promotionId,
+    userId,
+    { transaction: tb.transaction }
   )
 
   if (userLimit) {
-    TransactionError.assert(userLimit > userUsed,
+    TransactionError.assert(
+      userLimit > userUsed,
       `You have already fully redeemed this promotion`,
-      { source: 'promoCode' }
+      { source: "promoCode" }
     )
   }
 
-  const itemLimit = type !== 'RoutePass' && userLimit ? userLimit - userUsed : null
+  const itemLimit =
+    type !== "RoutePass" && userLimit ? userLimit - userUsed : null
 
   // Run hooks
   await promotion.preApplyHooks()
@@ -83,8 +110,11 @@ export async function applyPromoCode (tb, promoCode, type) {
   promotion.removePaidAndApplyLimits(itemLimit)
   const filteredItems = promotion.getValidItems()
 
-  const usedCount = type === 'RoutePass' ? 1 : filteredItems.length
-  const [discountValues, refundAdjustments] = promotion.computeDiscountsAndRefunds()
+  const usedCount = type === "RoutePass" ? 1 : filteredItems.length
+  const [
+    discountValues,
+    refundAdjustments,
+  ] = promotion.computeDiscountsAndRefunds()
 
   // keyBy(appliedDiscounts, item.id)
   const discountValueMap = _(filteredItems)
@@ -105,18 +135,25 @@ export async function applyPromoCode (tb, promoCode, type) {
   if (!tb.dryRun && tb.committed) {
     await promotion.commitHooks()
     if (promotion.params.usageLimit.userLimit) {
-      await tb.models.PromoUsage.addUserPromoUsage(promotionId,
-        userId, usedCount, { transaction: tb.transaction })
+      await tb.models.PromoUsage.addUserPromoUsage(
+        promotionId,
+        userId,
+        usedCount,
+        { transaction: tb.transaction }
+      )
     }
   }
 
   // Add a discount entry to the transaction
-  TransactionError.assert(!clone.transactionItemsByType.discount,
-    "Composing multiple discounts is currently not supported!")
+  TransactionError.assert(
+    !clone.transactionItemsByType.discount,
+    "Composing multiple discounts is currently not supported!"
+  )
 
-  clone.transactionItemsByType.discount = clone.transactionItemsByType.discount || []
+  clone.transactionItemsByType.discount =
+    clone.transactionItemsByType.discount || []
   clone.transactionItemsByType.discount.push({
-    itemType: 'discount',
+    itemType: "discount",
     debit: _.sum(discountValues),
     discount: {
       description,
@@ -125,40 +162,58 @@ export async function applyPromoCode (tb, promoCode, type) {
       discountAmounts: discountValueMap,
       refundAmounts: refundAdjustmentMap,
       promotionParams: promotion.params,
-      promotionId
+      promotionId,
     },
-    notes: { tickets: discountValueMap }
+    notes: { tickets: discountValueMap },
   })
 
   // Update the description
   const discountDescriptions = _(clone.transactionItemsByType.discount || [])
     .map(item => `${item.discount.code} -$${Number(item.debit).toFixed(2)}`)
-    .join(';')
-  clone.description = clone.description + ' ' + discountDescriptions
+    .join(";")
+  clone.description = clone.description + " " + discountDescriptions
 
-  clone.undoFunctions.push(async (t) => {
+  clone.undoFunctions.push(async t => {
     if (promotion.params.usageLimit.userLimit) {
-      await tb.models.PromoUsage.subtractUserPromoUsage(promotionId,
-        userId, usedCount, { transaction: t })
+      await tb.models.PromoUsage.subtractUserPromoUsage(
+        promotionId,
+        userId,
+        usedCount,
+        { transaction: t }
+      )
     }
-    await promotion.undoHooks({transaction: t})
+    await promotion.undoHooks({ transaction: t })
   })
 
   return clone
 }
 
 export const qualifiers = {
-  Promotion: require('./functions/ticketDiscountQualifiers'),
-  RoutePass: require('./functions/routePassDiscountQualifiers'),
+  Promotion: require("./functions/ticketDiscountQualifiers"),
+  RoutePass: require("./functions/routePassDiscountQualifiers"),
 }
 
 const promotions = {
-  Promotion: require('./Promotion').Promotion,
-  RoutePass: require('./RoutePass').RoutePass,
+  Promotion: require("./Promotion").Promotion,
+  RoutePass: require("./RoutePass").RoutePass,
 }
 
-export function createCalculation (promoType, transactionBuilder, params, options, description, promotionId) {
+export function createCalculation(
+  promoType,
+  transactionBuilder,
+  params,
+  options,
+  description,
+  promotionId
+) {
   if (!promotions[promoType] || !qualifiers[promoType]) return null
   const qualifiersForType = qualifiers[promoType]
-  return new promotions[promoType](transactionBuilder, params, options, description, promotionId, qualifiersForType)
+  return new promotions[promoType](
+    transactionBuilder,
+    params,
+    options,
+    description,
+    promotionId,
+    qualifiersForType
+  )
 }
