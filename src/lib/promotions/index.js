@@ -132,7 +132,7 @@ export async function applyPromoCode (tb, promoCode, type) {
 
   // Update the description
   const discountDescriptions = _(clone.transactionItemsByType.discount || [])
-    .map(item => `${item.discount.code} -$${item.debit.toFixed(2)}`)
+    .map(item => `${item.discount.code} -$${Number(item.debit).toFixed(2)}`)
     .join(';')
   clone.description = clone.description + ' ' + discountDescriptions
 
