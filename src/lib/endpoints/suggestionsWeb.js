@@ -2,54 +2,64 @@ const _ = require("lodash")
 const Joi = require("joi")
 const common = require("../util/common")
 const Boom = require("boom")
-const querystring = require('querystring')
-import {Buffer} from "buffer"
-import axios from 'axios'
-import process from 'process'
-import jwt from 'jsonwebtoken'
-import assert from 'assert'
-import path from 'path'
-import Handlebars from 'handlebars'
-import fs from 'fs'
-import * as auth from '../core/auth'
-import * as email from '../util/email'
-import {toSVY} from "../util/svy21"
-import {NotFoundError, InvalidArgumentError} from '../util/errors'
-import {handleRequestWith, assertFound} from '../util/endpoints'
+const querystring = require("querystring")
+import { Buffer } from "buffer"
+import axios from "axios"
+import process from "process"
+import jwt from "jsonwebtoken"
+import assert from "assert"
+import path from "path"
+import Handlebars from "handlebars"
+import fs from "fs"
+import * as auth from "../core/auth"
+import * as email from "../util/email"
+import { toSVY } from "../util/svy21"
+import { NotFoundError, InvalidArgumentError } from "../util/errors"
+import { handleRequestWith, assertFound } from "../util/endpoints"
 
-var getModels = common.getModels
-var getDB = common.getDB
-var defaultErrorHandler = common.defaultErrorHandler
+let getModels = common.getModels
+let getDB = common.getDB
+let defaultErrorHandler = common.defaultErrorHandler
 
-var auth0Secret = new Buffer(process.env.PUBLIC_AUTH0_SECRET || '', 'base64')
+let auth0Secret = new Buffer(process.env.PUBLIC_AUTH0_SECRET || "", "base64")
 
 /**
-**/
-export function register (server, options, next) {
+ * @param {object} server The HAPI server object
+ * @param {object} options Options passed to plugin by HAPI
+ * @param {function} next
+ **/
+export function register(server, options, next) {
   /* Custom authentication scheme that verifies only the email address */
-  server.auth.scheme('auth0web', (scheme, opts) => ({
-    async authenticate (request, reply) {
+  server.auth.scheme("auth0web", (scheme, opts) => ({
+    async authenticate(request, reply) {
       try {
-        var authorization = request.headers.authorization
-        var token = authorization.match(/^Bearer (.*)$/)[1]
+        let authorization = request.headers.authorization
+        let token = authorization.match(/^Bearer (.*)$/)[1]
 
         assert(token)
-        var result = jwt.verify(token, opts.secret)
-        reply.continue({credentials: {
-          email: result.email_verified && result.email,
-          scope: result.email_verified ? ['email'] : [],
-        }})
+        let result = jwt.verify(token, opts.secret)
+        reply.continue({
+          credentials: {
+            email: result.email_verified && result.email,
+            scope: result.email_verified ? ["email"] : [],
+          },
+        })
       } catch (err) {
         reply.continue({
-          credentials: {email: null},
+          credentials: { email: null },
           scope: [],
         })
       }
-    }
+    },
   }))
-  server.auth.strategy('auth0web', 'auth0web', {secret: auth0Secret})
+  server.auth.strategy("auth0web", "auth0web", { secret: auth0Secret })
 
-  function escapeLike (s) {
+  /**
+   * Escape a string for use as a literal in LIKE queries
+   * @param {string} s
+   * @return {string} Escaped string
+   */
+  function escapeLike(s) {
     return s.replace(/[\\%_]/g, m => `\\${m}`)
   }
 
@@ -60,70 +70,75 @@ export function register (server, options, next) {
     method: "GET",
     path: "/suggestions/web",
     config: {
-      tags: ['api'],
+      tags: ["api"],
       auth: {
-        mode: 'try',
-        strategies: ['auth0web'],
-        scope: 'email',
+        mode: "try",
+        strategies: ["auth0web"],
+        scope: "email",
       },
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        var suggestions = await m.Suggestion.findAll({
+        let suggestions = await m.Suggestion.findAll({
           where: {
             email: {
-              $ilike: escapeLike(request.auth.credentials.email)
-            }
+              $ilike: escapeLike(request.auth.credentials.email),
+            },
           },
-          order: [['updatedAt', 'DESC']]
+          order: [["updatedAt", "DESC"]],
         })
 
         reply(suggestions.map(s => s.toJSON()))
       } catch (err) {
-        console.log(err.stack)
+        console.log(err.stack); // eslint-disable-line
         reply(Boom.badImplementation(err.message))
       }
-    }
+    },
   })
 
   server.route({
     method: "GET",
     path: "/suggestions/web/{id}",
     config: {
-      tags: ['api'],
+      tags: ["api"],
       auth: {
-        mode: 'optional',
-        strategies: ['auth0web'],
+        mode: "optional",
+        strategies: ["auth0web"],
       },
       validate: {
         params: {
           id: Joi.number().integer(),
-        }
+        },
       },
       description: `
       Returns a suggestion. If it belongs to the user, the email is returned in
       full. Otherwise it's returned partially anonymised
-      `
+      `,
     },
     handler: handleRequestWith(
-      (i, request, {db, models}) => models.Suggestion.findById(request.params.id),
+      (i, request, { db, models }) =>
+        models.Suggestion.findById(request.params.id),
       (suggestionInstance, request) => {
         assertFound(suggestionInstance)
         const suggestion = suggestionInstance.toJSON()
-        const credentialsEmail = _.get(request, 'auth.credentials.email')
+        const credentialsEmail = _.get(request, "auth.credentials.email")
 
-        if (credentialsEmail && suggestion.email.toLowerCase() === credentialsEmail.toLowerCase()) {
+        if (
+          credentialsEmail &&
+          (suggestion.email.toLowerCase() === credentialsEmail.toLowerCase() ||
+            credentialsEmail.toLowerCase().endsWith("@data.gov.sg"))
+        ) {
           return suggestion
         } else {
           return {
             ...suggestion,
-            email: email.anonymizeEmail(suggestion.email)
+            email: email.anonymizeEmail(suggestion.email),
           }
         }
       }
-    )
+    ),
   })
 
   /**
@@ -133,55 +148,69 @@ export function register (server, options, next) {
     method: "PUT",
     path: "/suggestions/web/{id}",
     config: {
-      tags: ['api'],
+      tags: ["api"],
       auth: {
-        mode: 'required',
-        strategies: ['auth0web'],
-        scope: 'email',
+        mode: "required",
+        strategies: ["auth0web"],
+        scope: "email",
       },
       validate: {
         params: {
-          id: Joi.number().integer()
+          id: Joi.number().integer(),
         },
         payload: {
-          boardLat: Joi.number().optional().min(1).max(2),
-          boardLon: Joi.number().optional().min(103).max(105),
-          alightLat: Joi.number().optional().min(1).max(2),
-          alightLon: Joi.number().optional().min(103).max(105),
-          time: Joi.number().integer().required(),
-        }
-      }
+          boardLat: Joi.number()
+            .optional()
+            .min(1)
+            .max(2),
+          boardLon: Joi.number()
+            .optional()
+            .min(103)
+            .max(105),
+          alightLat: Joi.number()
+            .optional()
+            .min(1)
+            .max(2),
+          alightLon: Joi.number()
+            .optional()
+            .min(103)
+            .max(105),
+          time: Joi.number()
+            .integer()
+            .required(),
+        },
+      },
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        var suggestion = await m.Suggestion.find({
+        let suggestion = await m.Suggestion.find({
           where: {
             id: request.params.id,
             email: {
-              $ilike: escapeLike(request.auth.credentials.email)
-            }
-          }
+              $ilike: escapeLike(request.auth.credentials.email),
+            },
+          },
         })
         NotFoundError.assert(suggestion)
 
         // Update the suggestion contents
-        var update = {}
+        let update = {}
 
         // update board stop
         if (request.payload.boardLat && request.payload.boardLon) {
           update.board = {
-            type: 'Point',
-            coordinates: [request.payload.boardLon, request.payload.boardLon]
+            type: "Point",
+            coordinates: [request.payload.boardLon, request.payload.boardLon],
           }
         }
 
         // update alight stop
         if (request.payload.alightLat && request.payload.alightLon) {
           update.alight = {
-            type: 'Point',
-            coordinates: [request.payload.alightLon, request.payload.alightLon]
+            type: "Point",
+            coordinates: [request.payload.alightLon, request.payload.alightLon],
           }
         }
 
@@ -192,14 +221,14 @@ export function register (server, options, next) {
 
         await suggestion.update(update)
 
-        updateTravelTime(suggestion).catch((err) => console.error(err))
+        updateTravelTime(suggestion).catch(err => console.error(err))
 
         reply(suggestion.toJSON())
       } catch (err) {
-        console.log(err.stack)
+        console.log(err.stack); // eslint-disable-line
         reply(Boom.badImplementation(err.message))
       }
-    }
+    },
   })
 
   /**
@@ -209,29 +238,29 @@ export function register (server, options, next) {
     method: "DELETE",
     path: "/suggestions/web/{id}",
     config: {
-      tags: ['api'],
+      tags: ["api"],
       auth: {
-        mode: 'required',
-        strategies: ['auth0web'],
-        scope: 'email',
+        mode: "required",
+        strategies: ["auth0web"],
+        scope: "email",
       },
       validate: {
         params: {
-          id: Joi.number().integer()
-        }
-      }
+          id: Joi.number().integer(),
+        },
+      },
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        var suggestion = await m.Suggestion.find({
+        let suggestion = await m.Suggestion.find({
           where: {
             id: request.params.id,
             email: {
-              $ilike: escapeLike(request.auth.credentials.email)
-            }
-          }
+              $ilike: escapeLike(request.auth.credentials.email),
+            },
+          },
         })
         NotFoundError.assert(suggestion)
 
@@ -239,10 +268,10 @@ export function register (server, options, next) {
 
         reply(suggestion.toJSON())
       } catch (err) {
-        console.log(err.stack)
+        console.log(err.stack) // eslint-disable-line
         reply(Boom.badImplementation(err.message))
       }
-    }
+    },
   })
 
   /**
@@ -254,112 +283,140 @@ export function register (server, options, next) {
     config: {
       tags: ["api"],
       auth: {
-        mode: 'try',
-        strategies: ['auth0web'],
+        mode: "try",
+        strategies: ["auth0web"],
       },
-      description: 'For suggestions from the web, verified by email',
+      description: "For suggestions from the web, verified by email",
       validate: {
         payload: Joi.object({
           boardLat: Joi.number().required(),
           boardLon: Joi.number().required(),
           alightLat: Joi.number().required(),
           alightLon: Joi.number().required(),
-          time: Joi.number().integer().required(),
+          time: Joi.number()
+            .integer()
+            .required(),
 
           email: Joi.string().email(),
           emailVerification: Joi.object({
             type: Joi.string(),
-            data: Joi.string()
+            data: Joi.string(),
           }).allow(null),
           currentMode: Joi.string().optional(),
           referrer: Joi.string().optional(),
-        })
+        }),
       },
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        var requestIP = request.headers['x-forwarded-for'] ||
-          request.info.remoteAddress
+        let requestIP =
+          request.headers["x-forwarded-for"] || request.info.remoteAddress
         if (requestIP instanceof Array) {
           requestIP = requestIP[0]
-          assert.strictEqual(typeof requestIP, 'string')
+          assert.strictEqual(typeof requestIP, "string")
         }
 
-        var suggestionData = {
+        let suggestionData = {
           board: {
             type: "POINT",
-            coordinates: [request.payload.boardLon, request.payload.boardLat]
+            coordinates: [request.payload.boardLon, request.payload.boardLat],
           },
           alight: {
             type: "POINT",
-            coordinates: [request.payload.alightLon, request.payload.alightLat]
+            coordinates: [request.payload.alightLon, request.payload.alightLat],
           },
           time: request.payload.time,
           currentMode: request.payload.currentMode,
           email: request.payload.email,
           ipAddress: requestIP,
-          referrer: request.payload.referrer
+          referrer: request.payload.referrer,
         }
 
-        var emailTemplateText = Handlebars.compile(
-          fs.readFileSync(path.join(__dirname, '/../../../data/suggestion-verification.txt'), 'utf-8')
+        let emailTemplateText = Handlebars.compile(
+          fs.readFileSync(
+            path.join(__dirname, "/../../../data/suggestion-verification.txt"),
+            "utf-8"
+          )
         )
-        var emailTemplateHtml = Handlebars.compile(
-          fs.readFileSync(path.join(__dirname, '/../../../data/suggestion-verification.html'), 'utf-8')
+        let emailTemplateHtml = Handlebars.compile(
+          fs.readFileSync(
+            path.join(__dirname, "/../../../data/suggestion-verification.html"),
+            "utf-8"
+          )
         )
 
         if (!request.payload.emailVerification) {
-          suggestionData.action = 'addSuggestion'
-          var token = jwt.sign(suggestionData, auth.emailVerificationKey, {
-            expiresIn: '30 days'
+          suggestionData.action = "addSuggestion"
+          let token = jwt.sign(suggestionData, auth.emailVerificationKey, {
+            expiresIn: "30 days",
           })
 
           await email.sendMail({
-            from: 'feedback@beeline.sg',
+            from: "feedback@beeline.sg",
             to: request.payload.email,
-            subject: 'Please verify your Beeline suggestion!',
+            subject: "Please verify your Beeline suggestion!",
             text: emailTemplateText({
-              verificationLink: `https://${process.env.WEB_DOMAIN}/suggestions/web/verify?token=${token}`,
+              verificationLink: `https://${
+                process.env.WEB_DOMAIN
+              }/suggestions/web/verify?token=${token}`,
             }),
             html: emailTemplateHtml({
-              verificationLink: `https://${process.env.WEB_DOMAIN}/suggestions/web/verify?token=${token}`,
+              verificationLink: `https://${
+                process.env.WEB_DOMAIN
+              }/suggestions/web/verify?token=${token}`,
             }),
           })
 
           return reply(suggestionData)
-        } else if (request.payload.emailVerification.type === 'auth0') {
-          var creds = jwt.verify(request.payload.emailVerification.data, auth0Secret)
+        } else if (request.payload.emailVerification.type === "auth0") {
+          let creds = jwt.verify(
+            request.payload.emailVerification.data,
+            auth0Secret
+          )
 
-          assert(creds.email_verified, 'Your email must be verified with your provider (e.g. Google, Facebook)')
-          assert.strictEqual(creds.email, request.payload.email, 'Verified email and email provided are not the same')
+          assert(
+            creds.email_verified,
+            "Your email must be verified with your provider (e.g. Google, Facebook)"
+          )
+          assert.strictEqual(
+            creds.email,
+            request.payload.email,
+            "Verified email and email provided are not the same"
+          )
 
-          var pastSuggestionsCount = await m.Suggestion.count({
+          let pastSuggestionsCount = await m.Suggestion.count({
             where: {
               email: {
-                $ilike: escapeLike(request.payload.email)
-              }
+                $ilike: escapeLike(request.payload.email),
+              },
             },
-            order: [['updatedAt', 'DESC']]
+            order: [["updatedAt", "DESC"]],
           })
-          InvalidArgumentError.assert(pastSuggestionsCount < 5, "Each user is limited to 5 suggestions! Sorry!")
+          InvalidArgumentError.assert(
+            pastSuggestionsCount < 5,
+            "Each user is limited to 5 suggestions! Sorry!"
+          )
 
           // otherwise create the suggestion
-          var suggestion = await m.Suggestion.create(suggestionData)
+          let suggestion = await m.Suggestion.create(suggestionData)
 
-          updateTravelTime(suggestion).catch((err) => console.error(err))
+          updateTravelTime(suggestion).catch(err => console.error(err))
 
           reply(suggestion.toJSON())
         } else {
-          throw new InvalidArgumentError(`Unknown verification type ${request.payload.emailVerification.type}`)
+          throw new InvalidArgumentError(
+            `Unknown verification type ${
+              request.payload.emailVerification.type
+            }`
+          )
         }
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
-
 
   server.route({
     method: "GET",
@@ -369,35 +426,39 @@ export function register (server, options, next) {
       auth: false,
       validate: {
         query: {
-          token: Joi.string()
-        }
+          token: Joi.string(),
+        },
       },
-      description: `Endpoint used to validate suggestions from email`
+      description: `Endpoint used to validate suggestions from email`,
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var token = auth.verifyImmediate(request.query.token)
-        var m = getModels(request)
+        let token = auth.verifyImmediate(request.query.token)
+        let m = getModels(request)
 
-        assert.strictEqual(token.action, 'addSuggestion', 'Invalid token')
+        assert.strictEqual(token.action, "addSuggestion", "Invalid token")
 
         const suggestion = await m.Suggestion.create(token)
 
-        updateTravelTime(suggestion).catch((err) => console.error(err))
-        reply.redirect('https://beeline.sg/suggestSubmitted.html#' + querystring.stringify({
-          originLat: token.board.coordinates[1],
-          originLng: token.board.coordinates[0],
-          destinationLat: token.alight.coordinates[1],
-          destinationLng: token.alight.coordinates[0],
-        }))
+        updateTravelTime(suggestion).catch(err => console.error(err))
+        reply.redirect(
+          "https://beeline.sg/suggestSubmitted.html#" +
+            querystring.stringify({
+              originLat: token.board.coordinates[1],
+              originLng: token.board.coordinates[0],
+              destinationLat: token.alight.coordinates[1],
+              destinationLng: token.alight.coordinates[0],
+            })
+        )
       } catch (err) {
-        console.log(err.stack)
-        return reply(Boom.badRequest(`
+        console.log(err.stack); // eslint-disable-line
+        return reply(
+          Boom.badRequest(`
           The suggestion failed to be verified
-          `))
-          .header('content-type', 'text/html')
+          `)
+        ).header("content-type", "text/html")
       }
-    }
+    },
   })
 
   server.route({
@@ -407,24 +468,37 @@ export function register (server, options, next) {
       tags: ["api"],
       validate: {
         query: {
-          startLat: Joi.number().min(1).max(2),
-          startLng: Joi.number().min(102).max(105),
-          endLat: Joi.number().min(1).max(2),
-          endLng: Joi.number().min(102).max(105),
-          startDistance: Joi.number().default(5000).max(5000),
-          endDistance: Joi.number().default(5000).max(5000),
-        }
+          startLat: Joi.number()
+            .min(1)
+            .max(2),
+          startLng: Joi.number()
+            .min(102)
+            .max(105),
+          endLat: Joi.number()
+            .min(1)
+            .max(2),
+          endLng: Joi.number()
+            .min(102)
+            .max(105),
+          startDistance: Joi.number()
+            .default(5000)
+            .max(5000),
+          endDistance: Joi.number()
+            .default(5000)
+            .max(5000),
+        },
       },
-      description: `Suggestions by all users`
+      description: `Suggestions by all users`,
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var db = getDB(request)
+        let db = getDB(request)
 
-        var startXY = toSVY([request.query.startLng, request.query.startLat])
-        var endXY = toSVY([request.query.endLng, request.query.endLat])
+        let startXY = toSVY([request.query.startLng, request.query.startLat])
+        let endXY = toSVY([request.query.endLng, request.query.endLat])
 
-        var sugg = await db.query(`
+        let sugg = await db.query(
+          `
           SELECT DISTINCT ON (board, alight, time, email)
             *
           FROM suggestions
@@ -437,53 +511,73 @@ export function register (server, options, next) {
             ST_Transform(ST_SetSRID(alight, 4326), 3414),
             ST_GeomFromText('POINT(${endXY[0]} ${endXY[1]})', 3414)
           ) < ${request.query.endDistance})
-        `, {
-          type: db.QueryTypes.SELECT
-        })
+        `,
+          {
+            type: db.QueryTypes.SELECT,
+          }
+        )
 
-        sugg = sugg.map(s => _.defaults({
-          email: email.anonymizeEmail(s.email),
-          ipAddress: null,
-        }, s))
+        sugg = sugg.map(s =>
+          _.defaults(
+            {
+              email: email.anonymizeEmail(s.email),
+              ipAddress: null,
+            },
+            s
+          )
+        )
         reply(sugg)
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   next()
 }
 register.attributes = {
-  name: "endpoint-suggestions-web"
+  name: "endpoint-suggestions-web",
 }
 
-export function updateTravelTime (suggestion) {
+/**
+ * Ask Google how long the commute normally takes.
+ *
+ * @param {object} suggestion The Suggestion instance
+ * @return {Promise<Suggestion>} Promise returning the *updated* suggestion
+ **/
+export function updateTravelTime(suggestion) {
   // FIXME We need actual knowledge of public holidays
   let imputedTime = new Date()
   imputedTime.setDate(imputedTime.getDate() + 1)
   imputedTime.setHours(0, 0, 0, 0)
   imputedTime.setTime(imputedTime.getTime() + suggestion.time) // Set to the arrival time tomorrow,
 
-  while (imputedTime.getDay() === 0 || imputedTime.getDay() === 6) { // then increment until it's a working day
+  while (imputedTime.getDay() === 0 || imputedTime.getDay() === 6) {
+    // then increment until it's a working day
     imputedTime.setDate(imputedTime.getDate() + 1)
     // FIXME: Increment until it's a public holiday
   }
 
-  return axios.get(`https://maps.googleapis.com/maps/api/directions/json?` + querystring.stringify({
-    origin: `${suggestion.board.coordinates[1]},${suggestion.board.coordinates[0]}`,
-    destination: `${suggestion.alight.coordinates[1]},${suggestion.alight.coordinates[0]}`,
-    mode: 'transit',
-    arrival_time: Math.floor(imputedTime / 1000),
-    key: process.env.GOOGLE_MAPS_API_KEY
-  }))
-    .then((response) => {
+  return axios
+    .get(
+      `https://maps.googleapis.com/maps/api/directions/json?` +
+        querystring.stringify({
+          origin: `${suggestion.board.coordinates[1]},${
+            suggestion.board.coordinates[0]
+          }`,
+          destination: `${suggestion.alight.coordinates[1]},${
+            suggestion.alight.coordinates[0]
+          }`,
+          mode: "transit",
+          arrival_time: Math.floor(imputedTime / 1000),
+          key: process.env.GOOGLE_MAPS_API_KEY,
+        })
+    )
+    .then(response => {
       let result = response.data
 
-      console.log(result)
-
       return suggestion.update({
-        travelTime: _.sum(result.routes[0].legs.map(leg => leg.duration.value))
+        travelTime: _.sum(result.routes[0].legs.map(leg => leg.duration.value)),
       })
     })
 }
