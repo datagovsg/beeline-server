@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "",
   "engines": {
-    "node": "8.x.x"
+    "node": "9.x.x"
   },
   "main": "dist/index.js",
   "scripts": {
