@@ -629,20 +629,39 @@ export function register(server, options, next) {
 
           reply(io)
             .header("Content-type", "text/csv")
-            .header("content-disposition", 'attachment; filename="route_pass_report.csv"')
+            .header(
+              "content-disposition",
+              'attachment; filename="route_pass_report.csv"'
+            )
 
-          db.transaction({readOnly: true}, async transaction => {
-            const perPage = 20
-            let page = 1
-            let lastFetchedSize = perPage
-            while (lastFetchedSize >= perPage) {
-              const relatedTransactionItems = await getTransactionItems(m, db, query, page, perPage, transaction) // eslint-disable-line no-await-in-loop
-              for (const row of relatedTransactionItems) {
-                if (!writer.write(row)) {
-                  await new Promise((resolve) => { // eslint-disable-line no-await-in-loop
-                    writer.once('drain', resolve)
-                  })
-                }
+          db
+            .transaction({ readOnly: true }, async transaction => {
+              let untilBatchWritten = Promise.resolve(true)
+              const perPage = 20
+              let page = 1
+              let lastFetchedSize = perPage
+              while (lastFetchedSize >= perPage) {
+                const relatedTransactionItems = await getTransactionItems(
+                  m,
+                  db,
+                  query,
+                  page,
+                  perPage,
+                  transaction
+                )
+                await untilBatchWritten
+                untilBatchWritten = new Promise(async batchWritten => {
+                  for (const row of relatedTransactionItems) {
+                    if (!writer.write(row)) {
+                      await new Promise(resolve => {
+                        writer.once("drain", resolve)
+                      })
+                    }
+                  }
+                  batchWritten()
+                })
+                lastFetchedSize = relatedTransactionItems.length
+                ++page
               }
             })
             .catch(err => {
