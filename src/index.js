@@ -1,6 +1,7 @@
+/* eslint no-console: 0 */
 require("source-map-support").install()
 // REQUIRED BY TELEGRAM
-require('bluebird').config({cancellation: true})
+require("bluebird").config({ cancellation: true })
 const Hapi = require("hapi")
 const Inert = require("inert")
 const Vision = require("vision")
@@ -14,76 +15,79 @@ const AnalyticsPlugin = require("./lib/util/analytics.js")
 // FORCE DATES TO BE INTEREPRETED AS UTC
 // N.B. we are not overriding behaviour of timestamp type
 // NEW BEHAVIOUR IN postgres-date
-var DATE = /^(\d{1,})-(\d{2})-(\d{2})$/
-require('pg').types.setTypeParser(1082, (dateString) => {
+const DATE = /^(\d{1,})-(\d{2})-(\d{2})$/
+require("pg").types.setTypeParser(1082, dateString => {
   return DATE.test(dateString) ? new Date(dateString) : null
 })
 
-
 // Check environment variables. Exit if any of the
-// required ones don't exist
+// required ones don"t exist
 const requiredVariables = [
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_USER',
-  'SMTP_PASSWORD',
-  'TWILIO_ACCOUNT_SID',
-  'TWILIO_AUTH_TOKEN',
-  'DATABASE_URL',
-  'AUTH0_SECRET',
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASSWORD",
+  "TWILIO_ACCOUNT_SID",
+  "TWILIO_AUTH_TOKEN",
+  "DATABASE_URL",
+  "AUTH0_SECRET",
 ]
 
 // If DATABASE_URL is absent, check if we can put one together
 // from AWS RDS equivalents
 const rdsVariables = [
-  'RDS_USERNAME',
-  'RDS_PASSWORD',
-  'RDS_HOSTNAME',
-  'RDS_PORT',
-  'RDS_DB_NAME',
+  "RDS_USERNAME",
+  "RDS_PASSWORD",
+  "RDS_HOSTNAME",
+  "RDS_PORT",
+  "RDS_DB_NAME",
 ]
 
 const warnVariables = [
-  'STRIPE_PK',
-  'STRIPE_CID',
-  'STRIPE_SK',
-  'AUTH0_CID',
-  'AUTH0_DOMAIN',
+  "STRIPE_PK",
+  "STRIPE_CID",
+  "STRIPE_SK",
+  "AUTH0_CID",
+  "AUTH0_DOMAIN",
 ]
 
-const checkExists = vars => vars.forEach(v => {
-  if (!process.env[v]) {
-    console.log(`${v} environment variable is not set!`)
-    throw new Error(`${v} environment variable is not set!`)
-  }
-})
+const checkExists = vars =>
+  vars.forEach(v => {
+    if (!process.env[v]) {
+      console.log(`${v} environment variable is not set!`)
+      throw new Error(`${v} environment variable is not set!`)
+    }
+  })
 
 if (!process.env.DATABASE_URL) {
-  console.warn('Attempting to construct DATABASE_URL from AWS RDS config')
+  console.warn("Attempting to construct DATABASE_URL from AWS RDS config")
   checkExists(rdsVariables)
   process.env.DATABASE_URL =
     `postgres://${process.env.RDS_USERNAME}:${process.env.RDS_PASSWORD}` +
-    `@${process.env.RDS_HOSTNAME}:${process.env.RDS_PORT}/${process.env.RDS_DB_NAME}`
+    `@${process.env.RDS_HOSTNAME}:${process.env.RDS_PORT}/${
+      process.env.RDS_DB_NAME
+    }`
 }
 
 checkExists(requiredVariables)
 
 for (let v of warnVariables) {
   if (!process.env[v]) {
-    console.warn(`${v} environment variable is not set! This is not fatal, but you'd better not be in production!`)
+    console.warn(
+      `${v} environment variable is not set! This is not fatal, but you"d better not be in production!`
+    )
   }
 }
 
-
-var server = new Hapi.Server({
+const server = new Hapi.Server({
   debug: {
     request: ["error"],
-    log: ["error"]
+    log: ["error"],
   },
   app: {
-    webDomain: process.env.WEB_DOMAIN || 'staging.beeline.sg',
-    emailDomain: process.env.EMAIL_DOMAIN || 'staging.beeline.sg',
-  }
+    webDomain: process.env.WEB_DOMAIN || "staging.beeline.sg",
+    emailDomain: process.env.EMAIL_DOMAIN || "staging.beeline.sg",
+  },
 })
 
 // Configure the connection parameters
@@ -100,21 +104,27 @@ server.connection({
         "Beeline-Device-Version",
         "Beeline-Device-Platform",
         "Beeline-Device-Manufacturer",
-        "Beeline-App-Name"
+        "Beeline-App-Name",
       ],
-      additionalExposedHeaders: [
-        'Date'
-      ]
-    }
-  }
+      additionalExposedHeaders: ["Date"],
+    },
+  },
 })
 
-server.on('start', () => {
-  events.emit('lifecycle', {stage: 'start'})
+server.on("start", () => {
+  events.emit("lifecycle", { stage: "start" })
 })
 
-server.on('stop', () => {
-  events.emit('lifecycle', {stage: 'stop'})
+server.on("stop", () => {
+  events.emit("lifecycle", { stage: "stop" })
+})
+
+server.on("response", function({ info, method, url, response }) {
+  console.log(
+    `${info.remoteAddress} - ${method.toUpperCase()} ${url.path} -> ${
+      response.statusCode
+    }`
+  )
 })
 
 // Set up Swagger to allow you to view API documentation
@@ -129,10 +139,10 @@ server
         documentationPath: "/",
         info: {
           title: "Beeline API Documentation",
-          version: version
-        }
-      }
-    }
+          version: version,
+        },
+      },
+    },
   ])
   .then(() => {
     console.log("Registered Swagger")
@@ -158,22 +168,23 @@ server
   //   }
   // })
   // Kill the process if there are any errors in registration or starting
-  // Need to do this since node doesn't crash on unhandled promises
-  .catch((error) => {
-    events.emit('lifecycle', {stage: 'error'})
+  // Need to do this since node doesn"t crash on unhandled promises
+  .catch(error => {
+    events.emit("lifecycle", { stage: "error" })
     console.error(error)
 
     setTimeout(() => process.exit(1), 5000)
   })
 
-process.on('SIGTERM', () => {
-  server.stop({timeout: 30 * 1000})
+process.on("SIGTERM", () => {
+  server
+    .stop({ timeout: 30 * 1000 })
     .then(() => {
       console.log("Server shutdown gracefully :)")
-      server.plugins['sequelize'].db.close()
+      server.plugins["sequelize"].db.close()
       process.exit(0)
     })
-    .catch((err) => {
+    .catch(err => {
       console.log("Ooops!", err)
     })
 })
