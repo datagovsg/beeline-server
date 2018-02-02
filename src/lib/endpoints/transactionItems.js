@@ -350,15 +350,7 @@ export function register(server, options, next) {
         },
         {
           model: m.Transaction,
-          include: [
-            {
-              model: m.TransactionItem,
-              where: {
-                itemType: { $notIn: ["account", "transfer"] },
-              },
-              separate: true,
-            },
-          ],
+          attributes: ["id", "createdAt", "committed", "type", "description"],
           where: transactionWhereClause,
         },
       ],
@@ -437,7 +429,8 @@ export function register(server, options, next) {
         `SELECT
           ti."id",
           "paymentResource",
-          "payments".data->'transfer'->>'destination_payment' as "transferResource"
+          "payments".data->'transfer'->>'destination_payment' as "transferResource",
+          "payments".data->>'message' as "paymentMessage"
         FROM
           "transactionItems" "paymentItem",
           "payments",
