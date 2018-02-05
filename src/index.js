@@ -122,7 +122,7 @@ server.on("stop", () => {
 server.on("response", function({ info, method, url, response }) {
   console.log(
     `${info.remoteAddress} - ${method.toUpperCase()} ${url.path} -> ${
-      response.statusCode
+      (response || {}).statusCode
     }`
   )
 })
