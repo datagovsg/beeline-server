@@ -350,7 +350,7 @@ export function register(server, options, next) {
         let adminInst = await m.Admin.findById(
           request.auth.credentials.adminId,
           {
-            include: [m.TransportCompany],
+            include: [{model: m.TransportCompany, attributes: {exclude: ['logo']}}],
           }
         )
 
