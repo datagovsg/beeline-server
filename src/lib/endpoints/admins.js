@@ -223,9 +223,10 @@ export function register (server, options, next) {
     },
     handler (request, reply) {
       reply({
-        role: request.auth.credentials.role,
+        scope: request.auth.credentials.scope,
         email: request.auth.credentials.email,
         adminId: request.auth.credentials.adminId,
+        transportCompanyIds: request.auth.credentials.transportCompanyIds,
       })
     }
   })

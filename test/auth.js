@@ -1,5 +1,5 @@
 const {models: m} = require('../src/lib/core/dbschema')()
-const {randomEmail} = require("./test_common")
+const {loginAs, randomEmail} = require("./test_common")
 import {expect} from "code"
 import server from "../src/index"
 import Lab from "lab"
@@ -10,20 +10,19 @@ export var lab = Lab.script()
 
 lab.experiment("Auth stuff", function () {
   lab.test('adminCredentials', {timeout: 10000}, async function () {
-    var adminEmail = randomEmail()
-    var adminInst = await m.Admin.create({
-      email: adminEmail
+    const adminEmail = randomEmail()
+    const adminInst = await m.Admin.create({
+      email: adminEmail,
     })
-    var companyInst = await m.TransportCompany.create({})
+    const companyInst = await m.TransportCompany.create({})
 
     await adminInst.addTransportCompany(companyInst.id, {permissions: ['abc', 'def', 'ghi']})
 
     // Check that permissions etc. are all added in
-    var credentials = await auth.credentialsFromToken({
+    const credentials = await auth.credentialsFromToken({
       email: adminEmail,
-      adminId: adminInst.id,
       role: 'admin',
-      iat: Date.now()
+      iat: Date.now(),
     })
     expect(credentials.permissions[companyInst.id]).include('abc')
     expect(credentials.permissions[companyInst.id]).include('def')
@@ -33,28 +32,47 @@ lab.experiment("Auth stuff", function () {
     expect(credentials.iat).exist()
 
     // Check the whoami function
-    var response = await server.inject({
+    const response = await server.inject({
       url: '/admins/whoami',
       headers: {authorization: `Bearer ${adminInst.makeToken()}`}
     })
+    expect(response.result.scope).equal("admin")
     expect(response.result.adminId).equal(adminInst.id)
+    expect(response.result.transportCompanyIds).include(companyInst.id)
   })
 
   lab.test('superadminCredentials', {timeout: 10000}, async function () {
-    var adminEmail = randomEmail()
-    var adminInst = await m.Admin.create({
-      email: adminEmail
+    const adminEmail = randomEmail()
+    const adminInst = await m.Admin.create({
+      email: adminEmail,
     })
 
     // Check that email, adminId are included
-    var credentials = await auth.credentialsFromToken({
+    const credentials = await auth.credentialsFromToken({
       email: adminEmail,
       role: 'superadmin',
-      iat: Date.now()
+      iat: Date.now(),
     })
+
     expect(credentials.adminId).equal(adminInst.id)
     expect(credentials.email).equal(adminEmail)
     expect(credentials.iat).exist()
+
+    // Check the whoami function
+    const superadminToken = (await loginAs("superadmin", {email: adminEmail})).result.sessionToken
+    const response = await server.inject({
+      url: '/admins/whoami',
+      headers: {authorization: `Bearer ${superadminToken}`},
+    })
+    expect(response.result.scope).equal("superadmin")
+    expect(response.result.adminId).equal(adminInst.id)
+
+    //
+    const allCompanyIds = await m.TransportCompany.findAll({attributes: ['id']})
+      .then(s => s.map(tc => tc.id))
+    for (let companyId of allCompanyIds) {
+      expect(response.result.transportCompanyIds).include(companyId)
+    }
   })
 
   lab.test('[admin] credentialsFromToken works with app_metadata', {timeout: 10000}, async function () {

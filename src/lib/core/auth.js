@@ -130,24 +130,26 @@ register.attributes = {
 }
 
 async function adminCredentials (token) {
-  var email = _.get(token, 'app_metadata.email', _.get(token, 'email'))
-  var iat = token.iat
+  const email = _.get(token, 'app_metadata.email', _.get(token, 'email'))
+  const iat = token.iat
 
   assert(email)
 
-  var adminInstance = await m.Admin.find({
-    where: {email: email.toLowerCase()}
+  const canonicalEmail = email.toLowerCase()
+
+  const adminInstance = await m.Admin.find({
+    where: {email: canonicalEmail}
   })
 
   // Authorize for only the companies admin is allowed to access
-  var creds = {
+  const creds = {
     scope: 'admin',
-    email: email.toLowerCase(),
+    email: canonicalEmail,
     adminId: adminInstance.id,
     iat
   }
 
-  var adminCompanies = await m.AdminCompany.findAll({
+  const adminCompanies = await m.AdminCompany.findAll({
     where: {adminId: adminInstance.id},
     raw: true,
     attributes: ['transportCompanyId', 'permissions']
@@ -170,27 +172,23 @@ async function superadminCredentials (token) {
   }
 
   // Authorize for all companies
-  var companiesPromise = m.TransportCompany.findAll({
+  const companies = await m.TransportCompany.findAll({
     attributes: ['id'],
     raw: true,
-  }).then((companies) => {
-    creds.transportCompanyIds = companies.map(c => c.id)
-
-    // Grant all permissions to superadmin
-    creds.permissions = _(creds.transportCompanyIds)
-      .keyBy()
-      .mapValues(key => ADMIN_TASKS)
-      .value()
   })
 
   // Find the admin user on which we store data, if such a user exists
-  var adminPromise = m.Admin.findOne({where: {email: token.email}})
-    .then((adminInst) => {
-      creds.adminId = adminInst && adminInst.id
-    })
+  const adminInst = await m.Admin.findOne({where: {email: token.email}})
 
-  await adminPromise
-  await companiesPromise
+  creds.transportCompanyIds = companies.map(c => c.id)
+
+  // Grant all permissions to superadmin
+  creds.permissions = _(creds.transportCompanyIds)
+    .keyBy()
+    .mapValues(key => ADMIN_TASKS)
+    .value()
+
+  creds.adminId = adminInst && adminInst.id
 
   return creds
 }
