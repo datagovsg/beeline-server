@@ -16,6 +16,7 @@ export async function loginAs (type, options) {
       app_metadata: {
         roles: ['superadmin'],
       },
+      ...options,
     }
   } else if (type === 'admin') {
     let email = `test-admin-${Date.now()}@example.com`
