@@ -8,25 +8,21 @@ const {toWGS, toSVY} = require('../src/lib/util/svy21')
 const eventHandlers = require('../src/lib/events/handlers')
 
 const {db, models: m} = require("../src/lib/core/dbschema")()
-export var lab = Lab.script()
+export const lab = Lab.script()
 const eventsDaemon = require('../src/lib/daemons/eventSubscriptions')
 
 lab.experiment("Integration test for monitoring events", function () {
-  var companyInstance, userInstance, driverInstance, vehicleInstance,
-    stopInstances, stopsById
+  let [companyInstance, userInstance, driverInstance, vehicleInstance,
+    stopInstances, stopsById] = []
 
-  function delay (ms) {
-    return new Promise(resolve => setTimeout(resolve, ms))
-  }
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
   let payloads = []
 
-  async function pollAndProcess () {
-    return tool.processStatus(await tool.poll())
-  }
+  const pollAndProcess = async () => tool.processStatus(await tool.poll())
 
-  async function expectEvent (event, severity, params, fn) {
-    var uid = Math.random()
+  const expectEvent  = async (event, severity, params, fn) => {
+    let uid = Math.random()
 
     await m.EventSubscription.create({
       agent: {
@@ -34,7 +30,7 @@ lab.experiment("Integration test for monitoring events", function () {
       },
       event, params,
       formatter: '0',
-      handler: 'debug' // This handler is monkey-patched in before()
+      handler: 'debug', // This handler is monkey-patched in before()
     })
 
     await eventsDaemon.updateEventSubscriptions({db, models: m})
@@ -67,7 +63,7 @@ lab.experiment("Integration test for monitoring events", function () {
 
     driverInstance = await m.Driver.create({
       name: 'Test driver',
-      telephone: `TEST-${Date.now()}`
+      telephone: `TEST-${Date.now()}`,
     })
 
     vehicleInstance = await m.Vehicle.create({
@@ -80,8 +76,8 @@ lab.experiment("Integration test for monitoring events", function () {
         description: `Test Stop ${i + 1}`,
         coordinates: {
           type: "Point",
-          coordinates: randomSingaporeLngLat()
-        }
+          coordinates: randomSingaporeLngLat(),
+        },
       }))
     )
 
@@ -90,7 +86,7 @@ lab.experiment("Integration test for monitoring events", function () {
     await driverInstance.addTransportCompany(companyInstance)
   })
 
-  async function createPing (tripInstance, date = new Date(), tripStop = null, distance = 50) {
+  const createPing = async (tripInstance, date = new Date(), tripStop = null, distance = 50) => {
     await tripInstance.update({
       driverId: driverInstance.id,
       vehicleId: vehicleInstance.id,
@@ -102,7 +98,7 @@ lab.experiment("Integration test for monitoring events", function () {
     } else {
       coords = toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
     }
-    var xy2 = [coords[0] + distance, coords[1]]
+    let xy2 = [coords[0] + distance, coords[1]]
 
     return await m.Ping.create({
       createdAt: date,
@@ -112,23 +108,23 @@ lab.experiment("Integration test for monitoring events", function () {
       vehicleId: vehicleInstance.id,
       coordinates: {
         type: 'Point',
-        coordinates: toWGS(xy2)
-      }
+        coordinates: toWGS(xy2),
+      },
     })
   }
 
-  async function createRouteStopsTrips (minsOffset) {
-    var now = Date.now()
+  const createRouteStopsTrips = async (minsOffset) => {
+    let now = Date.now()
 
     // create Route
-    var routeInstance = await m.Route.create({
+    let routeInstance = await m.Route.create({
       name: "Test route only",
       from: "Test route From",
-      to: "Test route To"
+      to: "Test route To",
     })
 
     // create some trips...
-    var tripInstance = await m.Trip.create({
+    let tripInstance = await m.Trip.create({
       date: new Date(now),
       capacity: 10,
       routeId: routeInstance.id,
@@ -140,21 +136,21 @@ lab.experiment("Integration test for monitoring events", function () {
         { stopId: stopInstances[2].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 20) * 60000)},
 
         { stopId: stopInstances[3].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 30) * 60000)},
-        { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 40) * 60000)}
+        { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 40) * 60000)},
       ],
       bookingInfo: {
         windowType: 'stop',
         windowSize: 0,
-      }
+      },
     }, {
-      include: [{model: m.TripStop}]
+      include: [{model: m.TripStop}],
     })
 
     await m.Ticket.create({
       boardStopId: tripInstance.tripStops[0].id,
       alightStopId: tripInstance.tripStops[2].id,
       userId: userInstance.id,
-      status: 'valid'
+      status: 'valid',
     })
 
     return [routeInstance, tripInstance]

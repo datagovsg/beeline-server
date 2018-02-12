@@ -9,15 +9,15 @@ const {randomEmail, expectEvent} = require("./test_common")
 const {toWGS, toSVY} = require('../src/lib/util/svy21')
 
 const Lab = require('lab')
-export var lab = Lab.script()
+export const lab = Lab.script()
 const {models: m} = require("../src/lib/core/dbschema")()
 const {expect, fail} = require('code')
 
 const timemachine = require('./timemachine-wrap')
 
 lab.experiment("Checks on the monitoring tool", function () {
-  var companyInstance, userInstance, driverInstance, vehicleInstance,
-    stopInstances, stopsById, adminInstance
+  let [companyInstance, userInstance, driverInstance, vehicleInstance,
+    stopInstances, stopsById, adminInstance] = []
 
   lab.before(async function () {
     userInstance = await m.User.create({
@@ -32,7 +32,7 @@ lab.experiment("Checks on the monitoring tool", function () {
 
     driverInstance = await m.Driver.create({
       name: 'Test driver',
-      telephone: `TEST-${Date.now()}`
+      telephone: `TEST-${Date.now()}`,
     })
 
     adminInstance = await m.Admin.create({
@@ -52,8 +52,8 @@ lab.experiment("Checks on the monitoring tool", function () {
           coordinates: // randomSingaporeLngLat()
             // Cannot use a random lat/lng because
             // arrival time calculation now considers the last stop
-            [103.8, 1.38 + 0.02 * i]
-        }
+            [103.8, 1.38 + 0.02 * i],
+        },
       }))
     )
 
@@ -63,19 +63,16 @@ lab.experiment("Checks on the monitoring tool", function () {
     await driverInstance.addTransportCompany(companyInstance)
   })
 
-  async function createPing (tripInstance, date = new Date(), tripStop = null, distance = 50) {
+  const createPing = async (tripInstance, date = new Date(), tripStop = null, distance = 50) => {
     await tripInstance.update({
       driverId: driverInstance.id,
       vehicleId: vehicleInstance.id,
     })
 
-    let coords = null
-    if (!tripStop) {
-      coords = [100, 100] // Somewhere in the sea...
-    } else {
-      coords = toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
-    }
-    var xy2 = [coords[0] + distance, coords[1]]
+    const coords = tripStop
+      ? toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
+      : [100, 100]
+    const xy2 = [coords[0] + distance, coords[1]]
 
     return await m.Ping.create({
       createdAt: date,
@@ -86,24 +83,24 @@ lab.experiment("Checks on the monitoring tool", function () {
       vehicleId: vehicleInstance.id,
       coordinates: {
         type: 'Point',
-        coordinates: toWGS(xy2)
-      }
+        coordinates: toWGS(xy2),
+      },
     })
   }
 
-  async function createRouteStopsTrips (minsOffset) {
-    var now = Date.now()
+  const createRouteStopsTrips = async (minsOffset) => {
+    const now = Date.now()
 
     // create Route
-    var routeInstance = await m.Route.create({
+    const routeInstance = await m.Route.create({
       name: "Test route only",
       from: "Test route From",
-      to: "Test route To"
+      to: "Test route To",
     })
 
 
     // create some trips...
-    var tripInstance = await m.Trip.create({
+    const tripInstance = await m.Trip.create({
       date: new Date(now),
       capacity: 10,
       routeId: routeInstance.id,
@@ -115,14 +112,14 @@ lab.experiment("Checks on the monitoring tool", function () {
         { stopId: stopInstances[2].id, canBoard: true, canAlight: false, time: new Date(now + (minsOffset + 20) * 60000)},
 
         { stopId: stopInstances[3].id, canBoard: false, canAlight: true, time: new Date(now + (minsOffset + 30) * 60000)},
-        { stopId: stopInstances[4].id, canBoard: false, canAlight: true, time: new Date(now + (minsOffset + 40) * 60000)}
+        { stopId: stopInstances[4].id, canBoard: false, canAlight: true, time: new Date(now + (minsOffset + 40) * 60000)},
       ],
       bookingInfo: {
         windowType: 'stop',
         windowSize: 0,
-      }
+      },
     }, {
-      include: [{model: m.TripStop}]
+      include: [{model: m.TripStop}],
     })
 
     return [routeInstance, tripInstance, now]
@@ -140,8 +137,8 @@ lab.experiment("Checks on the monitoring tool", function () {
     })
 
     // Alert level three should be flagged
-    var r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [25]})
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [25]})
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id]).exist()
     expect(serviceStatuses[routeInstance.id].status).exist()
@@ -163,8 +160,8 @@ lab.experiment("Checks on the monitoring tool", function () {
     })
 
     // Alert level three should be flagged
-    var r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [5]})
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [5]})
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id]).exist()
     expect(serviceStatuses[routeInstance.id].status).exist()
@@ -178,7 +175,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     let [routeInstance, tripInstance] = await createRouteStopsTrips(30)
 
     await tripInstance.update({
-      status: 'cancelled'
+      status: 'cancelled',
     })
 
     // Add user to trip
@@ -190,7 +187,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     })
 
     // Alert level three should be flagged
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id]).exist()
     expect(serviceStatuses[routeInstance.id].status).exist()
@@ -215,7 +212,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     // Alert level three should be flagged
     // FIXME:
     // var r = expectEvent('lateETA', { routeIds: [routeInstance.id], timeBefore: 5*60000})
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id]).exist()
     expect(serviceStatuses[routeInstance.id].status).exist()
@@ -239,7 +236,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     // Alert level three should be flagged
     // FIXME:
     // var r = expectEvent('lateETA', { routeIds: [routeInstance.id], timeBefore: 5*60000})
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id]).exist()
     expect(serviceStatuses[routeInstance.id].status).exist()
@@ -262,7 +259,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     await createPing(tripInstance, now, tripInstance.tripStops[0], 10)
 
     // Alert level three should be flagged
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id].status.ping).below(3)
     expect(serviceStatuses[routeInstance.id].status.distance).below(3)
@@ -281,7 +278,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     await createPing(tripInstance, now, tripInstance.tripStops[0], 10)
 
     // Alert level three should be flagged
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id].status.ping).below(3)
     expect(serviceStatuses[routeInstance.id].status.distance).below(3)
@@ -303,8 +300,8 @@ lab.experiment("Checks on the monitoring tool", function () {
     await createPing(tripInstance, now + 16 * 60000, tripInstance.tripStops[0], 10)
 
     // Alert level three should be flagged
-    var r = expectEvent('lateArrival', { routeIds: [routeInstance.id], timeAfter: 15 * 60000})
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let r = expectEvent('lateArrival', { routeIds: [routeInstance.id], timeAfter: 15 * 60000})
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id].status.ping).below(3)
     expect(serviceStatuses[routeInstance.id].status.distance).equal(3)
@@ -326,8 +323,8 @@ lab.experiment("Checks on the monitoring tool", function () {
     await createPing(tripInstance, now + 6 * 60000, tripInstance.tripStops[0], 10)
 
     // Alert level three should be flagged
-    var r = expectEvent('lateArrival', { routeIds: [routeInstance.id], timeAfter: 5 * 60000})
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let r = expectEvent('lateArrival', { routeIds: [routeInstance.id], timeAfter: 5 * 60000})
+    let serviceStatuses = tool.processStatus(await tool.poll())
 
     expect(serviceStatuses[routeInstance.id].status.ping).below(3)
     expect(serviceStatuses[routeInstance.id].status.distance).equal(2)
@@ -336,10 +333,10 @@ lab.experiment("Checks on the monitoring tool", function () {
   })
 
   lab.test("Lite trips are continuously monitored", {timeout: 5000}, async function () {
-    var now = Date.now()
+    let now = Date.now()
 
     // create Route
-    var routeInstance = await m.Route.create({
+    let routeInstance = await m.Route.create({
       name: "Test Lite Route",
       from: "From Lite",
       to: "To Lite",
@@ -354,13 +351,13 @@ lab.experiment("Checks on the monitoring tool", function () {
         { stopId: stopInstances[2].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 25 * cycle + 10) * 60000)},
 
         { stopId: stopInstances[3].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 25 * cycle + 15) * 60000)},
-        { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 25 * cycle + 20) * 60000)}
+        { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: new Date(now + (minsOffset + 25 * cycle + 20) * 60000)},
       ])
       .flatten()
       .value()
 
     // create some trips...
-    var tripInstance = await m.Trip.create({
+    let tripInstance = await m.Trip.create({
       date: new Date(now),
       capacity: 10,
       routeId: routeInstance.id,
@@ -370,9 +367,9 @@ lab.experiment("Checks on the monitoring tool", function () {
       bookingInfo: {
         windowType: 'stop',
         windowSize: 0,
-      }
+      },
     }, {
-      include: [{model: m.TripStop}]
+      include: [{model: m.TripStop}],
     })
 
     // Say, the first ping was on time...
@@ -380,8 +377,8 @@ lab.experiment("Checks on the monitoring tool", function () {
 
     // Subsequently, there were no pings.
     // Alert level four should be flagged
-    var r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [5] })
-    var serviceStatuses = tool.processStatus(await tool.poll())
+    let r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [5] })
+    let serviceStatuses = tool.processStatus(await tool.poll())
     expect(serviceStatuses[routeInstance.id].status.ping).least(4)
     await r.check()
 
@@ -395,7 +392,7 @@ lab.experiment("Checks on the monitoring tool", function () {
     // suppress noPings if it is 1 hour stale)
     try {
       timemachine.config({
-        timestamp: tripInstance.tripStops[30].time.getTime()
+        timestamp: tripInstance.tripStops[30].time.getTime(),
       })
 
       r = expectEvent('noPings', { routeIds: [routeInstance.id], minsBefore: [5] })
