@@ -14,12 +14,18 @@ const {models: m} = require("../src/lib/core/dbschema")()
 const {expect, fail} = require('code')
 
 const timemachine = require('./timemachine-wrap')
+const sinon = require("sinon")
+const pollTools = require("../src/lib/daemons/pollTools")
 
 lab.experiment("Checks on the monitoring tool", function () {
   let [companyInstance, userInstance, driverInstance, vehicleInstance,
     stopInstances, stopsById, adminInstance] = []
 
+  let findAllPings
+
   lab.before(async function () {
+    findAllPings = sinon.stub(pollTools, "findAllPings")
+
     userInstance = await m.User.create({
       email: `testuser${Date.now()}@example.com`,
       name: "Test user",
@@ -63,29 +69,41 @@ lab.experiment("Checks on the monitoring tool", function () {
     await driverInstance.addTransportCompany(companyInstance)
   })
 
-  const createPing = async (tripInstance, date = new Date(), tripStop = null, distance = 50) => {
+  lab.after(async () => {
+    findAllPings.restore()
+  })
+
+  const createPings = async (tripInstance, ...pingDetails) => {
     await tripInstance.update({
       driverId: driverInstance.id,
       vehicleId: vehicleInstance.id,
     })
 
-    const coords = tripStop
-      ? toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
-      : [100, 100]
-    const xy2 = [coords[0] + distance, coords[1]]
+    const pings = pingDetails.map(({date, tripStop, distance}) => {
+      const coords = tripStop
+        ? toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
+        : [100, 100]
+      const xy2 = [coords[0] + distance, coords[1]]
 
-    return await m.Ping.create({
-      createdAt: date,
-      updatedAt: date,
-      time: date,
-      tripId: tripInstance.id,
-      driverId: driverInstance.id,
-      vehicleId: vehicleInstance.id,
-      coordinates: {
-        type: 'Point',
-        coordinates: toWGS(xy2),
-      },
+      return {
+        createdAt: date,
+        updatedAt: date,
+        time: date,
+        tripId: tripInstance.id,
+        driverId: driverInstance.id,
+        vehicleId: vehicleInstance.id,
+        coordinates: {
+          type: 'Point',
+          coordinates: toWGS(xy2),
+        },
+      }
     })
+
+    findAllPings.returns(pings)
+  }
+
+  const createPing = async (tripInstance, date = new Date(), tripStop = null, distance = 50) => {
+    return createPings(tripInstance, {date, tripStop, distance})
   }
 
   const createRouteStopsTrips = async (minsOffset) => {
@@ -294,10 +312,12 @@ lab.experiment("Checks on the monitoring tool", function () {
       userId: userInstance.id,
     })
 
-    // punctual with pings...
-    await createPing(tripInstance, now, tripInstance.tripStops[0], 2000)
-    // but 16 mins late
-    await createPing(tripInstance, now + 16 * 60000, tripInstance.tripStops[0], 10)
+    // punctual with pings... but 16 mins late
+    await createPings(
+      tripInstance,
+      { date: now, tripStop: tripInstance.tripStops[0], distance: 2000 },
+      { date: now + 16 * 60000, tripStop: tripInstance.tripStops[0], distance: 10 }
+    )
 
     // Alert level three should be flagged
     let r = expectEvent('lateArrival', { routeIds: [routeInstance.id], timeAfter: 15 * 60000})
@@ -319,8 +339,11 @@ lab.experiment("Checks on the monitoring tool", function () {
       userId: userInstance.id,
     })
 
-    await createPing(tripInstance, now, tripInstance.tripStops[0], 2000)
-    await createPing(tripInstance, now + 6 * 60000, tripInstance.tripStops[0], 10)
+    await createPings(
+      tripInstance,
+      { date: now, tripStop: tripInstance.tripStops[0], distance: 2000 },
+      { date: now + 6 * 60000, tripStop: tripInstance.tripStops[0], distance: 10 }
+    )
 
     // Alert level three should be flagged
     let r = expectEvent('lateArrival', { routeIds: [routeInstance.id], timeAfter: 5 * 60000})
@@ -384,7 +407,11 @@ lab.experiment("Checks on the monitoring tool", function () {
 
     // Now create a ping. No alert should be flagged.
     // minsBefore is -60 ~ 12th stop
-    await createPing(tripInstance, tripInstance.tripStops[12].time.getTime(), tripInstance.tripStops[12], 2000)
+    await createPings(
+      tripInstance,
+      { date: tripInstance.tripStops[0].time.getTime(), tripStop: tripInstance.tripStops[0], distance: 2000 },
+      { date: tripInstance.tripStops[12].time.getTime(), tripStop: tripInstance.tripStops[12], distance: 2000 }
+    )
     serviceStatuses = tool.processStatus(await tool.poll())
     expect(serviceStatuses[routeInstance.id].status.ping).most(3)
 

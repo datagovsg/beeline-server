@@ -11,11 +11,16 @@ const {db, models: m} = require("../src/lib/core/dbschema")()
 export const lab = Lab.script()
 const eventsDaemon = require('../src/lib/daemons/eventSubscriptions')
 
+const sinon = require("sinon")
+const pollTools = require("../src/lib/daemons/pollTools")
+
 lab.experiment("Integration test for monitoring events", function () {
   let [companyInstance, userInstance, driverInstance, vehicleInstance,
     stopInstances, stopsById] = []
 
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+  let findAllPings
 
   let payloads = []
 
@@ -37,7 +42,7 @@ lab.experiment("Integration test for monitoring events", function () {
 
     await fn()
 
-    await delay(100)
+    await delay(1000)
 
     let emitted = payloads.find(p => p.agent.uid === uid)
     expect(emitted).exist()
@@ -47,6 +52,7 @@ lab.experiment("Integration test for monitoring events", function () {
   }
 
   lab.before({timeout: 20000}, async function () {
+    findAllPings = sinon.stub(pollTools, "findAllPings")
     eventHandlers.debug = (agent, payload) => {
       payloads.push({agent, payload})
     }
@@ -86,31 +92,39 @@ lab.experiment("Integration test for monitoring events", function () {
     await driverInstance.addTransportCompany(companyInstance)
   })
 
-  const createPing = async (tripInstance, date = new Date(), tripStop = null, distance = 50) => {
+  lab.after(async () => {
+    findAllPings.restore()
+  })
+
+  const createPings = async (tripInstance, ...pingDetails) => {
     await tripInstance.update({
       driverId: driverInstance.id,
       vehicleId: vehicleInstance.id,
     })
 
-    let coords = null
-    if (!tripStop) {
-      coords = [100, 100] // Somewhere in the sea...
-    } else {
-      coords = toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
-    }
-    let xy2 = [coords[0] + distance, coords[1]]
+    const pings = pingDetails.map(({date, tripStop, distance}) => {
+      const coords = tripStop
+        ? toSVY(stopsById[tripStop.stopId].coordinates.coordinates)
+        : [100, 100]
+      const xy2 = [coords[0] + distance, coords[1]]
 
-    return await m.Ping.create({
-      createdAt: date,
-      updatedAt: date,
-      tripId: tripInstance.id,
-      driverId: driverInstance.id,
-      vehicleId: vehicleInstance.id,
-      coordinates: {
-        type: 'Point',
-        coordinates: toWGS(xy2),
-      },
+      return {
+        time: date,
+        tripId: tripInstance.id,
+        driverId: driverInstance.id,
+        vehicleId: vehicleInstance.id,
+        coordinates: {
+          type: 'Point',
+          coordinates: toWGS(xy2),
+        },
+      }
     })
+
+    findAllPings.returns(pings)
+  }
+
+  const createPing = async (tripInstance, date = new Date(), tripStop = null, distance = 50) => {
+    return createPings(tripInstance, {date, tripStop, distance})
   }
 
   const createRouteStopsTrips = async (minsOffset) => {

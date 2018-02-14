@@ -10,7 +10,7 @@ import { toSVY } from "../util/svy21"
 import { formatDate } from "../util/common"
 
 const { db, models: m } = require("../core/dbschema")()
-const { findAllPings } = require("./findAllPings")
+const pollTools = require("./pollTools")
 /* Since this is a separate process it needs to keep track of its own event subscriptions */
 const eventSubTask = require("../daemons/eventSubscriptions.js")
 const monitoringSms = require("./monitoringSms")
@@ -108,7 +108,7 @@ export const poll = async () => {
     order: [[m.TripStop, "time", "ASC"]],
   })
   let tripIds = trips.map(t => t.id)
-  let pings = await findAllPings(tripIds, m)
+  let pings = await pollTools.findAllPings(tripIds, m)
 
   // ASSUMPTION: each day, each route only as one trip
   let tripsById = _.keyBy(trips, t => t.id)
