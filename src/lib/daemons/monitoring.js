@@ -153,6 +153,7 @@ export const poll = async () => {
       // Pre-compute the SVY values
       for (let ping of pings) {
         ping._xy = toSVY(ping.coordinates.coordinates)
+        ping.time = new Date(ping.time)
       }
 
       let status = statusByTripId[tripId]
@@ -163,13 +164,13 @@ export const poll = async () => {
         let nearPings = pings.filter((p, i) => distances[i] <= GEOFENCE_RADIUS)
 
         stop.bestPing = _.minBy(nearPings, p =>
-          Math.abs(p.createdAt.getTime() - stop.time.getTime())
+          Math.abs(p.time.getTime() - stop.time.getTime())
         )
         stop.bestPingDistance =
           stop.bestPing && eucDistance(stop.bestPing._xy, stop._xy)
       }
 
-      status.lastPing = _.maxBy(pings, "createdAt")
+      status.lastPing = _.maxBy(pings, "time")
     })
 
   return {
