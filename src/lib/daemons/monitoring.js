@@ -10,6 +10,7 @@ import { toSVY } from "../util/svy21"
 import { formatDate } from "../util/common"
 
 const { db, models: m } = require("../core/dbschema")()
+const pollTools = require("./pollTools")
 /* Since this is a separate process it needs to keep track of its own event subscriptions */
 const eventSubTask = require("../daemons/eventSubscriptions.js")
 const monitoringSms = require("./monitoringSms")
@@ -79,7 +80,6 @@ function eucDistance(a, b) {
 export const poll = async () => {
   let now = new Date()
   let today = todayUTC()
-  let hrs0000 = today0000()
 
   let trips = await m.Trip.findAll({
     where: {
@@ -108,15 +108,7 @@ export const poll = async () => {
     order: [[m.TripStop, "time", "ASC"]],
   })
   let tripIds = trips.map(t => t.id)
-  let pings = await m.Ping.findAll({
-    where: {
-      time: {
-        $gte: hrs0000,
-      },
-      tripId: { $in: tripIds },
-    },
-    raw: true,
-  })
+  let pings = await pollTools.findAllPings(tripIds, m)
 
   // ASSUMPTION: each day, each route only as one trip
   let tripsById = _.keyBy(trips, t => t.id)
@@ -153,6 +145,7 @@ export const poll = async () => {
       // Pre-compute the SVY values
       for (let ping of pings) {
         ping._xy = toSVY(ping.coordinates.coordinates)
+        ping.time = new Date(ping.time)
       }
 
       let status = statusByTripId[tripId]
@@ -163,13 +156,13 @@ export const poll = async () => {
         let nearPings = pings.filter((p, i) => distances[i] <= GEOFENCE_RADIUS)
 
         stop.bestPing = _.minBy(nearPings, p =>
-          Math.abs(p.createdAt.getTime() - stop.time.getTime())
+          Math.abs(p.time.getTime() - stop.time.getTime())
         )
         stop.bestPingDistance =
           stop.bestPing && eucDistance(stop.bestPing._xy, stop._xy)
       }
 
-      status.lastPing = _.maxBy(pings, "createdAt")
+      status.lastPing = _.maxBy(pings, "time")
     })
 
   return {
@@ -522,11 +515,6 @@ export function processStatus(pollData, sendMessages = true) {
 function todayUTC() {
   let now = new Date()
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-}
-function today0000() {
-  let now = new Date()
-  now.setHours(0, 0, 0, 0)
-  return now
 }
 
 function numFiveMins(ms) {
