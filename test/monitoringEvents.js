@@ -42,6 +42,7 @@ lab.experiment("Integration test for monitoring events", function () {
 
     await fn()
 
+    // FIXME: Wait for 1s for the events to propagate through
     await delay(1000)
 
     let emitted = payloads.find(p => p.agent.uid === uid)
