@@ -276,12 +276,15 @@ export function register(server, options, next) {
       description: "Checks if the login is valid/invalid",
     },
     handler(request, reply) {
-      reply({
-        scope: request.auth.credentials.scope,
-        email: request.auth.credentials.email,
-        adminId: request.auth.credentials.adminId,
-        transportCompanyIds: request.auth.credentials.transportCompanyIds,
-      })
+      reply(
+        _.pick(request.auth.credentials, [
+          "scope",
+          "email",
+          "adminId",
+          "transportCompanyIds",
+          "permissions",
+        ])
+      )
     },
   })
 
@@ -350,7 +353,9 @@ export function register(server, options, next) {
         let adminInst = await m.Admin.findById(
           request.auth.credentials.adminId,
           {
-            include: [{model: m.TransportCompany, attributes: {exclude: ['logo']}}],
+            include: [
+              { model: m.TransportCompany, attributes: { exclude: ["logo"] } },
+            ],
           }
         )
 
