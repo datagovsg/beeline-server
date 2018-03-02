@@ -5,7 +5,6 @@ const {expect} = require("code")
 const server = require("../src/index.js")
 const _ = require("lodash")
 
-const {roundToNearestCent} = require("../src/lib/util/common")
 const {randomSingaporeLngLat, loginAs, randomEmail, randomString} = require("./test_common")
 const {db, models} = require("../src/lib/core/dbschema")()
 const Payment = require("../src/lib/transactions/payment")
@@ -22,31 +21,31 @@ import {
 import { TransactionBuilder } from '../src/lib/transactions/builder'
 
 lab.experiment("Transactions", function () {
-  var userInstance
-  var adminInstance
-  var authHeaders = {}
-  var stripeTokens = []
-  var creditTag
+  let userInstance
+  let adminInstance
+  let authHeaders = {}
+  let stripeTokens = []
+  let creditTag
 
   // var testName = "Name for Testing";
   // var updatedTestName = "Updated name for Testing";
 
-  var companyInstance
-  var routeInstance
-  var stopInstances = []
-  var tripInstances = []
+  let companyInstance
+  let routeInstance
+  let stopInstances = []
+  let tripInstances = []
 
-  var sandbox
+  let sandbox
 
-  function verifyCleanTransactionItems (txnItems) {
-    var transactionItemTypes = [
+  const verifyCleanTransactionItems = (txnItems) => {
+    let transactionItemTypes = [
       'payment',
       'refundPayment',
       'transfer',
       'account',
       'ticketSale',
       'ticketRefund',
-      'ticketExpense'
+      'ticketExpense',
     ]
 
     for (let item of txnItems) {
@@ -60,7 +59,7 @@ lab.experiment("Transactions", function () {
     }
   }
 
-  function cleanUpTransaction (transaction) {
+  const cleanUpTransaction = (transaction) => {
     return Promise.all((transaction.transactionItems || [])
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(txnItem => models.Ticket.destroy({where: {id: txnItem.itemId}}))
@@ -78,12 +77,12 @@ lab.experiment("Transactions", function () {
 
 
   const saveCustomerInfo = async function () {
-    var stripeToken = await createStripeToken()
-    var customerInfo = await stripe.customers.create({
+    let stripeToken = await createStripeToken()
+    let customerInfo = await stripe.customers.create({
       source: stripeToken,
       metadata: {
-        userId: userInstance.id
-      }
+        userId: userInstance.id,
+      },
     })
     return await stripe.customers.retrieve(customerInfo.id)
   }
@@ -100,14 +99,14 @@ lab.experiment("Transactions", function () {
     companyInstance = await models.TransportCompany.create({
       name: "Test company",
       clientId: testMerchantId,
-      sandboxId: testMerchantId
+      sandboxId: testMerchantId,
     })
 
     adminInstance = await models.Admin.create({
       email: `testadmin${new Date().getTime()}@example.com`,
     })
     await adminInstance.addTransportCompany(companyInstance.id, {
-      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers']
+      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers'],
     })
 
     // Create stops
@@ -116,8 +115,8 @@ lab.experiment("Transactions", function () {
         description: `Test Stop ${i + 1}`,
         coordinates: {
           type: "Point",
-          coordinates: randomSingaporeLngLat()
-        }
+          coordinates: randomSingaporeLngLat(),
+        },
       }))
     )
 
@@ -127,7 +126,7 @@ lab.experiment("Transactions", function () {
       from: "FromHere",
       to: "ToHere",
       tags: [creditTag, 'public'],
-      transportCompanyId: companyInstance.id
+      transportCompanyId: companyInstance.id,
     })
 
     // create some trips...
@@ -145,24 +144,24 @@ lab.experiment("Transactions", function () {
           { stopId: stopInstances[2].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T08:40:00Z`},
 
           { stopId: stopInstances[3].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T09:50:00Z`},
-          { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T09:55:00Z`}
+          { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T09:55:00Z`},
         ],
         bookingInfo: {
           windowType: 'stop',
           windowSize: 0,
-        }
+        },
       }, {
-        include: [{model: models.TripStop}]
+        include: [{model: models.TripStop}],
       }))
     )
 
-    var userToken = userInstance.makeToken()
+    let userToken = userInstance.makeToken()
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = adminInstance.makeToken()
+    let adminToken = adminInstance.makeToken()
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
-    var superToken = (await loginAs("superadmin")).result.sessionToken
+    let superToken = (await loginAs("superadmin")).result.sessionToken
     authHeaders.super = {authorization: "Bearer " + superToken}
 
     // Create 5 Stripe tokens
@@ -196,7 +195,7 @@ lab.experiment("Transactions", function () {
 
   lab.test("Prepare transaction", async function () {
     // CREATE
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/quote",
       payload: {
@@ -215,22 +214,22 @@ lab.experiment("Transactions", function () {
           boardStopId: tripInstances[2].tripStops[0].id,
           alightStopId: tripInstances[2].tripStops[0].id,
           // qty: 1
-        }]
+        }],
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
     verifyCleanTransactionItems(saleResponse.result.transactionItems)
 
-    var items = _.groupBy(saleResponse.result.transactionItems, "itemType")
+    let items = _.groupBy(saleResponse.result.transactionItems, "itemType")
 
     expect(items.ticketSale.length).to.equal(3)
     expect(items.payment.length).to.equal(1)
     expect(items.transfer.length).to.equal(1)
 
     // payment (to Beeline) matches total price of tickets
-    var totalPrice =
+    let totalPrice =
       parseFloat(tripInstances[0].price) +
       parseFloat(tripInstances[1].price) +
       parseFloat(tripInstances[2].price)
@@ -251,7 +250,7 @@ lab.experiment("Transactions", function () {
   lab.test("Trips are sorted in correct order", async function () {
     // CREATE
 
-    var ticketData = [{
+    let ticketData = [{
       tripId: tripInstances[0].id,
       boardStopId: tripInstances[0].tripStops[0].id,
       alightStopId: tripInstances[0].tripStops[0].id,
@@ -282,16 +281,16 @@ lab.experiment("Transactions", function () {
       userId: userInstance.id,
       boardStopId: td.boardStopId,
       alightStopId: td.alightStopId,
-      status: 'valid'
+      status: 'valid',
     })))
 
     // pull tickets
-    var tickets = (await server.inject({
+    let tickets = (await server.inject({
       method: "GET",
       url: "/tickets?startTime=" + encodeURIComponent(
         _.min(tripInstances.map(ti => ti.date.getTime()))
       ),
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })).result
 
     for (let i = 0; i < tickets.length - 2; i++) {
@@ -303,7 +302,7 @@ lab.experiment("Transactions", function () {
   // Stripe takes a while to respond, so we set a longer timeout
   lab.test("Payment works", {timeout: 15000}, async function () {
     // Inject the ticket purchases
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -313,18 +312,18 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[1].tripStops[0].id,
           // qty: 1
         }],
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
     verifyCleanTransactionItems(saleResponse.result.transactionItems)
 
-    var tripPrice = parseFloat(tripInstances[1].price)
+    let tripPrice = parseFloat(tripInstances[1].price)
 
     // Check that the card was debited correctly
-    var items = _.groupBy(saleResponse.result.transactionItems, "itemType")
+    let items = _.groupBy(saleResponse.result.transactionItems, "itemType")
     expect(parseFloat(items.payment[0].debit).toFixed(2))
       .to.equal(tripPrice.toFixed(2))
     expect(items.payment[0].payment.data).to.exist()
@@ -332,17 +331,17 @@ lab.experiment("Transactions", function () {
       .to.equal(Math.round(100 * tripPrice))
 
     // correct application fee applied
-    var processingFee = (await Payment.retrieveTransaction(
+    let processingFee = (await Payment.retrieveTransaction(
       items.payment[0].payment.data.balance_transaction)).fee
-    var expectedProcessingFee =
+    let expectedProcessingFee =
       Math.round(tripPrice * 100 * parseFloat(process.env.STRIPE_MICRO_CHARGE_RATE)) +
       parseInt(process.env.STRIPE_MICRO_MIN_CHARGE)
 
     expect(processingFee)
       .to.equal(expectedProcessingFee)
 
-    var ticketId = items.ticketSale[0].itemId
-    var refundResponse = await server.inject({
+    let ticketId = items.ticketSale[0].itemId
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticketId}/refund/payment`,
       payload: {
@@ -360,7 +359,7 @@ lab.experiment("Transactions", function () {
     expect(items.refundPayment[0].refundPayment.data).to.exist()
     expect(parseFloat(items.refundPayment[0].refundPayment.data.amount))
 
-    var refundedTicket = await models.Ticket.findById(ticketId)
+    let refundedTicket = await models.Ticket.findById(ticketId)
     expect(refundedTicket.status).equal('refunded')
 
     await cleanUpTransaction(refundResponse.result)
@@ -370,14 +369,14 @@ lab.experiment("Transactions", function () {
 
   // Stripe takes a while to respond, so we set a longer timeout
   lab.test("Cannot book cancelled trip", {timeout: 15000}, async function () {
-    var error
+    let error
     try {
       await tripInstances[1].update({
-        status: 'cancelled'
+        status: 'cancelled',
       })
 
       // Inject the ticket purchases
-      var saleResponse = await server.inject({
+      let saleResponse = await server.inject({
         method: "POST",
         url: "/transactions/tickets/payment",
         payload: {
@@ -387,15 +386,15 @@ lab.experiment("Transactions", function () {
             alightStopId: tripInstances[1].tripStops[0].id,
             // qty: 1
           }],
-          stripeToken: await createStripeToken()
+          stripeToken: await createStripeToken(),
         },
-        headers: authHeaders.user
+        headers: authHeaders.user,
       })
       expect(saleResponse.statusCode).equal(400)
       expect(saleResponse.result.message).contains('cancelled')
 
       await tripInstances[1].update({
-        status: 'void'
+        status: 'void',
       })
 
       // Inject the ticket purchases
@@ -409,9 +408,9 @@ lab.experiment("Transactions", function () {
             alightStopId: tripInstances[1].tripStops[0].id,
             // qty: 1
           }],
-          stripeToken: await createStripeToken()
+          stripeToken: await createStripeToken(),
         },
-        headers: authHeaders.user
+        headers: authHeaders.user,
       })
       expect(saleResponse.statusCode).equal(400)
       expect(saleResponse.result.message).contains('cancelled')
@@ -419,7 +418,7 @@ lab.experiment("Transactions", function () {
       error = err
     } finally {
       await tripInstances[1].update({
-        status: null
+        status: null,
       })
     }
 
@@ -428,16 +427,16 @@ lab.experiment("Transactions", function () {
 
   lab.test("Trip capacity", {timeout: 15000}, async function () {
     // create 11 fake users
-    var time = new Date().getTime()
+    let time = new Date().getTime()
 
-    var fakeUsers = await Promise.all(_.range(0, 11)
+    let fakeUsers = await Promise.all(_.range(0, 11)
       .map(i => models.User.create({
         name: `Some user ${i}`,
-        email: "test-user-" + (time + i) + "@example.com"
+        email: "test-user-" + (time + i) + "@example.com",
       }))
     )
 
-    var oneLastUser = fakeUsers.pop()
+    let oneLastUser = fakeUsers.pop()
 
     // Inject the first 10 ticket purchases
     for (let user of fakeUsers) {
@@ -445,7 +444,7 @@ lab.experiment("Transactions", function () {
         userId: user.id,
         boardStopId: tripInstances[1].tripStops[0].id,
         alightStopId: tripInstances[1].tripStops[0].id,
-        status: 'valid'
+        status: 'valid',
       })
     }
 
@@ -464,15 +463,15 @@ lab.experiment("Transactions", function () {
         stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: "Bearer " + oneLastUser.makeToken()
-      }
+        authorization: "Bearer " + oneLastUser.makeToken(),
+      },
     })
 
     expect(fakeSale.statusCode).to.equal(400)
 
     await cleanUpTransaction(fakeSale.result)
     await models.Ticket.destroy({
-      where: {userId: {$in: fakeUsers.map(u => u.id)}}
+      where: {userId: {$in: fakeUsers.map(u => u.id)}},
     })
     await Promise.all(
       fakeUsers.map(user => cleanlyDeleteUsers({ telephone: user.telephone }))
@@ -481,10 +480,10 @@ lab.experiment("Transactions", function () {
 
   lab.test("Dry run price checks have no effect on DB", async () => {
     // Count the # transactions before, after
-    var numTransactionsBefore = await models.Transaction.count()
-    var numTicketsBefore = await models.Ticket.count()
+    let numTransactionsBefore = await models.Transaction.count()
+    let numTicketsBefore = await models.Ticket.count()
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/quote",
       payload: {
@@ -493,15 +492,15 @@ lab.experiment("Transactions", function () {
           boardStopId: tripInstances[1].tripStops[0].id,
           alightStopId: tripInstances[1].tripStops[0].id,
           // qty: 1
-        }]
+        }],
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
     // Count the # transactions before, after
-    var numTransactionsAfter = await models.Transaction.count()
-    var numTicketsAfter = await models.Ticket.count()
+    let numTransactionsAfter = await models.Transaction.count()
+    let numTicketsAfter = await models.Ticket.count()
 
     expect(numTransactionsAfter).equal(numTransactionsBefore)
     expect(numTicketsAfter).equal(numTicketsBefore)
@@ -511,7 +510,7 @@ lab.experiment("Transactions", function () {
 
   // CREATE
   lab.test("Passenger appears on passenger list", {timeout: 15000}, async () => {
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -523,13 +522,13 @@ lab.experiment("Transactions", function () {
         }],
         stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
     // update transaction to committed
     // and ticket status to valid
-    var transaction = await models.Transaction.findById(
+    let transaction = await models.Transaction.findById(
       saleResponse.result.id, {include: [models.TransactionItem]}
     )
     transaction.committed = true
@@ -544,10 +543,10 @@ lab.experiment("Transactions", function () {
       })
     )
 
-    var passengerList = (await server.inject({
+    let passengerList = (await server.inject({
       method: "GET",
       url: "/trips/" + tripInstances[1].id + "/passengers",
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })).result.map(passenger => passenger.id)
 
     // ensure that this user is listed in the list of passengers
@@ -557,14 +556,14 @@ lab.experiment("Transactions", function () {
   })
 
   const issueFreeRoutePassWorksFor = role => async () => {
-    var response = await server.inject({
+    let response = await server.inject({
       method: "POST",
       url: "/transactions/route_passes/issue_free",
       payload: {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: creditTag
+        tag: creditTag,
       },
       headers: authHeaders[role],
     })
@@ -591,14 +590,14 @@ lab.experiment("Transactions", function () {
     const where = { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag}
     const initialRoutePassCount = await routePassCount(where)
 
-    var response = await server.inject({
+    let response = await server.inject({
       method: "POST",
       url: "/transactions/route_passes/issue_free",
       payload: {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: creditTag
+        tag: creditTag,
       },
       headers: typeof role === 'string' ? authHeaders[role] : role,
     })
@@ -611,14 +610,14 @@ lab.experiment("Transactions", function () {
     let otherCompanyInstance = await models.TransportCompany.create({
       name: "Test company 2",
       clientId: testMerchantId,
-      sandboxId: testMerchantId
+      sandboxId: testMerchantId,
     })
 
     let otherAdminInstance = await models.Admin.create({
       email: `testadmin2${new Date().getTime()}@example.com`,
     })
     await otherAdminInstance.addTransportCompany(otherCompanyInstance.id, {
-      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers']
+      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers'],
     })
 
     let otherAdminToken = otherAdminInstance.makeToken()
@@ -632,7 +631,7 @@ lab.experiment("Transactions", function () {
 
   lab.test("Admins cannot issue tickets from other companies", async function () {
     const adminInst = await models.Admin.create({
-      email: randomEmail()
+      email: randomEmail(),
     })
     const request = {
       method: "POST",
@@ -657,30 +656,30 @@ lab.experiment("Transactions", function () {
             boardStopId: tripInstances[2].tripStops[0].id,
             alightStopId: tripInstances[2].tripStops[0].id,
             userId: userInstance.id,
-          }
-        ]
+          },
+        ],
       },
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     }
 
     // Issue a free ticket to this user...
-    var issueResponse = await server.inject(request)
+    let issueResponse = await server.inject(request)
     expect(issueResponse.statusCode).to.equal(403)
 
     // Try to issue again, this time with the correct permissions
     await adminInst.addTransportCompany(companyInstance.id, {
-      permissions: ['issue-tickets']
+      permissions: ['issue-tickets'],
     })
 
-    var issueResponse2 = await server.inject(request)
+    let issueResponse2 = await server.inject(request)
     expect(issueResponse2.statusCode).to.equal(200)
 
     // Try to cancel
     // without the correct permissions
     await adminInst.setTransportCompanies([companyInstance.id], {
-      permissions: []
+      permissions: [],
     })
 
     const cancelRequest = {
@@ -693,18 +692,18 @@ lab.experiment("Transactions", function () {
           boardStopId: tripInstances[3].tripStops[0].id,
           alightStopId: tripInstances[3].tripStops[0].id,
           userId: userInstance.id,
-        }]
+        }],
       },
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     }
     const cancelResponse1 = await server.inject(cancelRequest)
     expect(cancelResponse1.statusCode).to.equal(403)
 
     // and again with the correct permissions
     await adminInst.setTransportCompanies([companyInstance.id], {
-      permissions: ['issue-tickets']
+      permissions: ['issue-tickets'],
     })
     const cancelResponse2 = await server.inject(cancelRequest)
     expect(cancelResponse2.statusCode).to.equal(200)
@@ -715,7 +714,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[1].reload()
     await tripInstances[2].reload()
     // Issue a free ticket to this user...
-    var issueResponse = await server.inject({
+    let issueResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/issue_free",
       payload: {
@@ -738,10 +737,10 @@ lab.experiment("Transactions", function () {
             boardStopId: tripInstances[2].tripStops[0].id,
             alightStopId: tripInstances[2].tripStops[0].id,
             userId: userInstance.id,
-          }
-        ]
+          },
+        ],
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(issueResponse.statusCode).to.equal(200)
 
@@ -754,7 +753,7 @@ lab.experiment("Transactions", function () {
 
     verifyCleanTransactionItems(issueResponse.result.transactionItems)
 
-    var ticketExpenseItems = issueResponse.result.transactionItems
+    let ticketExpenseItems = issueResponse.result.transactionItems
       .filter(txnItem => txnItem.ticketExpense)
 
     // All trips should appear
@@ -789,7 +788,7 @@ lab.experiment("Transactions", function () {
     await tripInstances[2].reload()
 
     // Issue a free ticket to this user...
-    var issueResponse = await server.inject({
+    let issueResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/issue_free",
       payload: {
@@ -812,22 +811,22 @@ lab.experiment("Transactions", function () {
             boardStopId: tripInstances[2].tripStops[0].id,
             alightStopId: tripInstances[2].tripStops[0].id,
             userId: userInstance.id,
-          }
-        ]
+          },
+        ],
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(issueResponse.statusCode).to.equal(200)
 
     verifyCleanTransactionItems(issueResponse.result.transactionItems)
 
     // Get the ticket ids
-    var originalTicketIds = issueResponse.result.transactionItems
+    let originalTicketIds = issueResponse.result.transactionItems
       .filter(txnItem => txnItem.ticketExpense)
       .map(txnItem => txnItem.ticketExpense.id)
 
     // Use them as replacements...
-    var replacementResponse = await server.inject({
+    let replacementResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/issue_free",
       payload: {
@@ -850,11 +849,11 @@ lab.experiment("Transactions", function () {
             boardStopId: tripInstances[2].tripStops[0].id,
             alightStopId: tripInstances[2].tripStops[0].id,
             userId: userInstance.id,
-          }
+          },
         ],
         cancelledTicketIds: originalTicketIds,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(replacementResponse.statusCode).to.equal(200)
 
@@ -868,13 +867,13 @@ lab.experiment("Transactions", function () {
     verifyCleanTransactionItems(replacementResponse.result.transactionItems)
 
     // Get the ticket ids
-    var newTicketIds = replacementResponse.result.transactionItems
+    let newTicketIds = replacementResponse.result.transactionItems
       .filter(txnItem => txnItem.ticketExpense)
       .map(txnItem => txnItem.ticketExpense.id)
 
     // For the original tickets, ensure thay are "replaced"
-    var originalTickets = await models.Ticket.findAll({
-      where: {id: {$in: originalTicketIds}}
+    let originalTickets = await models.Ticket.findAll({
+      where: {id: {$in: originalTicketIds}},
     })
 
     for (let ticket of originalTickets) {
@@ -882,8 +881,8 @@ lab.experiment("Transactions", function () {
     }
 
     // For the new tickets, ensure they are valid
-    var newTickets = await models.Ticket.findAll({
-      where: {id: {$in: newTicketIds}}
+    let newTickets = await models.Ticket.findAll({
+      where: {id: {$in: newTicketIds}},
     })
 
     for (let ticket of newTickets) {
@@ -896,7 +895,7 @@ lab.experiment("Transactions", function () {
 
   lab.test("When payment fails it fails cleanly", {timeout: 15000}, async function () {
     // Inject the ticket purchases
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -905,18 +904,18 @@ lab.experiment("Transactions", function () {
           boardStopId: tripInstances[2].tripStops[0].id,
           alightStopId: tripInstances[2].tripStops[1].id,
         }],
-        stripeToken: 'Fake stripe token!'
+        stripeToken: 'Fake stripe token!',
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).equal(402)
     // User-readable message
     expect(saleResponse.result.message).to.be.a.string()
 
     // Find the latest ticket for this user...
-    var latestTicket = await models.Ticket.find({
+    let latestTicket = await models.Ticket.find({
       userId: userInstance.id,
-      order: [['createdAt', 'desc']]
+      order: [['createdAt', 'desc']],
     })
 
     expect(latestTicket.status).equal('failed')
@@ -926,19 +925,19 @@ lab.experiment("Transactions", function () {
     expect(tripInstances[2].seatsAvailable).equal(tripInstances[2].capacity)
 
     // Find the latest payment
-    var latestPayment = await models.Payment.find({
-      order: [['createdAt', 'desc']]
+    let latestPayment = await models.Payment.find({
+      order: [['createdAt', 'desc']],
     })
     expect(latestPayment.data.message).startsWith('No such token:')
 
     // Get their associated transaction -- ensure it is not committed
-    var transactions = await models.Transaction.findAll({
+    let transactions = await models.Transaction.findAll({
       include: [
         {
           model: models.TransactionItem,
-          where: {itemType: 'ticketSale', itemId: latestTicket.id}
-        }
-      ]
+          where: {itemType: 'ticketSale', itemId: latestTicket.id},
+        },
+      ],
     })
     expect(transactions.length).equal(1)
     expect(transactions[0].committed).equal(false)
@@ -946,10 +945,10 @@ lab.experiment("Transactions", function () {
     await cleanUpTransaction(saleResponse.result)
   })
   lab.test("Declined card", {timeout: 15000}, async function () {
-    var now = new Date()
+    let now = new Date()
 
     // Inject the ticket purchases
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -962,10 +961,10 @@ lab.experiment("Transactions", function () {
           number: "4000000000000341",
           exp_month: "12",
           exp_year: "2020",
-          cvc: "123"
-        })).id
+          cvc: "123",
+        })).id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).equal(402)
     // User-readable message
@@ -973,7 +972,7 @@ lab.experiment("Transactions", function () {
     expect(saleResponse.result.message.toUpperCase()).contain('DECLINED')
 
     const latestPayment = await models.Payment.find({
-      where: {createdAt: {$gt: now}}
+      where: {createdAt: {$gt: now}},
     })
 
     expect(latestPayment.paymentResource).not.exist()
@@ -988,7 +987,7 @@ lab.experiment("Transactions", function () {
     txn.transactionItems = [
       {itemId: 1, debit: 5},
       {itemId: 2, debit: -2},
-      {debit: -3}
+      {debit: -3},
     ]
     expect(caller).to.throw()
     txn.transactionItems[2].itemId = 3
@@ -1006,12 +1005,12 @@ lab.experiment("Transactions", function () {
       tripStops: [
         {id: 2},
         {id: 3},
-        {id: 4}
-      ]
+        {id: 4},
+      ],
     }
     const rqTrip = {
       boardStopId: 1,
-      alightStopId: 5
+      alightStopId: 5,
     }
     const caller = () => { checkValidTripStop(dbTrip, rqTrip) }
     expect(caller).to.throw(TransactionError)
@@ -1031,11 +1030,11 @@ lab.experiment("Transactions", function () {
         {id: 2, time: {getTime: () => refDate - 1}},
         {id: 3, time: {getTime: () => refDate + 3}},
       ],
-      bookingInfo: {}
+      bookingInfo: {},
     }
     const rqTrip = {
       boardStopId: 2,
-      alightStopId: 3
+      alightStopId: 3,
     }
     const caller = () => { checkValidBookingWindow(refDate)(dbTrip, rqTrip) }
     expect(caller).to.throw(TransactionError)
@@ -1052,8 +1051,8 @@ lab.experiment("Transactions", function () {
     const dbTrip = {
       tripStops: [{
         id: 1,
-        tickets: [{status: 'valid', userId: 'foo'}]
-      }]
+        tickets: [{status: 'valid', userId: 'foo'}],
+      }],
     }
     const rqTrip = {userId: 'foo'}
     const caller = () => {
@@ -1073,7 +1072,7 @@ lab.experiment("Transactions", function () {
       {tripId: 't1'},
       {tripId: 't2'},
       {tripId: 't3'},
-      {tripId: 't4'}
+      {tripId: 't4'},
     ]
     let timesCalled = 0
     const checks = [() => { timesCalled++ }]
@@ -1130,8 +1129,8 @@ lab.experiment("Transactions", function () {
 
   lab.test("Charge from saved CustomerId", {timeout: 15000}, async function () {
     // CREATE a transaction as a user...
-    var customerInfo = await saveCustomerInfo()
-    var saleResponse = await server.inject({
+    let customerInfo = await saveCustomerInfo()
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1152,28 +1151,28 @@ lab.experiment("Transactions", function () {
           // qty: 1
         }],
         customerId: customerInfo.id,
-        sourceId: customerInfo.sources.data[0].id
+        sourceId: customerInfo.sources.data[0].id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
     await cleanUpTransaction(saleResponse.result)
   })
 
   lab.test("Test setting transaction type", {timeout: 15000}, async function () {
-    var tbInst
+    let tbInst
     const txTypes = ["ticketPurchase", "conversion", "refund"]
     const throwable = "Break transaction"
 
     for (let txType of txTypes) {
       try {
         await db.transaction(async (transaction) => { // eslint-disable-line no-await-in-loop
-          var tb = new TransactionBuilder({
+          let tb = new TransactionBuilder({
             transaction,
             db,
             models,
             dryRun: false,
-            committed: true
+            committed: true,
           });
 
           [tbInst] = await tb.build({type: txType})
@@ -1188,12 +1187,12 @@ lab.experiment("Transactions", function () {
 
     try {
       await db.transaction(async (transaction) => {
-        var tb = new TransactionBuilder({
+        let tb = new TransactionBuilder({
           transaction,
           db,
           models,
           dryRun: false,
-          committed: true
+          committed: true,
         });
 
         // Defaults type to "ticketPurchase" when none provided
@@ -1208,12 +1207,12 @@ lab.experiment("Transactions", function () {
 
     try {
       await db.transaction(async (transaction) => {
-        var tb = new TransactionBuilder({
+        let tb = new TransactionBuilder({
           transaction,
           db,
           models,
           dryRun: false,
-          committed: true
+          committed: true,
         });
 
         // No such type allowed, error should be thrown
@@ -1233,7 +1232,7 @@ lab.experiment("Transactions", function () {
     const tripPrice = tripInstances[0].price
     const seatsAvailable = tripInstances[0].seatsAvailable
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1253,37 +1252,37 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[2].tripStops[0].id,
           // qty: 1
         }],
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
     await tripInstances[0].reload()
     expect(tripInstances[0].seatsAvailable).equal(seatsAvailable - 1)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     // Refund a ticket...
-    var refundResponse1 = await server.inject({
+    let refundResponse1 = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/payment`,
       payload: {
-        targetAmt: tripPrice
+        targetAmt: tripPrice,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse1.statusCode).to.equal(200)
 
-    var refund1TIByType = _.groupBy(refundResponse1.result.transactionItems, ti => ti.itemType)
+    let refund1TIByType = _.groupBy(refundResponse1.result.transactionItems, ti => ti.itemType)
 
     expect(_.keys(refund1TIByType).length).equal(4)
     expect(refund1TIByType.refundPayment).exist()
@@ -1308,13 +1307,13 @@ lab.experiment("Transactions", function () {
     await ticket.update({status: 'valid'})
     await ticket.reload()
 
-    var refundResponse2 = await server.inject({
+    let refundResponse2 = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/payment`,
       payload: {
-        targetAmt: tripPrice
+        targetAmt: tripPrice,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse2.statusCode).to.equal(400)
@@ -1324,16 +1323,16 @@ lab.experiment("Transactions", function () {
     const stripeInstance = require('../src/lib/transactions/payment').stripe
     sandbox.stub(stripeInstance.refunds, "create", () => Promise.reject({hello: 'world'}))
 
-    var ticket1 = tickets.find(t => t.boardStopId === tripInstances[1].tripStops[0].id)
+    let ticket1 = tickets.find(t => t.boardStopId === tripInstances[1].tripStops[0].id)
 
     // Refund a ticket...
-    var refundResponse3 = await server.inject({
+    let refundResponse3 = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket1.id}/refund/payment`,
       payload: {
-        targetAmt: tripInstances[1].price
+        targetAmt: tripInstances[1].price,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(refundResponse3.statusCode).equal(402)
 
@@ -1346,9 +1345,9 @@ lab.experiment("Transactions", function () {
     const failedItems = await models.TransactionItem.findAll({
       where: {
         itemType: 'ticketRefund',
-        itemId: ticket1.id
+        itemId: ticket1.id,
       },
-      include: [models.Transaction]
+      include: [models.Transaction],
     })
     expect(failedItems.length).equal(1)
     expect(failedItems[0].transaction.committed).false()
@@ -1356,7 +1355,7 @@ lab.experiment("Transactions", function () {
     const failedPaymentTI = await models.TransactionItem.findAll({
       where: {
         itemType: 'refundPayment',
-        transactionId: failedItems[0].transactionId
+        transactionId: failedItems[0].transactionId,
       },
     })
     const failedRefundPayment = await models.RefundPayment.findById(failedPaymentTI[0].itemId)
@@ -1366,12 +1365,12 @@ lab.experiment("Transactions", function () {
   lab.test("Refund Payment disallowed if payment is less than ticket value", {timeout: 15000}, async function () {
     const tripPrice = tripInstances[0].price
 
-    var creditInst = await models.Credit.create({
+    let creditInst = await models.Credit.create({
       userId: userInstance.id,
       balance: tripPrice - 2,
     })
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1382,29 +1381,29 @@ lab.experiment("Transactions", function () {
           // qty: 1
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true
+        applyCredits: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     // Refund ticket at full price
-    var refundResponse = await server.inject({
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/payment`,
       payload: {
-        targetAmt: tripPrice
+        targetAmt: tripPrice,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse.statusCode).to.equal(400)
@@ -1414,12 +1413,12 @@ lab.experiment("Transactions", function () {
   lab.test("Refund Payment allowed if payment is more than ticket value", {timeout: 15000}, async function () {
     const tripPrice = tripInstances[0].price
     await models.Credit.destroy({ truncate: true })
-    var creditInst = await models.Credit.create({
+    let creditInst = await models.Credit.create({
       userId: userInstance.id,
       balance: tripPrice - 2,
     })
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1435,33 +1434,33 @@ lab.experiment("Transactions", function () {
           // qty: 1
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true
+        applyCredits: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     // Refund ticket at full price
-    var refundResponse = await server.inject({
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/payment`,
       payload: {
-        targetAmt: tripPrice
+        targetAmt: tripPrice,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(refundResponse.statusCode).to.equal(200)
 
-    var refundTIByType = _.groupBy(refundResponse.result.transactionItems, ti => ti.itemType)
+    let refundTIByType = _.groupBy(refundResponse.result.transactionItems, ti => ti.itemType)
 
     expect(_.keys(refundTIByType).length).equal(4)
     expect(refundTIByType.refundPayment).exist()
@@ -1474,7 +1473,7 @@ lab.experiment("Transactions", function () {
   lab.test("Refund Payment disallowed if targetAmt is less than ticket value", {timeout: 20000}, async function () {
     const tripPrice = tripInstances[0].price
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1484,29 +1483,29 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[0].tripStops[0].id,
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true
+        applyCredits: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     // Refund ticket at less than full price
-    var refundResponse = await server.inject({
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/payment`,
       payload: {
-        targetAmt: tripPrice - 2
+        targetAmt: tripPrice - 2,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse.statusCode).to.equal(400)
@@ -1517,7 +1516,7 @@ lab.experiment("Transactions", function () {
     const tripPrice = tripInstances[0].price
     const seatsAvailable = tripInstances[0].seatsAvailable
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1537,35 +1536,35 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[2].tripStops[0].id,
           // qty: 1
         }],
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     // Refund a ticket...
-    var refundResponse = await server.inject({
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice,
-        creditTag
+        creditTag,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse.statusCode).to.equal(200)
 
-    var refundTIByType = _.groupBy(refundResponse.result.transactionItems, ti => ti.itemType)
+    let refundTIByType = _.groupBy(refundResponse.result.transactionItems, ti => ti.itemType)
 
     expect(_.keys(refundTIByType).length).equal(3)
     expect(refundTIByType.routePass).exist()
@@ -1588,14 +1587,14 @@ lab.experiment("Transactions", function () {
     await ticket.update({status: 'valid'})
     await ticket.reload()
 
-    var refundResponse2 = await server.inject({
+    let refundResponse2 = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice,
-        creditTag
+        creditTag,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse2.statusCode).to.equal(400)
@@ -1605,7 +1604,7 @@ lab.experiment("Transactions", function () {
   lab.test("Refund RoutePass fails for bad creditTags", {timeout: 30000}, async function () {
     const tripPrice = tripInstances[0].price
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1625,20 +1624,20 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[2].tripStops[0].id,
           // qty: 1
         }],
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     await tripInstances[0].reload()
     const seatsAvailable = tripInstances[0].seatsAvailable
@@ -1647,11 +1646,11 @@ lab.experiment("Transactions", function () {
     const initialRoutePassCount = await routePassCount(where)
 
     const makeAndValidateBadRefundRequest = async creditTag => {
-      var refundResponse = await server.inject({
+      let refundResponse = await server.inject({
         method: "POST",
         url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
         payload: { creditTag, targetAmt: tripPrice },
-        headers: authHeaders.admin
+        headers: authHeaders.admin,
       })
 
       expect(refundResponse.statusCode).to.equal(400)
@@ -1670,7 +1669,7 @@ lab.experiment("Transactions", function () {
   lab.test("Refund RoutePass fails if targetAmt is not equal to ticket value", {timeout: 15000}, async function () {
     const tripPrice = tripInstances[0].price
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1680,30 +1679,30 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[0].tripStops[0].id,
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true
+        applyCredits: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     // Refund ticket at less than full price
-    var refundResponse = await server.inject({
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice - 2,
-        creditTag
+        creditTag,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse.statusCode).to.equal(400)
@@ -1716,9 +1715,9 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice + 2,
-        creditTag
+        creditTag,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse.statusCode).to.equal(400)
@@ -1746,20 +1745,20 @@ lab.experiment("Transactions", function () {
         ],
         discountFunction: {
           type: "simpleRate",
-          params: {"rate": 0.5}
+          params: {"rate": 0.5},
         },
         refundFunction: {
-          type: "refundDiscountedAmt"
+          type: "refundDiscountedAmt",
         },
         usageLimit: {
           globalLimit: 10,
-          userLimit: 10
-        }
+          userLimit: 10,
+        },
       },
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1780,38 +1779,38 @@ lab.experiment("Transactions", function () {
           // qty: 1
         }],
         stripeToken: await createStripeToken(),
-        promoCode: { code: promoCode, options: {} }
+        promoCode: { code: promoCode, options: {} },
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    let tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     await tripInstances[0].reload()
     const seatsAvailable = tripInstances[0].seatsAvailable
 
     // Refund a ticket...
-    var refundResponse = await server.inject({
+    let refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice,
-        creditTag
+        creditTag,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(refundResponse.statusCode).to.equal(200)
 
-    var refundTIByType = _.groupBy(refundResponse.result.transactionItems, ti => ti.itemType)
+    let refundTIByType = _.groupBy(refundResponse.result.transactionItems, ti => ti.itemType)
 
     expect(_.keys(refundTIByType).length).equal(3)
     expect(refundTIByType.routePass).exist()
@@ -1832,7 +1831,7 @@ lab.experiment("Transactions", function () {
     await promoInst.destroy()
   })
 
-  function expectTransactionItemsConsistent (response, refundAmount) {
+  const expectTransactionItemsConsistent = (response, refundAmount) => {
     const refundTIByType = _.groupBy(response.result.transactionItems, ti => ti.itemType)
 
     expect(refundTIByType.refundPayment).exist()
@@ -1851,8 +1850,6 @@ lab.experiment("Transactions", function () {
   lab.test("Refund of route pass", {timeout: 60000}, async function () {
     await models.RoutePass.destroy({ truncate: true })
 
-    const tripPrice = _.sortBy(tripInstances, 'date')[0].priceF
-
     const firstPurchaseResponse = await server.inject({
       method: 'POST',
       url: `/transactions/route_passes/payment`,
@@ -1862,21 +1859,24 @@ lab.experiment("Transactions", function () {
         stripeToken: await createStripeToken(),
         companyId: companyInstance.id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(firstPurchaseResponse.statusCode).to.equal(200)
 
     const firstTransactionItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'routePass')
     const routePassInst = await models.RoutePass.findById(firstTransactionItem.itemId)
 
+    const paymentItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'payment')
+    const tripPrice = paymentItem.debitF
+
     // Refund a route pass...
     const firstRefundResponse = await server.inject({
       method: "POST",
       url: `/transactions/route_passes/${routePassInst.id}/refund/payment`,
       payload: {
-        transactionItemId: firstTransactionItem.id
+        transactionItemId: firstTransactionItem.id,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(firstRefundResponse.statusCode).to.equal(200)
     const routePassTransactionItem = firstRefundResponse.result.transactionItems.find(ti => ti.itemType === 'routePass')
@@ -1906,22 +1906,21 @@ lab.experiment("Transactions", function () {
         ],
         discountFunction: {
           type: "simpleRate",
-          params: {"rate": 0.5}
+          params: {"rate": 0.5},
         },
         refundFunction: {
-          type: "refundDiscountedAmt"
+          type: "refundDiscountedAmt",
         },
         usageLimit: {
           globalLimit: 10,
-          userLimit: 10
-        }
+          userLimit: 10,
+        },
       },
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
     await models.RoutePass.destroy({ truncate: true })
 
-    const tripPrice = _.sortBy(tripInstances, 'date')[0].priceF
 
     const firstPurchaseResponse = await server.inject({
       method: 'POST',
@@ -1933,21 +1932,24 @@ lab.experiment("Transactions", function () {
         promoCode: { code: promoCode },
         companyId: companyInstance.id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(firstPurchaseResponse.statusCode).to.equal(200)
 
     const firstTransactionItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'routePass')
     const routePassInst = await models.RoutePass.findById(firstTransactionItem.itemId)
 
+    const paymentItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'payment')
+    const paymentPrice = paymentItem.debitF
+
     // Refund a route pass...
     const firstRefundResponse = await server.inject({
       method: "POST",
       url: `/transactions/route_passes/${routePassInst.id}/refund/payment`,
       payload: {
-        transactionItemId: firstTransactionItem.id
+        transactionItemId: firstTransactionItem.id,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(firstRefundResponse.statusCode).to.equal(200)
     const routePassTransactionItem = firstRefundResponse.result.transactionItems.find(ti => ti.itemType === 'routePass')
@@ -1956,7 +1958,7 @@ lab.experiment("Transactions", function () {
     await routePassInst.reload()
     expect(routePassInst.status).equal('refunded')
 
-    expectTransactionItemsConsistent(firstRefundResponse, tripPrice - roundToNearestCent(0.5 * tripPrice))
+    expectTransactionItemsConsistent(firstRefundResponse, paymentPrice)
 
     await promoInst.destroy()
   })
@@ -1974,14 +1976,14 @@ lab.experiment("Transactions", function () {
         stripeToken: await createStripeToken(),
         companyId: companyInstance.id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(purchaseResponse.statusCode).to.equal(200)
 
     const transactionItem = purchaseResponse.result.transactionItems.find(i => i.itemType === 'routePass')
     const routePass = await models.RoutePass.findById(transactionItem.itemId)
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -1994,7 +1996,7 @@ lab.experiment("Transactions", function () {
         stripeToken: await createStripeToken(),
         applyRoutePass: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
     await routePass.reload()
@@ -2005,9 +2007,9 @@ lab.experiment("Transactions", function () {
       method: "POST",
       url: `/transactions/route_passes/${routePass.id}/refund/payment`,
       payload: {
-        transactionItemId: transactionItem.id
+        transactionItemId: transactionItem.id,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(refundResponse.statusCode).to.equal(200)
 
@@ -2015,9 +2017,9 @@ lab.experiment("Transactions", function () {
       method: "POST",
       url: `/transactions/route_passes/${routePass.id}/refund/payment`,
       payload: {
-        transactionItemId: transactionItem.id
+        transactionItemId: transactionItem.id,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(badRefundResponse.statusCode).to.equal(400)
 
@@ -2035,7 +2037,7 @@ lab.experiment("Transactions", function () {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: rpTag
+        tag: rpTag,
       },
       headers: authHeaders.admin,
     })
@@ -2045,7 +2047,7 @@ lab.experiment("Transactions", function () {
         userId: userInstance.id,
         tag: rpTag,
         status: 'valid',
-      }
+      },
     })
     await server.inject({
       method: "POST",
@@ -2054,7 +2056,7 @@ lab.experiment("Transactions", function () {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: cTag
+        tag: cTag,
       },
       headers: authHeaders.admin,
     })
@@ -2064,10 +2066,10 @@ lab.experiment("Transactions", function () {
         userId: userInstance.id,
         tag: cTag,
         status: 'valid',
-      }
+      },
     })
 
-    var saleResponse = await server.inject({
+    let saleResponse = await server.inject({
       method: "POST",
       url: "/transactions/tickets/payment",
       payload: {
@@ -2080,7 +2082,7 @@ lab.experiment("Transactions", function () {
         stripeToken: await createStripeToken(),
         applyRoutePass: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
     await routePass.reload()
