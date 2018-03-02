@@ -1851,8 +1851,6 @@ lab.experiment("Transactions", function () {
   lab.test("Refund of route pass", {timeout: 60000}, async function () {
     await models.RoutePass.destroy({ truncate: true })
 
-    const tripPrice = _.sortBy(tripInstances, 'date')[0].priceF
-
     const firstPurchaseResponse = await server.inject({
       method: 'POST',
       url: `/transactions/route_passes/payment`,
@@ -1868,6 +1866,9 @@ lab.experiment("Transactions", function () {
 
     const firstTransactionItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'routePass')
     const routePassInst = await models.RoutePass.findById(firstTransactionItem.itemId)
+
+    const paymentItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'payment')
+    const tripPrice = paymentItem.debitF
 
     // Refund a route pass...
     const firstRefundResponse = await server.inject({
@@ -1921,7 +1922,6 @@ lab.experiment("Transactions", function () {
 
     await models.RoutePass.destroy({ truncate: true })
 
-    const tripPrice = _.sortBy(tripInstances, 'date')[0].priceF
 
     const firstPurchaseResponse = await server.inject({
       method: 'POST',
@@ -1940,6 +1940,9 @@ lab.experiment("Transactions", function () {
     const firstTransactionItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'routePass')
     const routePassInst = await models.RoutePass.findById(firstTransactionItem.itemId)
 
+    const paymentItem = firstPurchaseResponse.result.transactionItems.find(i => i.itemType === 'payment')
+    const paymentPrice = paymentItem.debitF
+
     // Refund a route pass...
     const firstRefundResponse = await server.inject({
       method: "POST",
@@ -1956,7 +1959,7 @@ lab.experiment("Transactions", function () {
     await routePassInst.reload()
     expect(routePassInst.status).equal('refunded')
 
-    expectTransactionItemsConsistent(firstRefundResponse, tripPrice - roundToNearestCent(0.5 * tripPrice))
+    expectTransactionItemsConsistent(firstRefundResponse, paymentPrice)
 
     await promoInst.destroy()
   })
