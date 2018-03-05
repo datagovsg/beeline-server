@@ -413,13 +413,15 @@ Trip's company ID and driver's company ID must match.
             "tickets"."id" AS "ticketId",
             "tickets"."boardStopId" AS "boardStopId",
             "tickets"."alightStopId" AS "alightStopId",
+            "stops"."id" AS "bsStopId",
             "tripStops"."tripId" AS "tripId"
           FROM
-            "tickets", users, "tripStops"
+            "tickets", users, "tripStops", "stops"
           WHERE
             "tickets"."status" = 'valid' AND
             "tripId" = :tripId AND
             "users".id = "tickets"."userId" AND
+            "tripStops"."stopId" = "stops"."id" AND
             "tripStops".id = "tickets"."boardStopId"`,
           {
             type: db.QueryTypes.SELECT,
