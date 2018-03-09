@@ -129,22 +129,23 @@ lab.experiment("Transactions", function () {
       transportCompanyId: companyInstance.id,
     })
 
+    const year = new Date().getFullYear() + 1
     // create some trips...
     tripInstances = await Promise.all(
       _.range(0, 9).map((i) => models.Trip.create({
         // decreasing, to check for ordering
-        date: `2018-03-0${9 - i}`,
+        date: `${year}-03-0${9 - i}`,
         capacity: 10,
         seatsAvailable: 10,
         routeId: routeInstance.id,
         price: (Math.random() * 3 + 4).toFixed(2),
         tripStops: [
-          { stopId: stopInstances[0].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T08:30:00Z`},
-          { stopId: stopInstances[1].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T08:35:00Z`},
-          { stopId: stopInstances[2].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T08:40:00Z`},
+          { stopId: stopInstances[0].id, canBoard: true, canAlight: true, time: `${year}-03-0${9 - i}T08:30:00Z`},
+          { stopId: stopInstances[1].id, canBoard: true, canAlight: true, time: `${year}-03-0${9 - i}T08:35:00Z`},
+          { stopId: stopInstances[2].id, canBoard: true, canAlight: true, time: `${year}-03-0${9 - i}T08:40:00Z`},
 
-          { stopId: stopInstances[3].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T09:50:00Z`},
-          { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: `2018-03-0${9 - i}T09:55:00Z`},
+          { stopId: stopInstances[3].id, canBoard: true, canAlight: true, time: `${year}-03-0${9 - i}T09:50:00Z`},
+          { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: `${year}-03-0${9 - i}T09:55:00Z`},
         ],
         bookingInfo: {
           windowType: 'stop',
