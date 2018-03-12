@@ -137,6 +137,10 @@ export function register(server, options, next) {
               },
             ],
           })
+          const subscriptions = await m.EventSubscription.findAll({
+            raw: true,
+          })
+          events.setSubscriptionList(subscriptions)
           events.emit("tripCancelled", {
             trip: _.assign(tripInst.toJSON(), { numPassengers }),
           })
