@@ -394,7 +394,9 @@ export function register(server, options, next) {
 
   const addPaymentMetadataTo = async (db, routePassItems) => {
     const ids = _(routePassItems)
-      .filter(r => r.transaction.type === "routePassPurchase")
+      .filter(r =>
+        ["routePassPurchase", "conversion"].includes(r.transaction.type)
+      )
       .map(r => r.id)
       .value()
     if (ids.length === 0) {
