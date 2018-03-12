@@ -499,7 +499,9 @@ the \`startDate\` defaults to the time of request.
       const ticketPrice = route.indicativeTrip.nextPrice
       const pricing = {
         1: {
+          quantity: 1,
           price: parseFloat(ticketPrice),
+          unitPrice: parseFloat(ticketPrice),
         },
       }
 
@@ -549,7 +551,17 @@ the \`startDate\` defaults to the time of request.
             return pricing
           })
           .zip(passSizes)
-          .map(pair => pair.reverse())
+          .map(pair => {
+            const [pricing, passSize] = pair
+            if (pricing) {
+              const { price, discount } = pricing
+              pricing.quantity = passSize
+              pricing.unitPrice = price / passSize
+              const discountFraction = discount / (discount + price)
+              pricing.discountPercent = discountFraction.toFixed(2) * 100
+            }
+            return pair.reverse()
+          })
           .fromPairs()
           .value()
 

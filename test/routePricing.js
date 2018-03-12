@@ -47,9 +47,10 @@ lab.experiment("Route-specific Credits", function () {
   })
 
   lab.test('Pricing for single ticket and 1 pass size with no promo', {timeout: 20000}, async function () {
+    const tag = 'rp-' + randomString()
     await routeInstance.update({
       notes: { passSizes: [smallPassSize] },
-      tags: ['rp-111']
+      tags: [tag],
     })
     let response = await server.inject({
       method: "GET",
@@ -63,9 +64,10 @@ lab.experiment("Route-specific Credits", function () {
   })
 
   lab.test('Pricing for single ticket and 2 pass sizes with default promo', {timeout: 20000}, async function () {
+    const tag = 'rp-' + randomString()
     await routeInstance.update({
       notes: { passSizes: [smallPassSize, 10] },
-      tags: ['rp-111']
+      tags: [tag],
     })
     await m.Promotion.destroy({
       where: { code: '' }
@@ -75,7 +77,7 @@ lab.experiment("Route-specific Credits", function () {
       type: 'RoutePass',
       params: {
         "description": "For test",
-        "tag": 'rp-111',
+        "tag": tag,
         "qualifyingCriteria": [{
           "type": "noLimit"
         }],
@@ -100,9 +102,13 @@ lab.experiment("Route-specific Credits", function () {
     expect(response.statusCode).equal(200)
     expect(response.result['1'].price).equal(+ticketPrice)
     expect(response.result['5'].price).equal(20)
+    expect(response.result['5'].unitPrice).equal(4)
     expect(response.result['5'].discount).equal(5)
+    expect(response.result['5'].discountPercent).about(20, 0.001)
     expect(response.result['10'].price).equal(40)
+    expect(response.result['10'].unitPrice).equal(4)
     expect(response.result['10'].discount).equal(10)
+    expect(response.result['10'].discountPercent).about(20, 0.001)
   })
 
   lab.test('Pricing for single ticket and 2 pass sizes with default promo with diff tag', {timeout: 20000}, async function () {
@@ -143,15 +149,20 @@ lab.experiment("Route-specific Credits", function () {
     expect(response.statusCode).equal(200)
     expect(response.result['1'].price).equal(+ticketPrice)
     expect(response.result['5'].price).equal(20)
+    expect(response.result['5'].unitPrice).equal(4)
     expect(response.result['5'].discount).equal(5)
+    expect(response.result['5'].discountPercent).about(20, 0.001)
     expect(response.result['10'].price).equal(40)
+    expect(response.result['5'].unitPrice).equal(4)
     expect(response.result['10'].discount).equal(10)
+    expect(response.result['10'].discountPercent).about(20, 0.001)
   })
 
   lab.test('Pricing for single ticket and 2 pass sizes with 2 default promos', {timeout: 20000}, async function () {
+    const tag = 'rp-' + randomString()
     await routeInstance.update({
       notes: { passSizes: [smallPassSize, 10] },
-      tags: ['rp-111']
+      tags: [tag],
     })
     await m.Promotion.destroy({
       where: { code: '' }
@@ -161,7 +172,7 @@ lab.experiment("Route-specific Credits", function () {
       type: 'RoutePass',
       params: {
         "description": "For test",
-        "tag": 'rp-111',
+        "tag": tag,
         "qualifyingCriteria": [{
           "type": "noLimit"
         }],
@@ -184,7 +195,7 @@ lab.experiment("Route-specific Credits", function () {
       type: 'RoutePass',
       params: {
         "description": "For test",
-        "tag": 'rp-111',
+        "tag": tag,
         "qualifyingCriteria": [{
           "type": "noLimit"
         }],
@@ -214,15 +225,20 @@ lab.experiment("Route-specific Credits", function () {
     expect(response.statusCode).equal(200)
     expect(response.result['1'].price).equal(+ticketPrice)
     expect(response.result['5'].price).equal(20)
+    expect(response.result['5'].unitPrice).equal(4)
     expect(response.result['5'].discount).equal(5)
+    expect(response.result['5'].discountPercent).about(20, 0.001)
     expect(response.result['10'].price).equal(30)
+    expect(response.result['10'].unitPrice).equal(3)
     expect(response.result['10'].discount).equal(20)
+    expect(response.result['10'].discountPercent).about(40, 0.001)
   })
 
   lab.test('Pricing for single ticket and 2 pass sizes with 2 default promos for special customer', {timeout: 20000}, async function () {
+    const tag = 'rp-' + randomString()
     await routeInstance.update({
       notes: { passSizes: [smallPassSize, 10] },
-      tags: ['rp-111']
+      tags: [tag]
     })
     await m.Promotion.destroy({
       where: { code: '' }
@@ -232,7 +248,7 @@ lab.experiment("Route-specific Credits", function () {
       type: 'RoutePass',
       params: {
         "description": "For test",
-        "tag": 'rp-111',
+        "tag": tag,
         "qualifyingCriteria": [{
           "type": "noLimit"
         }],
@@ -261,7 +277,7 @@ lab.experiment("Route-specific Credits", function () {
       type: 'RoutePass',
       params: {
         "description": "For test",
-        "tag": 'rp-111',
+        "tag": tag,
         "qualifyingCriteria": [{
           "type": "limitByContactList",
           "params": { "contactListId": contactListInstance.id }
@@ -295,8 +311,12 @@ lab.experiment("Route-specific Credits", function () {
     expect(response.statusCode).equal(200)
     expect(response.result['1'].price).equal(+ticketPrice)
     expect(response.result['5'].price).equal(20)
+    expect(response.result['5'].unitPrice).equal(4)
     expect(response.result['5'].discount).equal(5)
+    expect(response.result['5'].discountPercent).about(20, 0.001)
     expect(response.result['10'].price).equal(30)
+    expect(response.result['10'].unitPrice).equal(3)
     expect(response.result['10'].discount).equal(20)
+    expect(response.result['10'].discountPercent).about(40, 0.001)
   })
 })
