@@ -5,15 +5,16 @@ import server from "../src/index"
 import Lab from "lab"
 import {createUsersCompaniesRoutesAndTrips} from './test_data'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("Route-specific Credits", function () {
-  var userInstance, routeInstance
-  var testTag
+  let userInstance
+  let routeInstance
+  let testTag
   const ticketPrice = '5.00'
   const ticketsBought = 5
   const smallPassSize = 5
-  var trips
+  let trips
 
   lab.before({timeout: 15000}, async function () {
     testTag = `test-${Date.now()}`;
@@ -22,17 +23,17 @@ lab.experiment("Route-specific Credits", function () {
         await createUsersCompaniesRoutesAndTrips(m, new Array(ticketsBought).fill(+ticketPrice)))
 
     await routeInstance.update({
-      tags: [testTag]
+      tags: [testTag],
     })
   })
 
   lab.beforeEach(async function () {
     await resetTripInstances(m, trips)
     await m.RoutePass.destroy({
-      where: {userId: userInstance.id}
+      where: {userId: userInstance.id},
     })
     await m.Promotion.destroy({
-      where: { code: '' }
+      where: { code: '' },
     })
   })
 
@@ -70,7 +71,7 @@ lab.experiment("Route-specific Credits", function () {
       tags: [tag],
     })
     await m.Promotion.destroy({
-      where: { code: '' }
+      where: { code: '' },
     })
     await m.Promotion.create({
       code: '',
@@ -79,20 +80,20 @@ lab.experiment("Route-specific Credits", function () {
         "description": "For test",
         "tag": tag,
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.2}
+          "params": {"rate": 0.2},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     let response = await server.inject({
       method: "GET",
@@ -114,10 +115,10 @@ lab.experiment("Route-specific Credits", function () {
   lab.test('Pricing for single ticket and 2 pass sizes with default promo with diff tag', {timeout: 20000}, async function () {
     await routeInstance.update({
       notes: { passSizes: [smallPassSize, 10] },
-      tags: ['rp-' + randomString(), 'asdf']
+      tags: ['rp-' + randomString(), 'asdf'],
     })
     await m.Promotion.destroy({
-      where: { code: '' }
+      where: { code: '' },
     })
     await m.Promotion.create({
       code: '',
@@ -126,20 +127,20 @@ lab.experiment("Route-specific Credits", function () {
         "description": "For test",
         "tag": 'asdf',
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "params": {"schedule": [[25, 5], [50, 10]]},
-          "type": "tieredFixedByTotalValue"
+          "type": "tieredFixedByTotalValue",
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     let response = await server.inject({
       method: "GET",
@@ -165,7 +166,7 @@ lab.experiment("Route-specific Credits", function () {
       tags: [tag],
     })
     await m.Promotion.destroy({
-      where: { code: '' }
+      where: { code: '' },
     })
     await m.Promotion.create({
       code: '',
@@ -174,20 +175,20 @@ lab.experiment("Route-specific Credits", function () {
         "description": "For test",
         "tag": tag,
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.1}
+          "params": {"rate": 0.1},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     await m.Promotion.create({
@@ -197,25 +198,25 @@ lab.experiment("Route-specific Credits", function () {
         "description": "For test",
         "tag": tag,
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "tieredRateByTotalValue",
           "params": {
             "schedule": [
               [25, 0.2],
-              [50, 0.4]
-            ]
-          }
+              [50, 0.4],
+            ],
+          },
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     let response = await server.inject({
       method: "GET",
@@ -238,10 +239,10 @@ lab.experiment("Route-specific Credits", function () {
     const tag = 'rp-' + randomString()
     await routeInstance.update({
       notes: { passSizes: [smallPassSize, 10] },
-      tags: [tag]
+      tags: [tag],
     })
     await m.Promotion.destroy({
-      where: { code: '' }
+      where: { code: '' },
     })
     await m.Promotion.create({
       code: '',
@@ -250,26 +251,26 @@ lab.experiment("Route-specific Credits", function () {
         "description": "For test",
         "tag": tag,
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.1}
+          "params": {"rate": 0.1},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const contactListInstance = await m.ContactList.create({
       transportCompanyId: routeInstance.transportCompanyId,
       telephones: [userInstance.telephone],
-      emails: []
+      emails: [],
     })
 
     await m.Promotion.create({
@@ -280,25 +281,25 @@ lab.experiment("Route-specific Credits", function () {
         "tag": tag,
         "qualifyingCriteria": [{
           "type": "limitByContactList",
-          "params": { "contactListId": contactListInstance.id }
+          "params": { "contactListId": contactListInstance.id },
         }],
         "discountFunction": {
           "type": "tieredRateByTotalValue",
           "params": {
             "schedule": [
               [25, 0.2],
-              [50, 0.4]
-            ]
-          }
+              [50, 0.4],
+            ],
+          },
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     let response = await server.inject({
       method: "GET",
