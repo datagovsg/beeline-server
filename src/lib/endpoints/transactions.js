@@ -468,6 +468,88 @@ export const register = (server, options, next) => {
     }
   )
 
+  const refundViaStripeWithAccounting = async (
+    { db, txn, undoFn, stripeRefundInfo },
+    request
+  ) => {
+    try {
+      let tiByTypes = _.groupBy(txn.transactionItems, ti => ti.itemType)
+      let { charge, amount, idempotencyKey } = stripeRefundInfo
+      let refundAmtCents = Math.round(amount * 100)
+
+      let stripeRefundResult
+      try {
+        stripeRefundResult = await Payment.refundCharge(
+          charge.id,
+          refundAmtCents / 100,
+          idempotencyKey
+        )
+
+        assert(
+          stripeRefundResult.status === "succeeded",
+          "Stripe refund was not performed"
+        )
+      } catch (err) {
+        let refundPaymentInst = tiByTypes.refundPayment[0].refundPayment
+        await refundPaymentInst.update({ data: err })
+
+        throw new ChargeError(err.message)
+      }
+
+      // fill out refundPayment
+      await db.transaction(async transaction => {
+        assert.strictEqual(tiByTypes.refundPayment.length, 1)
+
+        let refundPaymentInst = tiByTypes.refundPayment[0].refundPayment
+        await refundPaymentInst.update({
+          paymentResource: stripeRefundResult.id,
+          data: stripeRefundResult,
+        })
+
+        // amend processing fee:
+        let processingFee =
+          -(await Payment.retrieveTransaction(
+            stripeRefundResult.balance_transaction
+          )).fee / 100
+
+        // for stripe-transfer (processing fee)
+        let stripeTransfer = tiByTypes.transfer.find(
+          ti => ti.transfer.thirdParty === "stripe"
+        )
+        await stripeTransfer.update({ debit: processingFee }, { transaction })
+        await stripeTransfer.transfer.update(
+          { incoming: processingFee },
+          { transaction }
+        )
+
+        // for account transaction item
+        assert.strictEqual(tiByTypes.account.length, 1)
+        await tiByTypes.account[0].update(
+          { credit: amount + processingFee },
+          { transaction }
+        )
+      })
+
+      return txn.toJSON()
+    } catch (err) {
+      if (err instanceof ChargeError) {
+        console.error(err)
+        try {
+          await undoFn()
+        } catch (err2) {
+          console.error(err2)
+          events.emit("transactionFailure", {
+            message: `Error performing refund. ${err.message}`,
+            userId:
+              request.auth.credentials.adminId || request.auth.credentials.email,
+          })
+        }
+      }
+
+      throw err
+    }
+  }
+
   server.route({
     method: "POST",
     path: "/transactions/route_passes/{routePassId}/refund/payment",
@@ -577,88 +659,6 @@ will not be refunded here, so we will make a net profit.`,
       }, refundViaStripeWithAccounting),
     }
   )
-
-  const refundViaStripeWithAccounting = async (
-    { db, txn, undoFn, stripeRefundInfo },
-    request
-  ) => {
-    try {
-      let tiByTypes = _.groupBy(txn.transactionItems, ti => ti.itemType)
-      let { charge, amount, idempotencyKey } = stripeRefundInfo
-      let refundAmtCents = Math.round(amount * 100)
-
-      let stripeRefundResult
-      try {
-        stripeRefundResult = await Payment.refundCharge(
-          charge.id,
-          refundAmtCents / 100,
-          idempotencyKey
-        )
-
-        assert(
-          stripeRefundResult.status === "succeeded",
-          "Stripe refund was not performed"
-        )
-      } catch (err) {
-        let refundPaymentInst = tiByTypes.refundPayment[0].refundPayment
-        await refundPaymentInst.update({ data: err })
-
-        throw new ChargeError(err.message)
-      }
-
-      // fill out refundPayment
-      await db.transaction(async transaction => {
-        assert.strictEqual(tiByTypes.refundPayment.length, 1)
-
-        let refundPaymentInst = tiByTypes.refundPayment[0].refundPayment
-        await refundPaymentInst.update({
-          paymentResource: stripeRefundResult.id,
-          data: stripeRefundResult,
-        })
-
-        // amend processing fee:
-        let processingFee =
-          -(await Payment.retrieveTransaction(
-            stripeRefundResult.balance_transaction
-          )).fee / 100
-
-        // for stripe-transfer (processing fee)
-        let stripeTransfer = tiByTypes.transfer.find(
-          ti => ti.transfer.thirdParty === "stripe"
-        )
-        await stripeTransfer.update({ debit: processingFee }, { transaction })
-        await stripeTransfer.transfer.update(
-          { incoming: processingFee },
-          { transaction }
-        )
-
-        // for account transaction item
-        assert.strictEqual(tiByTypes.account.length, 1)
-        await tiByTypes.account[0].update(
-          { credit: amount + processingFee },
-          { transaction }
-        )
-      })
-
-      return txn.toJSON()
-    } catch (err) {
-      if (err instanceof ChargeError) {
-        console.error(err)
-        try {
-          await undoFn()
-        } catch (err2) {
-          console.error(err2)
-          events.emit("transactionFailure", {
-            message: `Error performing refund. ${err.message}`,
-            userId:
-              request.auth.credentials.adminId || request.auth.credentials.email,
-          })
-        }
-      }
-
-      throw err
-    }
-  }
 
   // Refunds a ticket, issuing a routePass in its stead
   // Current implementation of routePass requires the relevant
