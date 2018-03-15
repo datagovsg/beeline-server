@@ -406,16 +406,15 @@ export const register = (server, options, next) => {
       method: "POST",
       config: {
         tags: ["api"],
-        description: `Used to preview the result of payment_ticket_sale
+        description: `Used to preview the result of a ticket payment
   `,
-        notes: `Payload must have an array \`trips\`, each an object with a \`tripId\`, \`qty\`, \`boardStopId\` and \`alightStopId\`.
+        notes: `Payload must have an array \`trips\`, each an object with a \`tripId\`, \`boardStopId\` and \`alightStopId\`.
   `,
         validate: {
           payload: Joi.object({
             trips: Joi.array().items(
               Joi.object({
                 tripId: Joi.number().integer(),
-                // qty: Joi.number().integer().default(1).min(1).max(1),
                 boardStopId: Joi.number().integer(),
                 alightStopId: Joi.number().integer(),
               })
@@ -433,18 +432,13 @@ export const register = (server, options, next) => {
               })
               .allow(null)
               .default(null),
-            dryRun: Joi.boolean().default(true),
+            groupItemsByType: Joi.boolean().default(false),
           }).unknown(),
         },
       },
 
       async handler(request, reply) {
         try {
-          assert(
-            request.payload.dryRun,
-            "Prepared ticket transactions are currently not allowed"
-          )
-
           for (let trip of request.payload.trips) {
             trip.userId = request.auth.credentials.userId || 0
           }
@@ -458,9 +452,35 @@ export const register = (server, options, next) => {
             applyRoutePass: request.payload.applyRoutePass,
             applyReferralCredits: request.payload.applyReferralCredits,
             applyCredits: request.payload.applyCredits,
-            dryRun: request.payload.dryRun,
+            dryRun: true,
           })
-          reply(preparedTransaction)
+
+          const groupItemsByType = preparedTransaction => {
+            const groupedItems = _.groupBy(
+              preparedTransaction.transactionItems,
+              "itemType"
+            )
+            return {
+              ...preparedTransaction,
+              transactionItems: groupedItems,
+              totals: _(groupedItems)
+                .mapValues(items =>
+                  _(["credit", "debit"])
+                    .map(field => [
+                      field,
+                      _.sumBy(items, item => parseFloat(item[field])),
+                    ])
+                    .fromPairs()
+                    .value()
+                )
+                .value(),
+            }
+          }
+          reply(
+            request.payload.groupItemsByType
+              ? groupItemsByType(preparedTransaction)
+              : preparedTransaction
+          )
         } catch (err) {
           defaultErrorHandler(reply)(err)
         }

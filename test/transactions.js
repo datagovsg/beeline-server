@@ -59,12 +59,15 @@ lab.experiment("Transactions", function () {
     }
   }
 
-  const cleanUpTransaction = (transaction) => {
-    return Promise.all((transaction.transactionItems || [])
+  const cleanUpTransactionItems = (transactionItems, id) => {
+    return Promise.all((transactionItems || [])
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(txnItem => models.Ticket.destroy({where: {id: txnItem.itemId}}))
-    ).then(() => models.Transaction.destroy({where: {id: transaction.id}}))
+    ).then(() => models.Transaction.destroy({where: {id: id}}))
   }
+
+  const cleanUpTransaction = ({transactionItems, id}) =>
+    cleanUpTransactionItems(transactionItems, id)
 
   // Cache this for performance reasons
   const createStripeToken = async () => stripeTokens.length
@@ -246,6 +249,65 @@ lab.experiment("Transactions", function () {
       .to.equal(companyInstance.id)
 
     await cleanUpTransaction(saleResponse.result)
+  })
+
+  lab.test("Prepare transaction - group by type", async function () {
+    // CREATE
+    let saleResponse = await server.inject({
+      method: "POST",
+      url: "/transactions/tickets/quote",
+      payload: {
+        trips: [{
+          tripId: tripInstances[0].id,
+          boardStopId: tripInstances[0].tripStops[0].id,
+          alightStopId: tripInstances[0].tripStops[0].id,
+          // qty: 1
+        }, {
+          tripId: tripInstances[1].id,
+          boardStopId: tripInstances[1].tripStops[0].id,
+          alightStopId: tripInstances[1].tripStops[0].id,
+          // qty: 1
+        }, {
+          tripId: tripInstances[2].id,
+          boardStopId: tripInstances[2].tripStops[0].id,
+          alightStopId: tripInstances[2].tripStops[0].id,
+          // qty: 1
+        }],
+        groupItemsByType: true,
+      },
+      headers: authHeaders.user,
+    })
+    expect(saleResponse.statusCode).to.equal(200)
+
+    const {totals, transactionItems: items} = saleResponse.result
+    const itemsList = _(items).values().flatten().value()
+
+    verifyCleanTransactionItems(itemsList)
+
+    expect(items.ticketSale.length).to.equal(3)
+    expect(items.payment.length).to.equal(1)
+    expect(items.transfer.length).to.equal(1)
+
+    // payment (to Beeline) matches total price of tickets
+    let totalPrice =
+      parseFloat(tripInstances[0].price) +
+      parseFloat(tripInstances[1].price) +
+      parseFloat(tripInstances[2].price)
+    expect(parseFloat(items.payment[0].debit).toFixed(2))
+      .to.equal(totalPrice.toFixed(2))
+    expect(totals.payment.debit.toFixed(2)).to.equal(totalPrice.toFixed(2))
+
+    // transfer (to operator) matches COGS
+    expect(parseFloat(items.transfer[0].credit).toFixed(2))
+      .to.equal(parseFloat(items.account[0].debit).toFixed(2))
+    expect(parseFloat(totals.transfer.credit).toFixed(2))
+      .to.equal(parseFloat(totals.account.debit).toFixed(2))
+
+    // transferred to the correct operator
+    expect(items.transfer[0].transfer.transportCompanyId)
+      .to.equal(companyInstance.id)
+
+    await cleanUpTransactionItems(itemsList, saleResponse.result.id)
   })
 
   lab.test("Trips are sorted in correct order", async function () {
