@@ -9,11 +9,9 @@ module.exports = (server, options, next) => {
       require("./endpoints/companies"),
       require("./endpoints/companyPromos"),
       require("./endpoints/companyContactLists"),
-      require("./endpoints/monitoring"),
       require("./endpoints/drivers"),
       require("./endpoints/onemap"),
       require("./endpoints/eventSubscriptions"),
-      require("./endpoints/pings"),
       require("./endpoints/promotions"),
       require("./endpoints/regions"),
       require("./endpoints/routes"),
@@ -39,7 +37,6 @@ module.exports = (server, options, next) => {
       require("./custom/userSuggestedRoutes"),
       require("./daemons/eventSubscriptions"),
       require("./daemons/smoketest"),
-      // daemons/monitoring is loaded by endpoints/monitoring
     ])
     .then(next, err => {
       console.warn(err)

@@ -1,4 +1,4 @@
-/* eslint-disable babel/new-cap */
+/* eslint-disable */
 
 import assert from 'assert'
 import _ from "lodash"
@@ -294,7 +294,6 @@ export function makeAssociation (modelCache) {
   var Trip = modelCache.require('Trip')
   var TripStop = modelCache.require('TripStop')
   var TripStatus = modelCache.require('TripStatus')
-  var Ping = modelCache.require('Ping')
   var Driver = modelCache.require('Driver')
   var Route = modelCache.require('Route')
   var Vehicle = modelCache.require('Vehicle')
@@ -304,9 +303,6 @@ export function makeAssociation (modelCache) {
   })
   // Trip, ping statuses
   Trip.hasMany(TripStatus, {
-    foreignKey: "tripId"
-  })
-  Trip.hasMany(Ping, {
     foreignKey: "tripId"
   })
   Trip.belongsTo(Driver, {
