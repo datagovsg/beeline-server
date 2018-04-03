@@ -85,7 +85,7 @@ module.exports = (server, options, next) => {
           })
           .on("error", err => {
             console.error(err)
-            reply(err).statusCode(500)
+            reply(Boom.boomify(err))
           })
       } catch (err) {
         console.error(err.stack)
