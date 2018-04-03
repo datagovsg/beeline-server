@@ -336,13 +336,21 @@ lab.experiment("Transactions", function () {
 
     let user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/user_history',
+      url: '/transactions/user_history?groupItemsByType=true',
       headers: {
         authorization: `Bearer ${user.makeToken()}`,
       },
     })).result
     expect(user1History.transactions.map(txn => txn.id)).to.include(saleTxn.id)
     expect(user1History.transactions.map(txn => txn.id)).to.include(refundTxn.id)
+
+    const saleItems = user1History.transactions.find(txn => txn.id === saleTxn.id).itemsByType
+    expect(saleItems.ticketSale).exist()
+    expect(saleItems.deal).exist()
+
+    const refundItems = user1History.transactions.find(txn => txn.id === refundTxn.id).itemsByType
+    expect(refundItems.ticketRefund).exist()
+    expect(refundItems.deal).exist()
 
     await destroyTicketsIn(saleTxn)
   })
@@ -392,13 +400,21 @@ lab.experiment("Transactions", function () {
 
     let user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/user_history',
+      url: '/transactions/user_history?groupItemsByType=true',
       headers: {
         authorization: `Bearer ${user.makeToken()}`,
       },
     })).result
     expect(user1History.transactions.map(txn => txn.id)).to.include(saleTxn.id)
     expect(user1History.transactions.map(txn => txn.id)).to.include(refundTxn.id)
+
+    const saleItems = user1History.transactions.find(txn => txn.id === saleTxn.id).itemsByType
+    expect(saleItems.routePass).exist()
+    expect(saleItems.deal).exist()
+
+    const refundItems = user1History.transactions.find(txn => txn.id === refundTxn.id).itemsByType
+    expect(refundItems.routePass).exist()
+    expect(refundItems.deal).exist()
 
     for (let txnItem of saleTxn.transactionItems) {
       if (txnItem.itemType.startsWith("routePass")) {

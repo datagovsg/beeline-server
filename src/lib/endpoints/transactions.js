@@ -1367,6 +1367,7 @@ refunded, issued)`,
             .default(20)
             .min(1)
             .max(100),
+          groupItemsByType: Joi.boolean().default(false),
         },
       },
     },
@@ -1473,8 +1474,43 @@ OFFSET :offset
             ticketExpense: ticketIncludes,
           }
         )
+        const txns = transactions.map(tx => tx.toJSON())
+        if (request.query.groupItemsByType) {
+          for (let t of txns) {
+            t.itemsByType = _.groupBy(t.transactionItems, ti => ti.itemType)
+            const ticketItems =
+              t.itemsByType.ticketSale ||
+              t.itemsByType.ticketRefund ||
+              t.itemsByType.ticketExpense
+            const routePassItems =
+              t.itemsByType.routeCredits || t.itemsByType.routePass
+            const deal = _.cloneDeep(ticketItems || routePassItems)
+
+            const extractRouteIdFromTag = tag =>
+              tag.substring(tag.indexOf("-") + 1)
+
+            if (ticketItems) {
+              const ticketItem =
+                ticketItems[0].ticketSale ||
+                ticketItems[0].ticketRefund ||
+                ticketItems[0].ticketExpense
+              deal.forEach(
+                d => (d.routeId = ticketItem.boardStop.trip.routeId)
+              )
+            } else if (routePassItems) {
+              const routePassItem =
+                routePassItems[0].routeCredits || routePassItems[0].routePass
+              deal.forEach(
+                d =>
+                  (d.routeId = Number(extractRouteIdFromTag(routePassItem.tag)))
+              )
+            }
+            t.itemsByType.deal = deal
+            delete t.transactionItems
+          }
+        }
         reply({
-          transactions: transactions.map(tx => tx.toJSON()),
+          transactions: txns,
           page: request.query.page,
           perPage: request.query.perPage,
         })
