@@ -402,74 +402,79 @@ export function register(server, options, next) {
     if (ids.length === 0) {
       return routePassItems
     }
-    const refundMetadata = await db
-      .query(
-        `SELECT
-          ti.id,
-          "refundingTransaction"."transactionId" as "refundingTransactionId",
-          "paymentResource" as "refundResource"
-        FROM
-          "transactionItems" "refundingTransaction",
-          "transactionItems" "refundPaymentItem",
-          "refundPayments",
-          "transactionItems" ti
-        WHERE
-          "refundingTransaction".notes IS NOT NULL
-          AND "refundingTransaction".notes->>'refundedTransactionId' = ti."transactionId"::text
-          AND "refundingTransaction"."itemType" = 'routePass'
-          AND "refundingTransaction"."itemId" = ti."itemId"
-          AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
-          AND "refundPayments".id = "refundPaymentItem"."itemId"
-          AND ti.id in (:ids)
-        `,
-        { type: db.QueryTypes.SELECT, replacements: { ids } }
-      )
-      .then(keyBy("id"))
+    const [
+      refundMetadata,
+      paymentMetadata,
+      discountMetadata,
+    ] = await Promise.all([
+      db
+        .query(
+          `SELECT
+            ti.id,
+            "refundingTransaction"."transactionId" as "refundingTransactionId",
+            "paymentResource" as "refundResource"
+          FROM
+            "transactionItems" "refundingTransaction",
+            "transactionItems" "refundPaymentItem",
+            "refundPayments",
+            "transactionItems" ti
+          WHERE
+            "refundingTransaction".notes IS NOT NULL
+            AND "refundingTransaction".notes->>'refundedTransactionId' = ti."transactionId"::text
+            AND "refundingTransaction"."itemType" = 'routePass'
+            AND "refundingTransaction"."itemId" = ti."itemId"
+            AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
+            AND "refundPayments".id = "refundPaymentItem"."itemId"
+            AND ti.id in (:ids)
+          `,
+          { type: db.QueryTypes.SELECT, replacements: { ids } }
+        )
+        .then(keyBy("id")),
+      db
+        .query(
+          `SELECT
+            ti."id",
+            "paymentResource",
+            "payments".data->'transfer'->>'destination_payment' as "transferResource",
+            "payments".data->>'message' as "paymentMessage"
+          FROM
+            "transactionItems" "paymentItem",
+            "payments",
+            "transactionItems" ti
+          WHERE
+            "paymentItem"."transactionId" = ti."transactionId"
+            AND "paymentItem"."itemType" = 'payment'
+            AND "paymentItem"."itemId" = "payments"."id"
+            AND ti.id in (:ids)
+          `,
+          { type: db.QueryTypes.SELECT, replacements: { ids } }
+        )
+        .then(keyBy("id")),
+      db
+        .query(
+          `SELECT
+            ti."id",
+            "discounts"."code",
+            "discounts"."promotionId",
+            "discounts"."description"
+          FROM
+            "transactionItems" "discountItem",
+            "discounts",
+            "transactionItems" ti
+          WHERE
+            "discountItem"."transactionId" = ti."transactionId"
+            AND "discountItem"."itemType" = 'discount'
+            AND "discountItem"."itemId" = "discounts"."id"
+            AND ti.id in (:ids)
+          `,
+          { type: db.QueryTypes.SELECT, replacements: { ids } }
+        )
+        .then(discounts =>
+          discounts.map(discount => ({ id: discount.id, discount }))
+        )
+        .then(keyBy("id")),
+    ])
 
-    const paymentMetadata = await db
-      .query(
-        `SELECT
-          ti."id",
-          "paymentResource",
-          "payments".data->'transfer'->>'destination_payment' as "transferResource",
-          "payments".data->>'message' as "paymentMessage"
-        FROM
-          "transactionItems" "paymentItem",
-          "payments",
-          "transactionItems" ti
-        WHERE
-          "paymentItem"."transactionId" = ti."transactionId"
-          AND "paymentItem"."itemType" = 'payment'
-          AND "paymentItem"."itemId" = "payments"."id"
-          AND ti.id in (:ids)
-        `,
-        { type: db.QueryTypes.SELECT, replacements: { ids } }
-      )
-      .then(keyBy("id"))
-
-    const discountMetadata = await db
-      .query(
-        `SELECT
-          ti."id",
-          "discounts"."code",
-          "discounts"."promotionId",
-          "discounts"."description"
-        FROM
-          "transactionItems" "discountItem",
-          "discounts",
-          "transactionItems" ti
-        WHERE
-          "discountItem"."transactionId" = ti."transactionId"
-          AND "discountItem"."itemType" = 'discount'
-          AND "discountItem"."itemId" = "discounts"."id"
-          AND ti.id in (:ids)
-        `,
-        { type: db.QueryTypes.SELECT, replacements: { ids } }
-      )
-      .then(discounts =>
-        discounts.map(discount => ({ id: discount.id, discount }))
-      )
-      .then(keyBy("id"))
     routePassItems.forEach(r =>
       _.assign(
         r,
@@ -564,9 +569,12 @@ export function register(server, options, next) {
           offset: entryOffset,
           transaction,
         }).then(passes => passes.map(r => r.toJSON()))
-        await addRouteMetadataTo(db, routePassItems)
-        await addBoardStopMetadataTo(db, routePassItems)
-        return addPaymentMetadataTo(db, routePassItems)
+        await Promise.all([
+          addRouteMetadataTo(db, routePassItems),
+          addBoardStopMetadataTo(db, routePassItems),
+          addPaymentMetadataTo(db, routePassItems),
+        ])
+        return routePassItems
       }
 
       const routePassCSVFields = [
