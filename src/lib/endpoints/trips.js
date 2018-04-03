@@ -442,8 +442,7 @@ Trip's company ID and driver's company ID must match.
     config: {
       tags: ["api"],
       auth: false,
-      description:
-        "Returns the current vehicle, driver, latest pings, latest statuses",
+      description: "Returns the current vehicle, driver, latest statuses",
       validate: {
         params: {
           id: Joi.number().integer(),
@@ -462,32 +461,16 @@ Trip's company ID and driver's company ID must match.
         if (!trip) {
           return reply(Boom.notFound())
         }
-        let [pings, statuses] = await Promise.all([
-          trip.driverId
-            ? m.Ping.findAll({
-                where: {
-                  tripId: request.params.id,
-                  // vehicleId: trip.vehicleId
-                  driverId: trip.driverId,
-                },
-                order: [["time", "DESC"]],
-                limit: 20,
-              })
-            : [],
-          m.TripStatus.findAll({
-            where: {
-              tripId: request.params.id,
-            },
-            order: [["time", "DESC"]],
-            limit: 20,
-          }),
-        ])
-
-        const tripJSON = trip.toJSON()
+        let statuses = await m.TripStatus.findAll({
+          where: {
+            tripId: request.params.id,
+          },
+          order: [["time", "DESC"]],
+          limit: 20,
+        })
 
         reply({
-          trip: tripJSON,
-          pings: pings.map(p => p.toJSON()),
+          trip: trip.toJSON(),
           statuses: statuses.map(s => s.toJSON()),
           code: trip.getCode(true),
         })

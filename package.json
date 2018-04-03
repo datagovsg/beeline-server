@@ -22,7 +22,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@mapbox/togeojson": "^0.16.0",
-    "aws-sdk": "^2.194.0",
     "axios": "^0.16.2",
     "babel-cli": "^6.8.0",
     "babel-plugin-transform-runtime": "^6.6.0",
