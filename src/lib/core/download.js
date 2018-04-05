@@ -77,10 +77,8 @@ module.exports = (server, options, next) => {
           .on("response", http => {
             const { PassThrough } = require("stream")
             const response = reply(http.pipe(new PassThrough()))
-            for (let header in http.headers) {
-              if ({}.hasOwnProperty.call(http, header)) {
-                response.header(header, http.headers[header])
-              }
+            for (const [name, value] of Object.entries(http.headers)) {
+              response.header(name, value)
             }
           })
           .on("error", err => {
