@@ -1,4 +1,5 @@
 /* eslint-disable new-cap */
+/* eslint-disable guard-for-in */
 
 const _ = require("lodash")
 const auth = require("../core/auth")
@@ -77,8 +78,8 @@ module.exports = (server, options, next) => {
           .on("response", http => {
             const { PassThrough } = require("stream")
             const response = reply(http.pipe(new PassThrough()))
-            for (const [name, value] of Object.entries(http.headers)) {
-              response.header(name, value)
+            for (let header in http.headers) {
+              response.header(header, http.headers[header])
             }
           })
           .on("error", err => {
