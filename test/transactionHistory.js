@@ -1,11 +1,11 @@
 /* eslint no-await-in-loop: 0 */
 
-var Lab = require("lab")
-var lab = exports.lab = Lab.script()
+let Lab = require("lab")
+let lab = exports.lab = Lab.script()
 
 import _ from 'lodash'
 const {expect} = require("code")
-var server = require("../src/index.js")
+let server = require("../src/index.js")
 
 const {prepareTicketSale} = require('../src/lib/transactions')
 const {randomSingaporeLngLat, randomString, createStripeToken} = require("./test_common")
@@ -16,10 +16,13 @@ import {loginAs} from './test_common'
 const testMerchantId = process.env.STRIPE_TEST_DESTINATION
 
 lab.experiment("Transactions", function () {
-  var testInstances = []
-  var stopInstances, tripInstances
-  var companyInstance1, companyInstance2
-  var routeInstance1, routeInstance2
+  let testInstances = []
+  let stopInstances
+  let tripInstances
+  let companyInstance1
+  let companyInstance2
+  let routeInstance1
+  let routeInstance2
 
   /** Additional tests we may/will want to carry out:
         - Test that booking window works
@@ -27,11 +30,11 @@ lab.experiment("Transactions", function () {
   **/
 
   lab.before({timeout: 10000}, async () => {
-    var tripIncludes = {
-      include: [{model: models.TripStop }]
+    let tripIncludes = {
+      include: [{model: models.TripStop }],
     }
 
-    var user = await models.User.create({
+    let user = await models.User.create({
       email: "testuser1" + new Date().getTime() +
                 "@testtestexample.com",
       name: "Test use r r r r",
@@ -60,8 +63,8 @@ lab.experiment("Transactions", function () {
           description: `Test Stop ${i}`,
           coordinates: {
             type: "Point",
-            coordinates: randomSingaporeLngLat()
-          }
+            coordinates: randomSingaporeLngLat(),
+          },
         }))
     )
     testInstances = testInstances.concat(stopInstances)
@@ -96,31 +99,31 @@ lab.experiment("Transactions", function () {
           { stopId: stopInstances[2].id, canBoard: true, canAlight: true, time: `2020-03-0${9 - i}T08:40:00Z`},
 
           { stopId: stopInstances[3].id, canBoard: true, canAlight: true, time: `2020-03-0${9 - i}T09:50:00Z`},
-          { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: `2020-03-0${9 - i}T09:55:00Z`}
-        ]
+          { stopId: stopInstances[4].id, canBoard: true, canAlight: true, time: `2020-03-0${9 - i}T09:55:00Z`},
+        ],
       }, tripIncludes))
     )
     testInstances = testInstances.concat(tripInstances)
 
-    var loginResponse = await loginAs("user", user.id)
+    let loginResponse = await loginAs("user", user.id)
     expect(loginResponse.statusCode).to.equal(200)
   })
 
   lab.after(async () => {
     await models.RoutePass.destroy({ truncate: true })
-    for (var i = testInstances.length - 1; i >= 0; i--) {
+    for (let i = testInstances.length - 1; i >= 0; i--) {
       testInstances[i] = await testInstances[i].destroy()
     }
   })
 
-  async function destroyTicketsIn (txn) {
+  const destroyTicketsIn = async txn => {
     for (let txnItem of txn.transactionItems) {
       if (txnItem.itemType.startsWith("ticket")) {
         let ticketId = txnItem.itemId
         await models.Ticket.destroy({
           where: {
-            id: ticketId
-          }
+            id: ticketId,
+          },
         })
       }
     }
@@ -128,7 +131,7 @@ lab.experiment("Transactions", function () {
 
   lab.test("Admin's transactions show only his company's", async function () {
     // create the users
-    var [user1, user2] = await Promise.all([
+    let [user1, user2] = await Promise.all([
       models.User.create({
         name: 'test user 1',
       }),
@@ -138,7 +141,7 @@ lab.experiment("Transactions", function () {
     ])
 
     // purchase the tickets...
-    var [txn1] = await prepareTicketSale([db, models], {
+    let [txn1] = await prepareTicketSale([db, models], {
       trips: [
         {
           tripId: tripInstances[0].id,
@@ -157,15 +160,15 @@ lab.experiment("Transactions", function () {
           boardStopId: tripInstances[4].tripStops[0].id,
           alightStopId: tripInstances[4].tripStops[0].id,
           userId: user1.id,
-        }
+        },
       ],
       creator: {
         type: 'superadmin',
-        id: 0
+        id: 0,
       },
       committed: true,
     })
-    var [txn2] = await prepareTicketSale([db, models], {
+    let [txn2] = await prepareTicketSale([db, models], {
       trips: [
         {
           tripId: tripInstances[1].id,
@@ -184,31 +187,31 @@ lab.experiment("Transactions", function () {
           boardStopId: tripInstances[5].tripStops[0].id,
           alightStopId: tripInstances[5].tripStops[0].id,
           userId: user2.id,
-        }
+        },
       ],
       creator: {
         type: 'superadmin',
-        id: 0
+        id: 0,
       },
       committed: true,
     })
 
     // pull the transaction history as an admin
-    var admin1Auth = (await loginAs('admin', {
+    let admin1Auth = (await loginAs('admin', {
       transportCompanyId: companyInstance1.id,
-      permissions: ['view-transactions']
+      permissions: ['view-transactions'],
     })).result.sessionToken
 
-    var txnHistory1Response = await server.inject({
+    let txnHistory1Response = await server.inject({
       method: 'GET',
       url: '/transactions',
       headers: {
-        authorization: `Bearer ${admin1Auth}`
-      }
+        authorization: `Bearer ${admin1Auth}`,
+      },
     })
     expect(txnHistory1Response.statusCode).to.equal(200)
 
-    var txnHistory1 = txnHistory1Response.result
+    let txnHistory1 = txnHistory1Response.result
     expect(txnHistory1.transactions).to.be.an.array()
 
     // the first transaction are trips involving company1
@@ -218,16 +221,16 @@ lab.experiment("Transactions", function () {
 
     // Transaction items test
     await (async () => {
-      var txnItems1Response = await server.inject({
+      let txnItems1Response = await server.inject({
         method: 'GET',
         url: `/transaction_items?orderBy=createdAt&order=desc&perPage=100&endDate=${Date.now()}`,
         headers: {
-          authorization: `Bearer ${admin1Auth}`
-        }
+          authorization: `Bearer ${admin1Auth}`,
+        },
       })
       expect(txnItems1Response.statusCode).to.equal(200)
 
-      var txnItems1 = txnItems1Response.result.rows
+      let txnItems1 = txnItems1Response.result.rows
       expect(txnItems1).to.be.an.array()
 
       // the first transaction are trips involving company1
@@ -237,17 +240,17 @@ lab.experiment("Transactions", function () {
     })()
 
     // pull as superadmin -- both transactions should exist
-    var superAdminAuth = (await loginAs('superadmin')).result.sessionToken
+    let superAdminAuth = (await loginAs('superadmin')).result.sessionToken
 
-    var txnHistoryResponse = await server.inject({
+    let txnHistoryResponse = await server.inject({
       method: 'GET',
       url: '/transactions',
       headers: {
-        authorization: `Bearer ${superAdminAuth}`
-      }
+        authorization: `Bearer ${superAdminAuth}`,
+      },
     })
     expect(txnHistoryResponse.statusCode).to.equal(200)
-    var txnHistory = txnHistoryResponse.result
+    let txnHistory = txnHistoryResponse.result
 
     expect(txnHistory.transactions).to.be.an.array()
 
@@ -256,25 +259,25 @@ lab.experiment("Transactions", function () {
     expect(txnHistory.transactions.map(txn => txn.id)).to.include(txn2.id)
 
     // checks for users
-    var user1Login = (await loginAs('user', user1.id)).result.sessionToken
-    var user2Login = (await loginAs('user', user2.id)).result.sessionToken
+    let user1Login = (await loginAs('user', user1.id)).result.sessionToken
+    let user2Login = (await loginAs('user', user2.id)).result.sessionToken
 
-    var user1History = (await server.inject({
+    let user1History = (await server.inject({
       method: 'GET',
       url: '/transactions/user_history',
       headers: {
-        authorization: `Bearer ${user1Login}`
-      }
+        authorization: `Bearer ${user1Login}`,
+      },
     })).result
     expect(user1History.transactions.map(txn => txn.id)).to.include(txn1.id)
     expect(user1History.transactions.map(txn => txn.id)).to.not.include(txn2.id)
 
-    var user2History = (await server.inject({
+    let user2History = (await server.inject({
       method: 'GET',
       url: '/transactions/user_history',
       headers: {
-        authorization: `Bearer ${user2Login}`
-      }
+        authorization: `Bearer ${user2Login}`,
+      },
     })).result
     expect(user2History.transactions.map(txn => txn.id)).to.include(txn2.id)
     expect(user2History.transactions.map(txn => txn.id)).to.not.include(txn1.id)
@@ -294,7 +297,7 @@ lab.experiment("Transactions", function () {
       email: `testadmin${new Date().getTime()}@example.com`,
     })
     await admin.addTransportCompany(companyInstance2.id, {
-      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers']
+      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers'],
     })
 
     // purchase the ticket...
@@ -308,11 +311,11 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[1].tripStops[0].id,
           // qty: 1
         }],
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${user.makeToken()}`
-      }
+        authorization: `Bearer ${user.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
     const saleTxn = saleResponse.result
@@ -325,21 +328,29 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticketId}/refund/payment`,
       payload: { targetAmt },
       headers: {
-        authorization: `Bearer ${admin.makeToken()}`
+        authorization: `Bearer ${admin.makeToken()}`,
       },
     })
     expect(refundResponse.statusCode).to.equal(200)
     const refundTxn = refundResponse.result
 
-    var user1History = (await server.inject({
+    let user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/user_history',
+      url: '/transactions/user_history?groupItemsByType=true',
       headers: {
-        authorization: `Bearer ${user.makeToken()}`
-      }
+        authorization: `Bearer ${user.makeToken()}`,
+      },
     })).result
     expect(user1History.transactions.map(txn => txn.id)).to.include(saleTxn.id)
     expect(user1History.transactions.map(txn => txn.id)).to.include(refundTxn.id)
+
+    const saleItems = user1History.transactions.find(txn => txn.id === saleTxn.id).itemsByType
+    expect(saleItems.ticketSale).exist()
+    expect(saleItems.deal).exist()
+
+    const refundItems = user1History.transactions.find(txn => txn.id === refundTxn.id).itemsByType
+    expect(refundItems.ticketRefund).exist()
+    expect(refundItems.deal).exist()
 
     await destroyTicketsIn(saleTxn)
   })
@@ -352,7 +363,7 @@ lab.experiment("Transactions", function () {
       email: `testadmin${new Date().getTime()}@example.com`,
     })
     await admin.addTransportCompany(companyInstance2.id, {
-      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers']
+      permissions: ['refund', 'issue-tickets', 'view-transactions', 'view-passengers'],
     })
     const tag = 'rp-' + randomString()
     await routeInstance2.update({ tags: [tag] })
@@ -365,11 +376,11 @@ lab.experiment("Transactions", function () {
         quantity: 1,
         tag,
         companyId: companyInstance2.id,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${user.makeToken()}`
-      }
+        authorization: `Bearer ${user.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
     const saleTxn = saleResponse.result
@@ -381,28 +392,36 @@ lab.experiment("Transactions", function () {
       url: `/transactions/route_passes/${routePassId}/refund/payment`,
       payload: { transactionItemId },
       headers: {
-        authorization: `Bearer ${admin.makeToken()}`
+        authorization: `Bearer ${admin.makeToken()}`,
       },
     })
     expect(refundResponse.statusCode).to.equal(200)
     const refundTxn = refundResponse.result
 
-    var user1History = (await server.inject({
+    let user1History = (await server.inject({
       method: 'GET',
-      url: '/transactions/user_history',
+      url: '/transactions/user_history?groupItemsByType=true',
       headers: {
-        authorization: `Bearer ${user.makeToken()}`
-      }
+        authorization: `Bearer ${user.makeToken()}`,
+      },
     })).result
     expect(user1History.transactions.map(txn => txn.id)).to.include(saleTxn.id)
     expect(user1History.transactions.map(txn => txn.id)).to.include(refundTxn.id)
+
+    const saleItems = user1History.transactions.find(txn => txn.id === saleTxn.id).itemsByType
+    expect(saleItems.routePass).exist()
+    expect(saleItems.deal).exist()
+
+    const refundItems = user1History.transactions.find(txn => txn.id === refundTxn.id).itemsByType
+    expect(refundItems.routePass).exist()
+    expect(refundItems.deal).exist()
 
     for (let txnItem of saleTxn.transactionItems) {
       if (txnItem.itemType.startsWith("routePass")) {
         await models.RoutePass.destroy({
           where: {
-            id: txnItem.itemId
-          }
+            id: txnItem.itemId,
+          },
         })
       }
     }
