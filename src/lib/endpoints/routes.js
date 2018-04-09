@@ -354,7 +354,7 @@ the \`startDate\` defaults to the time of request.
         },
         query: {
           ...routeCommonParams,
-          includeFeatures: Joi.boolean().default(false),
+          includeFeatures: Joi.boolean().default(true),
         },
       },
     },
