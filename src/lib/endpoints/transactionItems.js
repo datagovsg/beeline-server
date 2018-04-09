@@ -552,6 +552,10 @@ export function register(server, options, next) {
             .default("json"),
         },
       },
+      timeout: {
+        server: false,
+        socket: false,
+      },
     },
     async handler(request, reply) {
       const getTransactionItems = async (
@@ -644,6 +648,7 @@ export function register(server, options, next) {
               let page = 1
               let lastFetchedSize = perPage
               while (lastFetchedSize >= perPage) {
+                console.warn(`Retrieving ${perPage} items at page ${page}`)
                 const relatedTransactionItems = await getTransactionItems(
                   m,
                   db,
@@ -654,6 +659,7 @@ export function register(server, options, next) {
                 )
                 await untilBatchWritten
                 untilBatchWritten = new Promise(async batchWritten => {
+                  console.warn(`Writing items at page ${page}`)
                   for (const row of relatedTransactionItems) {
                     if (!writer.write(row)) {
                       await new Promise(resolve => {
