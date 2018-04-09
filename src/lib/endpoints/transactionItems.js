@@ -402,78 +402,72 @@ export function register(server, options, next) {
     if (ids.length === 0) {
       return routePassItems
     }
-    const [
-      refundMetadata,
-      paymentMetadata,
-      discountMetadata,
-    ] = await Promise.all([
-      db
-        .query(
-          `SELECT
-            ti.id,
-            "refundingTransaction"."transactionId" as "refundingTransactionId",
-            "paymentResource" as "refundResource"
-          FROM
-            "transactionItems" "refundingTransaction",
-            "transactionItems" "refundPaymentItem",
-            "refundPayments",
-            "transactionItems" ti
-          WHERE
-            "refundingTransaction".notes IS NOT NULL
-            AND "refundingTransaction".notes->>'refundedTransactionId' = ti."transactionId"::text
-            AND "refundingTransaction"."itemType" = 'routePass'
-            AND "refundingTransaction"."itemId" = ti."itemId"
-            AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
-            AND "refundPayments".id = "refundPaymentItem"."itemId"
-            AND ti.id in (:ids)
-          `,
-          { type: db.QueryTypes.SELECT, replacements: { ids } }
-        )
-        .then(keyBy("id")),
-      db
-        .query(
-          `SELECT
-            ti."id",
-            "paymentResource",
-            "payments".data->'transfer'->>'destination_payment' as "transferResource",
-            "payments".data->>'message' as "paymentMessage"
-          FROM
-            "transactionItems" "paymentItem",
-            "payments",
-            "transactionItems" ti
-          WHERE
-            "paymentItem"."transactionId" = ti."transactionId"
-            AND "paymentItem"."itemType" = 'payment'
-            AND "paymentItem"."itemId" = "payments"."id"
-            AND ti.id in (:ids)
-          `,
-          { type: db.QueryTypes.SELECT, replacements: { ids } }
-        )
-        .then(keyBy("id")),
-      db
-        .query(
-          `SELECT
-            ti."id",
-            "discounts"."code",
-            "discounts"."promotionId",
-            "discounts"."description"
-          FROM
-            "transactionItems" "discountItem",
-            "discounts",
-            "transactionItems" ti
-          WHERE
-            "discountItem"."transactionId" = ti."transactionId"
-            AND "discountItem"."itemType" = 'discount'
-            AND "discountItem"."itemId" = "discounts"."id"
-            AND ti.id in (:ids)
-          `,
-          { type: db.QueryTypes.SELECT, replacements: { ids } }
-        )
-        .then(discounts =>
-          discounts.map(discount => ({ id: discount.id, discount }))
-        )
-        .then(keyBy("id")),
-    ])
+    const refundMetadata = await db
+      .query(
+        `SELECT
+          ti.id,
+          "refundingTransaction"."transactionId" as "refundingTransactionId",
+          "paymentResource" as "refundResource"
+        FROM
+          "transactionItems" "refundingTransaction",
+          "transactionItems" "refundPaymentItem",
+          "refundPayments",
+          "transactionItems" ti
+        WHERE
+          "refundingTransaction".notes IS NOT NULL
+          AND "refundingTransaction".notes->>'refundedTransactionId' = ti."transactionId"::text
+          AND "refundingTransaction"."itemType" = 'routePass'
+          AND "refundingTransaction"."itemId" = ti."itemId"
+          AND "refundingTransaction"."transactionId" = "refundPaymentItem"."transactionId"
+          AND "refundPayments".id = "refundPaymentItem"."itemId"
+          AND ti.id in (:ids)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
+      )
+      .then(keyBy("id"))
+    const paymentMetadata = db
+      .query(
+        `SELECT
+          ti."id",
+          "paymentResource",
+          "payments".data->'transfer'->>'destination_payment' as "transferResource",
+          "payments".data->>'message' as "paymentMessage"
+        FROM
+          "transactionItems" "paymentItem",
+          "payments",
+          "transactionItems" ti
+        WHERE
+          "paymentItem"."transactionId" = ti."transactionId"
+          AND "paymentItem"."itemType" = 'payment'
+          AND "paymentItem"."itemId" = "payments"."id"
+          AND ti.id in (:ids)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
+      )
+      .then(keyBy("id"))
+    const discountMetadata = await db
+      .query(
+        `SELECT
+          ti."id",
+          "discounts"."code",
+          "discounts"."promotionId",
+          "discounts"."description"
+        FROM
+          "transactionItems" "discountItem",
+          "discounts",
+          "transactionItems" ti
+        WHERE
+          "discountItem"."transactionId" = ti."transactionId"
+          AND "discountItem"."itemType" = 'discount'
+          AND "discountItem"."itemId" = "discounts"."id"
+          AND ti.id in (:ids)
+        `,
+        { type: db.QueryTypes.SELECT, replacements: { ids } }
+      )
+      .then(discounts =>
+        discounts.map(discount => ({ id: discount.id, discount }))
+      )
+      .then(keyBy("id"))
 
     routePassItems.forEach(r =>
       _.assign(
@@ -643,7 +637,6 @@ export function register(server, options, next) {
 
           db
             .transaction({ readOnly: true }, async transaction => {
-              let untilBatchWritten = Promise.resolve(true)
               const perPage = 20
               let page = 1
               let lastFetchedSize = perPage
@@ -657,18 +650,15 @@ export function register(server, options, next) {
                   perPage,
                   transaction
                 )
-                await untilBatchWritten
-                untilBatchWritten = new Promise(async batchWritten => {
-                  console.warn(`Writing items at page ${page}`)
-                  for (const row of relatedTransactionItems) {
-                    if (!writer.write(row)) {
-                      await new Promise(resolve => {
-                        writer.once("drain", resolve)
-                      })
-                    }
+                for (const row of relatedTransactionItems) {
+                  console.warn(`Writing page ${page} to socket`)
+                  if (!writer.write(row)) {
+                    console.warn("Draining socket buffer")
+                    await new Promise(resolve => {
+                      writer.once("drain", resolve)
+                    })
                   }
-                  batchWritten()
-                })
+                }
                 lastFetchedSize = relatedTransactionItems.length
                 ++page
               }
