@@ -573,11 +573,9 @@ export function register(server, options, next) {
           offset: entryOffset,
           transaction,
         }).then(passes => passes.map(r => r.toJSON()))
-        await Promise.all([
-          addRouteMetadataTo(db, routePassItems),
-          addBoardStopMetadataTo(db, routePassItems),
-          addPaymentMetadataTo(db, routePassItems),
-        ])
+        await addRouteMetadataTo(db, routePassItems)
+        await addBoardStopMetadataTo(db, routePassItems)
+        await addPaymentMetadataTo(db, routePassItems)
         return routePassItems
       }
 
@@ -628,6 +626,8 @@ export function register(server, options, next) {
         const query = buildRoutePassQuery(request)
 
         if (request.query.format === "csvdump") {
+          let connected = true
+          request.once("disconnect", () => (connected = false))
           const io = new stream.PassThrough()
           const writer = fastCSV
             .createWriteStream({ headers: true })
@@ -647,7 +647,7 @@ export function register(server, options, next) {
               const perPage = 20
               let page = 1
               let lastFetchedSize = perPage
-              while (lastFetchedSize >= perPage) {
+              while (connected && lastFetchedSize >= perPage) {
                 console.warn(`Retrieving ${perPage} items at page ${page}`)
                 const relatedTransactionItems = await getTransactionItems(
                   m,
