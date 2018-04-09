@@ -567,9 +567,11 @@ export function register(server, options, next) {
           offset: entryOffset,
           transaction,
         }).then(passes => passes.map(r => r.toJSON()))
-        await addRouteMetadataTo(db, routePassItems)
-        await addBoardStopMetadataTo(db, routePassItems)
-        await addPaymentMetadataTo(db, routePassItems)
+        await Promise.all([
+          addRouteMetadataTo(db, routePassItems),
+          addBoardStopMetadataTo(db, routePassItems),
+          addPaymentMetadataTo(db, routePassItems),
+        ])
         return routePassItems
       }
 
@@ -637,7 +639,7 @@ export function register(server, options, next) {
 
           db
             .transaction({ readOnly: true }, async transaction => {
-              const perPage = 20
+              const perPage = 250
               let page = 1
               let lastFetchedSize = perPage
               while (connected && lastFetchedSize >= perPage) {
@@ -650,8 +652,8 @@ export function register(server, options, next) {
                   perPage,
                   transaction
                 )
+                console.warn(`Writing page ${page} to socket`)
                 for (const row of relatedTransactionItems) {
-                  console.warn(`Writing page ${page} to socket`)
                   if (!writer.write(row)) {
                     console.warn("Draining socket buffer")
                     await new Promise(resolve => {
