@@ -1,6 +1,8 @@
 const Joi = require("joi")
 const Boom = require("boom")
+
 const { getModels, defaultErrorHandler } = require("../util/common")
+const { cachedFetchRoutes, filterCached } = require("../listings/routes")
 
 /**
  * @param {Object} server - a HAPI server
@@ -9,6 +11,52 @@ const { getModels, defaultErrorHandler } = require("../util/common")
  * should initialise
  */
 export function register(server, options, next) {
+  server.route({
+    method: "GET",
+    path: "/routes/lite",
+    config: {
+      validate: {
+        query: {
+          label: Joi.string(),
+        },
+      },
+      auth: { access: { scope: ["user", "public"] } },
+      description: "Lists all lite routes, including subscription information",
+      tags: ["api"],
+    },
+    handler: async function(request, reply) {
+      if (request.query) {
+        request.query.tags = request.query.tags || []
+        request.query.tags.push("lite")
+      }
+      const routes = await cachedFetchRoutes(request).then(routes =>
+        filterCached(routes, request)
+      )
+
+      const { userId } = request.auth.credentials
+      if (userId) {
+        const models = getModels(request)
+        const subQuery = {
+          where: {
+            userId,
+            status: "valid",
+          },
+        }
+        if (request.query.label) {
+          subQuery.where.routeLabel = request.query.label
+        }
+        const subscriptions = await models.Subscription.findAll(subQuery)
+        const subLabels = subscriptions.map(s => s.routeLabel)
+        for (const route of routes) {
+          if (subLabels.includes(route.label)) {
+            route.isSubscribed = true
+          }
+        }
+      }
+      reply(routes)
+    },
+  })
+
   server.route({
     method: "GET",
     path: "/routes/lite/subscriptions",

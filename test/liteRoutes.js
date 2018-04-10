@@ -7,22 +7,21 @@ const server = require("../src/index.js")
 
 const {models} = require("../src/lib/core/dbschema")()
 const {loginAs} = require("./test_common")
+const {createUsersCompaniesRoutesAndTrips} = require("./test_data")
 
 lab.experiment("Lite route retrievals", function () {
   let routeLabel = "L1"
-  let liteUserName = "Test use r r r r"
-  let liteRouteInfo = {
-    name: "Name for Lite Testing",
-    from: "Testing Lite Route From",
-    to: "Testing Lite Route To",
-    path: JSON.stringify({testing: "liteTesting"}),
-    tags: ["lite"],
-    features: "* feature 1",
-    label: routeLabel,
-  }
+  let [userInstance, companyInstance, routeInstance, tripInstances] = []
 
   lab.before(async () => {
-    await models.Route.create(liteRouteInfo)
+
+    ({userInstance, companyInstance, routeInstance, tripInstances} =
+        await createUsersCompaniesRoutesAndTrips(models))
+
+    await routeInstance.update({
+      tags: ["lite"],
+      label: routeLabel,
+    })
   })
 
   lab.after(async () => {
@@ -30,22 +29,35 @@ lab.experiment("Lite route retrievals", function () {
     await models.Subscription.destroy({
       where: { routeLabel },
     })
-    await models.Route.destroy({
-      where: { tags: {$contains: ["lite"]} },
+    await Promise.all(tripInstances.map(t => t.destroy()))
+    await routeInstance.destroy()
+    await companyInstance.destroy()
+    await userInstance.destroy()
+  })
+
+  lab.test("lite route retrieval", async function () {
+    const readResponse = await server.inject({
+      method: "GET",
+      url: "/routes/lite",
     })
-    await models.User.destroy({
-      where: { name: liteUserName },
+    expect(readResponse.statusCode).to.equal(200)
+    expect(readResponse.result[0]._cached).to.equal(true)
+    expect(readResponse.result[0].label).to.equal(routeLabel)
+  })
+
+  lab.test("lite route retrieval", async function () {
+    const readResponse = await server.inject({
+      method: "GET",
+      url: "/routes/lite?label=" + routeLabel,
     })
+    expect(readResponse.statusCode).to.equal(200)
+    expect(readResponse.result[0]._cached).to.equal(true)
+    expect(readResponse.result[0].label).to.equal(routeLabel)
   })
 
   // lite subscriptions
   lab.test("lite route subscriptions CRUD", async function () {
-    let user = await models.User.create({
-      email: "testuser1" + new Date().getTime() +
-                  "@testtestexample.com",
-      name: liteUserName,
-      telephone: Date.now(),
-    })
+    let user = userInstance
     // LOGIN
     let loginResponse = await loginAs("user", user.id)
     let headers = {
@@ -70,6 +82,15 @@ lab.experiment("Lite route retrievals", function () {
     expect(readResponse.result[0].status).to.equal("valid")
     expect(readResponse.result[0].routeLabel).to.equal(routeLabel)
 
+    const getLiteRoutesWithSubsResponse = await server.inject({
+      method: "GET",
+      url: "/routes/lite",
+      headers,
+    })
+    expect(getLiteRoutesWithSubsResponse.statusCode).to.equal(200)
+    expect(getLiteRoutesWithSubsResponse.result[0].isSubscribed).to.equal(true)
+    expect(getLiteRoutesWithSubsResponse.result[0].label).to.equal(routeLabel)
+
     // DELETE
     const deleteResponse = await server.inject({
       method: "DELETE",
@@ -86,6 +107,15 @@ lab.experiment("Lite route retrievals", function () {
     })
     expect(readAfterDeleteResponse.statusCode).to.equal(200)
     expect(readAfterDeleteResponse.result.length).to.equal(0)
+
+    const getLiteRoutesWithoutSubsResponse = await server.inject({
+      method: "GET",
+      url: "/routes/lite",
+      headers,
+    })
+    expect(getLiteRoutesWithoutSubsResponse.statusCode).to.equal(200)
+    expect(getLiteRoutesWithoutSubsResponse.result[0].isSubscribed).to.not.exist()
+    expect(getLiteRoutesWithoutSubsResponse.result[0].label).to.equal(routeLabel)
   })
 
 })
