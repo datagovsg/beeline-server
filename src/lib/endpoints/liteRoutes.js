@@ -1,3 +1,4 @@
+const _ = require("lodash")
 const Joi = require("joi")
 const Boom = require("boom")
 
@@ -18,6 +19,8 @@ export function register(server, options, next) {
       validate: {
         query: {
           label: Joi.string(),
+          includeTrips: Joi.boolean().default(true),
+          startDate: Joi.date(),
         },
       },
       auth: { access: { scope: ["user", "public"] } },
@@ -25,35 +28,48 @@ export function register(server, options, next) {
       tags: ["api"],
     },
     handler: async function(request, reply) {
-      if (request.query) {
-        request.query.tags = request.query.tags || []
-        request.query.tags.push("lite")
-      }
-      const routes = await cachedFetchRoutes(request).then(routes =>
-        filterCached(routes, request)
-      )
+      request.query.tags = request.query.tags || []
+      request.query.tags.push("lite")
+      const routes = await cachedFetchRoutes(request)
+        .then(routes => filterCached(routes, request))
+        .then(routes => routes.map(route => _.omit(route, ["tags", "id"])))
 
+      const subLabels = []
       const { userId } = request.auth.credentials
       if (userId) {
         const models = getModels(request)
-        const subQuery = {
-          where: {
-            userId,
-            status: "valid",
-          },
-        }
+        const subQuery = { where: { userId, status: "valid" } }
         if (request.query.label) {
           subQuery.where.routeLabel = request.query.label
         }
         const subscriptions = await models.Subscription.findAll(subQuery)
-        const subLabels = subscriptions.map(s => s.routeLabel)
-        for (const route of routes) {
-          if (subLabels.includes(route.label)) {
-            route.isSubscribed = true
-          }
-        }
+        subLabels.push(...subscriptions.map(s => s.routeLabel))
       }
-      reply(routes)
+
+      const routesByLabel = _(routes)
+        .groupBy("label")
+        .mapValues(routes => {
+          const [route] = routes
+          if (routes.length > 1) {
+            route.trips = _(routes)
+              .flatMap(r => r.trips)
+              .sortBy("date")
+              .value()
+          }
+          const minTripDate = _.min(route.trips.map(trip => trip.date))
+          const tripsAtMinTripDate = route.trips.filter(
+            trip => trip.date === minTripDate
+          )
+          const tripStopTimes = _.flatMap(tripsAtMinTripDate, t =>
+            t.tripStops.map(t => t.time)
+          )
+          route.startTime = _.min(tripStopTimes)
+          route.endTime = _.max(tripStopTimes)
+          route.isSubscribed = subLabels.includes(route.label)
+          return route
+        })
+        .value()
+      reply(routesByLabel)
     },
   })
 

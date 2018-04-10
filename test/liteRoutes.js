@@ -41,8 +41,10 @@ lab.experiment("Lite route retrievals", function () {
       url: "/routes/lite",
     })
     expect(readResponse.statusCode).to.equal(200)
-    expect(readResponse.result[0]._cached).to.equal(true)
-    expect(readResponse.result[0].label).to.equal(routeLabel)
+    expect(readResponse.result[routeLabel]._cached).to.equal(true)
+    expect(readResponse.result[routeLabel].label).to.equal(routeLabel)
+    expect(readResponse.result[routeLabel].startTime).to.exist()
+    expect(readResponse.result[routeLabel].endTime).to.exist()
   })
 
   lab.test("lite route retrieval", async function () {
@@ -51,8 +53,10 @@ lab.experiment("Lite route retrievals", function () {
       url: "/routes/lite?label=" + routeLabel,
     })
     expect(readResponse.statusCode).to.equal(200)
-    expect(readResponse.result[0]._cached).to.equal(true)
-    expect(readResponse.result[0].label).to.equal(routeLabel)
+    expect(readResponse.result[routeLabel]._cached).to.equal(true)
+    expect(readResponse.result[routeLabel].label).to.equal(routeLabel)
+    expect(readResponse.result[routeLabel].startTime).to.exist()
+    expect(readResponse.result[routeLabel].endTime).to.exist()
   })
 
   // lite subscriptions
@@ -88,8 +92,8 @@ lab.experiment("Lite route retrievals", function () {
       headers,
     })
     expect(getLiteRoutesWithSubsResponse.statusCode).to.equal(200)
-    expect(getLiteRoutesWithSubsResponse.result[0].isSubscribed).to.equal(true)
-    expect(getLiteRoutesWithSubsResponse.result[0].label).to.equal(routeLabel)
+    expect(getLiteRoutesWithSubsResponse.result[routeLabel].isSubscribed).to.equal(true)
+    expect(getLiteRoutesWithSubsResponse.result[routeLabel].label).to.equal(routeLabel)
 
     // DELETE
     const deleteResponse = await server.inject({
@@ -114,8 +118,8 @@ lab.experiment("Lite route retrievals", function () {
       headers,
     })
     expect(getLiteRoutesWithoutSubsResponse.statusCode).to.equal(200)
-    expect(getLiteRoutesWithoutSubsResponse.result[0].isSubscribed).to.not.exist()
-    expect(getLiteRoutesWithoutSubsResponse.result[0].label).to.equal(routeLabel)
+    expect(getLiteRoutesWithoutSubsResponse.result[routeLabel].isSubscribed).to.equal(false)
+    expect(getLiteRoutesWithoutSubsResponse.result[routeLabel].label).to.equal(routeLabel)
   })
 
 })
