@@ -16,7 +16,6 @@ import _ from 'lodash'
 import querystring from "querystring"
 
 lab.experiment("Route manipulation", function () {
-  let authHeaders
   let testName = "Name for Testing"
   let updatedTestName = "Updated name for Testing"
 
@@ -41,7 +40,6 @@ lab.experiment("Route manipulation", function () {
   ].join('-')
 
   let routeId = null
-  let routeFeatures = "* feature 1"
   let routeInfo = {
     name: testName,
     from: "Testing Route From",
@@ -1709,97 +1707,6 @@ WHERE id = :id
     expect(returnedRouteIds3).include(routes[5].id)
   })
 
-  let routeLabel = "L1"
-  let liteUserName = "Test use r r r r"
-  let liteRouteInfo = {
-    name: "Name for Lite Testing",
-    from: "Testing Lite Route From",
-    to: "Testing Lite Route To",
-    path: JSON.stringify({testing: "liteTesting"}),
-    tags: ['lite'],
-    label: routeLabel,
-    features: routeFeatures,
-  }
-
-  let liteRouteCleanup = async () => {
-    // cleanup our test user
-    await models.Subscription.destroy({
-      where: { routeLabel },
-    })
-    await models.Route.destroy({
-      where: { tags: {$contains: ['lite']} },
-    })
-    await models.User.destroy({
-      where: { name: liteUserName },
-    })
-  }
-
-  // lite subscriptions
-  lab.test("lite route subscriptions CRUD", async function () {
-    await models.Route.create(liteRouteInfo)
-
-    let user = await models.User.create({
-      email: "testuser1" + new Date().getTime() +
-                  "@testtestexample.com",
-      name: liteUserName,
-      telephone: Date.now(),
-    })
-    // LOGIN
-    let loginResponse = await loginAs("user", user.id)
-    authHeaders = {
-      authorization: "Bearer " + loginResponse.result.sessionToken,
-    }
-    // CREATE
-    await server.inject({
-      method: "POST",
-      url: "/liteRoutes/subscriptions",
-      payload: {routeLabel: routeLabel},
-      headers: authHeaders,
-    })
-      .then((resp) => {
-        expect(resp.statusCode).to.equal(200)
-        expect(resp.result.status).to.equal("valid")
-      })
-      // READ
-      .then(() => {
-        return server.inject({
-          method: "GET",
-          url: "/liteRoutes/subscriptions",
-          headers: authHeaders,
-        })
-      })
-      .then((resp) => {
-        expect(resp.statusCode).to.equal(200)
-        expect(resp.result[0].status).to.equal("valid")
-        expect(resp.result[0].routeLabel).to.equal(routeLabel)
-      })
-      // DELETE
-      .then(() => {
-        return server.inject({
-          method: "DELETE",
-          url: "/liteRoutes/subscriptions/" + routeLabel,
-          headers: authHeaders,
-        })
-      })
-      .then((resp) => {
-        expect(resp.statusCode).to.equal(200)
-        expect(resp.result.status).to.equal("invalid")
-      })
-      .then(() => {
-        return server.inject({
-          method: "GET",
-          url: "/liteRoutes/subscriptions",
-          headers: authHeaders,
-        })
-      })
-      .then((resp) => {
-        expect(resp.statusCode).to.equal(200)
-        expect(resp.result.length).to.equal(0)
-      })
-      .then(liteRouteCleanup)
-  })
-
-  // lite subscriptions
   lab.test("Admins may not change label / tags but may change company tags", async function () {
     const adminInstance = await models.Admin.create({
       email: randomEmail(),
