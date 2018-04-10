@@ -1,12 +1,12 @@
 /* eslint no-await-in-loop: 0 */
 
-var Lab = require("lab")
-export var lab = Lab.script()
+const Lab = require("lab")
+export const lab = Lab.script()
 
 const { expect } = require("code")
-var server = require("../src/index.js")
+const server = require("../src/index.js")
 
-var testData = require("./test_data")
+const testData = require("./test_data")
 const {db, models} = require("../src/lib/core/dbschema")()
 const leftPad = require('left-pad')
 const {loginAs, randomSingaporeLngLat, randomEmail} = require("./test_common")
@@ -16,20 +16,20 @@ import _ from 'lodash'
 import querystring from "querystring"
 
 lab.experiment("Route manipulation", function () {
-  var authHeaders
-  var testName = "Name for Testing"
-  var updatedTestName = "Updated name for Testing"
+  let authHeaders
+  let testName = "Name for Testing"
+  let updatedTestName = "Updated name for Testing"
 
-  var cleanup = () => {
+  let cleanup = () => {
     return models.Route.destroy({
       where: {
-        name: testName
-      }
+        name: testName,
+      },
     }).then(() => {
       return models.Route.destroy({
         where: {
-          name: updatedTestName
-        }
+          name: updatedTestName,
+        },
       })
     })
   }
@@ -40,27 +40,27 @@ lab.experiment("Route manipulation", function () {
     leftPad(d.getDate(), 2, '0'),
   ].join('-')
 
-  var routeId = null
-  var routeFeatures = "* feature 1"
-  var routeInfo = {
+  let routeId = null
+  let routeFeatures = "* feature 1"
+  let routeInfo = {
     name: testName,
     from: "Testing Route From",
     to: "Testing Route To",
     path: JSON.stringify({testing: "testing"}),
     features: "* feature 1",
-    label: "Test1"
+    label: "Test1",
   }
-  var updatedRouteInfo = {
+  let updatedRouteInfo = {
     id: 123456,
     name: updatedTestName,
     from: "XTesting Route From",
     to: "XTesting Route To",
     path: JSON.stringify({testing: "xtesting"}),
     features: "* feature 1",
-    label: "Test1"
+    label: "Test1",
   }
 
-  var transportCompany, transportCompany2, route
+  let [transportCompany, transportCompany2, route] = []
 
   lab.before({timeout: 10000}, async function () {
     transportCompany = await models.TransportCompany.create({})
@@ -75,13 +75,13 @@ lab.experiment("Route manipulation", function () {
         description: `Test Stop ${i + 1}`,
         coordinates: {
           type: "Point",
-          coordinates: randomSingaporeLngLat()
-        }
+          coordinates: randomSingaporeLngLat(),
+        },
       }))
     )
 
     // Create the routes
-    async function populateRoute (routeOptions, dates, tripOptions) {
+    const populateRoute = async (routeOptions, dates, tripOptions) => {
       const route = await models.Route.create({
         ...routeInfo,
         ...routeOptions,
@@ -104,8 +104,8 @@ lab.experiment("Route manipulation", function () {
           time: `${dt}T${leftPad(6 + ((i * 3) % 5), 2, '0')}:00:00+0800`,
           stopId: s.id,
           canBoard: true,
-          canAlight: true
-        }))
+          canAlight: true,
+        })),
       }, {include: [models.TripStop]})))
       return route
     }
@@ -169,9 +169,9 @@ lab.experiment("Route manipulation", function () {
   })
 
   lab.test("List routes", {timeout: 15000}, async function () {
-    var response = await server.inject({
+    let response = await server.inject({
       method: 'GET',
-      url: '/routes?includeDates=true'
+      url: '/routes?includeDates=true',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -184,7 +184,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?includeTrips=true'
+      url: '/routes?includeTrips=true',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -200,7 +200,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?includeTrips=true&startDate=2016-01-01'
+      url: '/routes?includeTrips=true&startDate=2016-01-01',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).above(1)
@@ -213,7 +213,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?includeTrips=true&endDate=2016-12-01'
+      url: '/routes?includeTrips=true&endDate=2016-12-01',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).above(1)
@@ -226,7 +226,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?tags=["public"]'
+      url: '/routes?tags=["public"]',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -236,7 +236,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?companyTags=["banana"]'
+      url: '/routes?companyTags=["banana"]',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -246,7 +246,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?includeTrips=true'
+      url: '/routes?includeTrips=true',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -259,7 +259,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: '/routes?tags=["lite"]&label=L1'
+      url: '/routes?tags=["lite"]&label=L1',
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(2)
@@ -270,12 +270,12 @@ lab.experiment("Route manipulation", function () {
   })
 
   lab.test("List routes (today)", {timeout: 15000}, async function () {
-    var response = await server.inject({
+    let response = await server.inject({
       method: 'GET',
       url: '/routes?' + querystring.stringify({
         includeTrips: 'true',
-        startDate: stringDate(new Date())
-      })
+        startDate: stringDate(new Date()),
+      }),
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).above(1)
@@ -292,8 +292,8 @@ lab.experiment("Route manipulation", function () {
         includeTrips: 'true',
         tags: JSON.stringify(['public']),
         label: 'R2',
-        startDate: stringDate(new Date())
-      })
+        startDate: stringDate(new Date()),
+      }),
     })
     expect(response.statusCode).equal(200)
     expect(response.result.length).least(1)
@@ -306,9 +306,9 @@ lab.experiment("Route manipulation", function () {
 
 
   lab.test("Get route", {timeout: 10000}, async function () {
-    var response = await server.inject({
+    let response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?includeDates=true`
+      url: `/routes/${route.id}?includeDates=true`,
     })
     expect(response.statusCode).equal(200)
     expect(response.result.dates).instanceof(Object)
@@ -316,14 +316,14 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?includeTrips=true`
+      url: `/routes/${route.id}?includeTrips=true`,
     })
     expect(response.statusCode).equal(200)
     expect(response.result.trips).not.empty()
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?includeTrips=true&startDate=2016-01-01`
+      url: `/routes/${route.id}?includeTrips=true&startDate=2016-01-01`,
     })
     expect(response.statusCode).equal(200)
     for (let trip of response.result.trips) {
@@ -332,7 +332,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?includeTrips=true&endDate=2016-12-01`
+      url: `/routes/${route.id}?includeTrips=true&endDate=2016-12-01`,
     })
     expect(response.statusCode).equal(200)
     for (let trip of response.result.trips) {
@@ -341,7 +341,7 @@ lab.experiment("Route manipulation", function () {
 
     response = await server.inject({
       method: 'GET',
-      url: `/routes/${route.id}?includeTrips=true`
+      url: `/routes/${route.id}?includeTrips=true`,
     })
     expect(response.statusCode).equal(200)
     for (let trip of response.result.trips) {
@@ -351,14 +351,14 @@ lab.experiment("Route manipulation", function () {
 
   lab.test("CRUD routes", {timeout: 10000}, async function () {
     const superadminAuthHeaders = {
-      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken
+      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken,
     }
 
     const authHeaders = {
       authorization: 'Bearer ' + (await loginAs("admin", {
         transportCompanyId: transportCompany.id,
-        permissions: ['manage-routes']
-      })).result.sessionToken
+        permissions: ['manage-routes'],
+      })).result.sessionToken,
     }
 
     await Promise.resolve()
@@ -368,7 +368,7 @@ lab.experiment("Route manipulation", function () {
           method: "POST",
           url: "/routes",
           payload: _.defaults({features: ''}, routeInfo),
-          headers: superadminAuthHeaders
+          headers: superadminAuthHeaders,
         })
       })
       .then((resp) => expect(resp.statusCode).equal(200))
@@ -377,7 +377,7 @@ lab.experiment("Route manipulation", function () {
           method: "POST",
           url: "/routes",
           payload: routeInfo,
-          headers: superadminAuthHeaders
+          headers: superadminAuthHeaders,
         })
       })
       .then((resp) => {
@@ -391,7 +391,7 @@ lab.experiment("Route manipulation", function () {
       .then(() => {
         return server.inject({
           method: "GET",
-          url: "/routes/" + routeId
+          url: "/routes/" + routeId,
         })
       })
       .then((resp) => {
@@ -406,7 +406,7 @@ lab.experiment("Route manipulation", function () {
           method: "PUT",
           url: "/routes/" + routeId,
           headers: superadminAuthHeaders,
-          payload: _.defaults({features: ''}, updatedRouteInfo)
+          payload: _.defaults({features: ''}, updatedRouteInfo),
         })
       })
       .then((resp) => expect(resp.statusCode).equal(200))
@@ -415,7 +415,7 @@ lab.experiment("Route manipulation", function () {
           method: "PUT",
           url: "/routes/" + routeId,
           headers: superadminAuthHeaders,
-          payload: updatedRouteInfo
+          payload: updatedRouteInfo,
         })
       })
       .then((resp) => {
@@ -426,7 +426,7 @@ lab.experiment("Route manipulation", function () {
       .then(() => {
         return server.inject({
           method: "GET",
-          url: "/routes/" + routeId
+          url: "/routes/" + routeId,
         })
       })
       .then((resp) => {
@@ -438,7 +438,7 @@ lab.experiment("Route manipulation", function () {
         return server.inject({
           method: "DELETE",
           url: "/routes/" + routeId,
-          headers: authHeaders
+          headers: authHeaders,
         })
       })
       .then((resp) => {
@@ -447,7 +447,7 @@ lab.experiment("Route manipulation", function () {
       .then(() => {
         return server.inject({
           method: "GET",
-          url: "/routes/" + routeId
+          url: "/routes/" + routeId,
         })
       })
       .then((resp) => {
@@ -458,16 +458,16 @@ lab.experiment("Route manipulation", function () {
 
 
   lab.test("Get route with indicative trip", async function () {
-    var routeInstance = await models.Route.create(routeInfo)
-    var now = new Date()
+    let routeInstance = await models.Route.create(routeInfo)
+    let now = new Date()
 
-    var stopInstances = [
+    let stopInstances = [
       await models.Stop.create({coordinates: {type: "Point", coordinates: toWGS([1000, 2000])}, description: "Some stop 1"}),
       await models.Stop.create({coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}),
       await models.Stop.create({coordinates: {type: "Point", coordinates: toWGS([1000, 2010])}, description: "Some stop 2"}),
     ]
 
-    var trips = [{
+    let trips = [{
       routeId: routeInstance.id,
       price: 5.00,
       capacity: 10,
@@ -482,8 +482,8 @@ lab.experiment("Route manipulation", function () {
         {stopId: stopInstances[0].id, canBoard: true, canAlight: false,
           time: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 8, 0, 0)},
         {stopId: stopInstances[1].id, canBoard: false, canAlight: true,
-          time: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 9, 0, 0)}
-      ]
+          time: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 9, 0, 0)},
+      ],
     }, {
       routeId: routeInstance.id,
       price: 10.00,
@@ -501,17 +501,17 @@ lab.experiment("Route manipulation", function () {
         {stopId: stopInstances[1].id, canBoard: true, canAlight: false,
           time: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 8, 10, 0)},
         {stopId: stopInstances[2].id, canBoard: false, canAlight: true,
-          time: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 9, 0, 0)}
-      ]
+          time: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 9, 0, 0)},
+      ],
     }]
 
-    var tripInstances = await Promise.all(trips.map(trInfo => (
+    let tripInstances = await Promise.all(trips.map(trInfo => (
       models.Trip.create(trInfo, {include: [models.TripStop]})
     )))
 
-    var response = await server.inject({
+    let response = await server.inject({
       method: 'GET',
-      url: `/routes/${routeInstance.id}?includeIndicative=true`
+      url: `/routes/${routeInstance.id}?includeIndicative=true`,
     })
     expect(response.statusCode).equal(200)
     expect(response.result).to.include('indicativeTrip')
@@ -519,9 +519,9 @@ lab.experiment("Route manipulation", function () {
     expect(response.result.indicativeTrip.nextTripId).to.equal(tripInstances[0].id)
     expect(response.result.indicativeTrip.lastTripId).to.equal(tripInstances[1].id)
 
-    function intervalToTimeSinceMidnight (interval) {
-      var hours = (interval.hours || 0) + 8
-      var minutes = interval.minutes || 0
+    const intervalToTimeSinceMidnight = interval => {
+      let hours = (interval.hours || 0) + 8
+      let minutes = interval.minutes || 0
       return hours * 3600000 + minutes * 60000
     }
 
@@ -546,26 +546,26 @@ lab.experiment("Route manipulation", function () {
   })
 
   lab.test("Get availability -- date/timezone test", async function () {
-    var routeInst = await models.Route.create(routeInfo)
-    var trips = testData.trips
+    let routeInst = await models.Route.create(routeInfo)
+    let trips = testData.trips
 
     trips = trips.map((tr) => _.extend({routeId: routeInst.id}, tr))
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
 
-    var resp = await server.inject({
+    let resp = await server.inject({
       url: "/routes/" + routeInst.id + "?" +
                     querystring.stringify({
                       startDate: new Date(2016, 1 /* FEBRUARY */, 1).toISOString(),
                       endDate: new Date(2016, 1 /* FEBRUARY */, 2).toISOString(),
                       includeTrips: true,
                     }),
-      method: "GET"
+      method: "GET",
     })
     expect(resp.statusCode).to.equal(200)
     expect(resp.result).to.include("trips")
@@ -580,30 +580,30 @@ lab.experiment("Route manipulation", function () {
       trips.map((tr) => tr.destroy())
     )
     await Promise.all([
-      routeInst.destroy()
+      routeInst.destroy(),
     ])
   })
   lab.test("Get availability", async function () {
-    var routeInst = await models.Route.create(routeInfo)
-    var trips = testData.trips
+    let routeInst = await models.Route.create(routeInfo)
+    let trips = testData.trips
 
     trips = trips.map((tr) => _.extend({routeId: routeInst.id}, tr))
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
 
     // create test account
-    var testAccount = await models.Account.create({
-      name: "Unit test account (FAKE)"
+    let testAccount = await models.Account.create({
+      name: "Unit test account (FAKE)",
     })
-    var testUser = await models.User.create(testData.users[0])
+    let testUser = await models.User.create(testData.users[0])
 
     // create some tickets
-    var ticketTransaction = {
+    let ticketTransaction = {
       committed: true,
       description: "Test entry",
       transactionItems: [
@@ -613,9 +613,9 @@ lab.experiment("Route manipulation", function () {
             status: "valid",
             boardStopId: trips[0].tripStops[0].id,
             alightStopId: trips[0].tripStops[1].id,
-            userId: testUser.id
+            userId: testUser.id,
           },
-          credit: 0
+          credit: 0,
         },
         {
           itemType: "ticketSale",
@@ -623,9 +623,9 @@ lab.experiment("Route manipulation", function () {
             status: "valid",
             boardStopId: trips[1].tripStops[0].id,
             alightStopId: trips[1].tripStops[2].id,
-            userId: testUser.id
+            userId: testUser.id,
           },
-          credit: 0
+          credit: 0,
         },
         {
           itemType: "ticketSale",
@@ -633,36 +633,36 @@ lab.experiment("Route manipulation", function () {
             status: "pending",
             boardStopId: trips[0].tripStops[2].id,
             alightStopId: trips[0].tripStops[1].id,
-            userId: testUser.id
+            userId: testUser.id,
           },
-          credit: 0
+          credit: 0,
         },
         {
           itemType: "account",
           itemId: testAccount.id,
-          debit: 0
-        }
-      ]
+          debit: 0,
+        },
+      ],
     }
 
-    var transactionInst = await models.Transaction.create(ticketTransaction, {
+    let transactionInst = await models.Transaction.create(ticketTransaction, {
       include: [{
         model: models.TransactionItem,
         include: [
           {model: models.Ticket, as: "ticketSale"},
-          {model: models.Account, as: "account"}
-        ]
-      }]
+          {model: models.Account, as: "account"},
+        ],
+      }],
     })
 
-    var resp = await server.inject({
+    let resp = await server.inject({
       url: "/routes/" + routeInst.id + "?" +
                 querystring.stringify({
                   startDate: new Date(2016, 1 /* 1 = FEBRUARY */, 1).toISOString(),
                   endDate: new Date(2016, 1 /* 1 = FEBRUARY */, 20).toISOString(),
                   includeTrips: true,
                 }),
-      method: "GET"
+      method: "GET",
     })
     expect(resp.statusCode).to.equal(200)
     expect(resp.result).to.include("trips")
@@ -704,21 +704,21 @@ lab.experiment("Route manipulation", function () {
     await Promise.all([
       routeInst.destroy(),
       testAccount.destroy(),
-      testUser.destroy()
+      testUser.destroy(),
     ])
   })
 
   lab.test("Search by Lat Lon #2", async function () {
     // elements of testInstances will be destroyed at the end
-    var testInstances = []
+    let testInstances = []
 
-    var routes = [
+    let routes = [
       await models.Route.create(routeInfo),
-      await models.Route.create(routeInfo)
+      await models.Route.create(routeInfo),
     ]
     testInstances.push(routes[0])
     testInstances.push(routes[1])
-    var trips = [
+    let trips = [
       {
         routeId: routes[0].id,
         capacity: 10,
@@ -731,8 +731,8 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
       },
       {
         routeId: routes[1].id,
@@ -746,16 +746,16 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([10000, 20000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
-      }
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
+      },
     ]
 
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
     for (let tr of trips) {
@@ -763,9 +763,9 @@ lab.experiment("Route manipulation", function () {
     }
 
     // check that a reasonable result is returned
-    var startLatLng = toWGS([10100, 19600]) // nearby trip #2 stop #1
-    var endLatLng = toWGS([40200, 20200]) // nearby trip #2 stop #2
-    var response = await server.inject({
+    let startLatLng = toWGS([10100, 19600]) // nearby trip #2 stop #1
+    let endLatLng = toWGS([40200, 20200]) // nearby trip #2 stop #2
+    let response = await server.inject({
       url: "/routes/search_by_latlon?" + querystring.stringify({
         startLat: startLatLng[1],
         startLng: startLatLng[0],
@@ -773,9 +773,9 @@ lab.experiment("Route manipulation", function () {
         endLng: endLatLng[0],
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-02-03T00:00:00+0800").toISOString()
+        endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
 
@@ -783,8 +783,8 @@ lab.experiment("Route manipulation", function () {
     for (let route of response.result) {
       for (let trip of route.trips) {
         for (let i = 0; i < trip.tripStops.length - 1; i++) {
-          var thisStop = trip.tripStops[i]
-          var nextStop = trip.tripStops[i + 1]
+          let thisStop = trip.tripStops[i]
+          let nextStop = trip.tripStops[i + 1]
 
           expect(new Date(thisStop.time).getTime())
             .to.be.most(new Date(nextStop.time).getTime())
@@ -792,7 +792,7 @@ lab.experiment("Route manipulation", function () {
       }
     }
 
-    var routeIds = response.result.map(r => r.id)
+    let routeIds = response.result.map(r => r.id)
     expect(routeIds).to.not.include(routes[0].id)
     expect(routeIds).to.include(routes[1].id)
 
@@ -807,9 +807,9 @@ lab.experiment("Route manipulation", function () {
         endLng: endLatLng[0],
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-02-03T00:00:00+0800").toISOString()
+        endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
     routeIds = response.result.map(r => r.id)
@@ -820,23 +820,23 @@ lab.experiment("Route manipulation", function () {
       testInstances = testInstances.map((t) => t.destroy())
       await Promise.all(testInstances)
     } catch (err) {
-      console.log(err.stack)
+      console.error(err.stack)
     }
   })
 
   lab.test("Search by Lat Lon #3 (missing start or missing end)", async function () {
     // elements of testInstances will be destroyed at the end
-    var testInstances = []
+    let testInstances = []
 
-    var routes = [
+    let routes = [
       await models.Route.create(routeInfo),
-      await models.Route.create(routeInfo)
+      await models.Route.create(routeInfo),
     ]
 
     testInstances.push(routes[0])
     testInstances.push(routes[1])
 
-    var trips = [
+    let trips = [
       {
         routeId: routes[0].id,
         capacity: 10,
@@ -849,8 +849,8 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
       },
       {
         routeId: routes[1].id,
@@ -864,16 +864,16 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([10000, 20000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
-      }
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
+      },
     ]
 
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
     for (let tr of trips) {
@@ -881,9 +881,9 @@ lab.experiment("Route manipulation", function () {
     }
 
     // missing start
-    var startLatLng = toWGS([10100, 19600]) // nearby trip #2 stop #1
-    var endLatLng = toWGS([40200, 20200]) // nearby trip #2 stop #2
-    var response = await server.inject({
+    let startLatLng = toWGS([10100, 19600]) // nearby trip #2 stop #1
+    let endLatLng = toWGS([40200, 20200]) // nearby trip #2 stop #2
+    let response = await server.inject({
       url: "/routes/search_by_latlon?" + querystring.stringify({
         // startLat: startLatLng[1],
         // startLng: startLatLng[0],
@@ -891,9 +891,9 @@ lab.experiment("Route manipulation", function () {
         endLng: endLatLng[0],
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-02-03T00:00:00+0800").toISOString()
+        endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
     expect(_.some(response.result, r => r.id === routes[1].id)).true()
@@ -910,9 +910,9 @@ lab.experiment("Route manipulation", function () {
         // endLng: endLatLng[0],
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-02-03T00:00:00+0800").toISOString()
+        endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
     expect(_.some(response.result, r => r.id === routes[1].id)).true()
@@ -921,10 +921,10 @@ lab.experiment("Route manipulation", function () {
 
   lab.test("Search by Lat Lon", async function () {
     // elements of testInstances will be destroyed at the end
-    var testInstances = []
-    var routeInst = await models.Route.create(routeInfo)
+    let testInstances = []
+    let routeInst = await models.Route.create(routeInfo)
     testInstances.push(routeInst)
-    var trips = [
+    let trips = [
       {
         capacity: 10,
         seatsAvailable: 10,
@@ -938,8 +938,8 @@ lab.experiment("Route manipulation", function () {
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2010])}, description: "Some stop 2"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2030])}, description: "Some stop 3"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
       },
       {
         capacity: 10,
@@ -954,8 +954,8 @@ lab.experiment("Route manipulation", function () {
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-02T08:00:00+0800"},
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2010])}, description: "Some stop 2"}, canBoard: true, canAlight: false, time: "2016-02-02T08:00:00+0800"},
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2030])}, description: "Some stop 3"}, canBoard: true, canAlight: false, time: "2016-02-02T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-02T08:00:00+0800"}
-        ]
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-02T08:00:00+0800"},
+        ],
       },
       {
         capacity: 10,
@@ -970,17 +970,17 @@ lab.experiment("Route manipulation", function () {
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-03T08:00:00+0800"},
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2010])}, description: "Some stop 2"}, canBoard: true, canAlight: false, time: "2016-02-03T08:00:00+0800"},
           { stop: { coordinates: {type: "Point", coordinates: toWGS([1000, 2030])}, description: "Some stop 3"}, canBoard: true, canAlight: false, time: "2016-02-03T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-03T08:00:00+0800"}
-        ]
-      }
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([4000, 2040])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-03T08:00:00+0800"},
+        ],
+      },
     ]
 
     trips = trips.map((tr) => _.extend({routeId: routeInst.id}, tr))
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
     for (let tr of trips) {
@@ -988,9 +988,9 @@ lab.experiment("Route manipulation", function () {
     }
 
     // check that a reasonable result is returned
-    var startLatLng = toWGS([800, 1800]) // 282.8 m away from stop # 1
-    var endLatLng = toWGS([3900, 2040]) // 100 m away from stop # 4
-    var response = await server.inject({
+    let startLatLng = toWGS([800, 1800]) // 282.8 m away from stop # 1
+    let endLatLng = toWGS([3900, 2040]) // 100 m away from stop # 4
+    let response = await server.inject({
       url: "/routes/search_by_latlon?" + querystring.stringify({
         startLat: startLatLng[1],
         startLng: startLatLng[0],
@@ -998,12 +998,12 @@ lab.experiment("Route manipulation", function () {
         endLng: endLatLng[0],
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-02-03T00:00:00+0800").toISOString()
+        endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
-    var matching = response.result.filter((x) => x.id === routeInst.id)
+    let matching = response.result.filter((x) => x.id === routeInst.id)
     expect(matching.length).to.equal(1)
     expect(Math.abs(matching[0].distanceToQuery - 382.8)).to.be.below(1)
     expect(Math.abs(matching[0].timeDifference - 0)).to.be.below(1)
@@ -1012,8 +1012,8 @@ lab.experiment("Route manipulation", function () {
     for (let route of response.result) {
       for (let trip of route.trips) {
         for (let i = 0; i < trip.tripStops.length - 1; i++) {
-          var thisStop = trip.tripStops[i]
-          var nextStop = trip.tripStops[i + 1]
+          let thisStop = trip.tripStops[i]
+          let nextStop = trip.tripStops[i + 1]
 
           expect(new Date(thisStop.time).getTime())
             .to.be.most(new Date(nextStop.time).getTime())
@@ -1030,9 +1030,9 @@ lab.experiment("Route manipulation", function () {
         endLat: endLatLng[1],
         endLng: endLatLng[0],
         startTime: new Date("2016-02-04T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-02-10T00:00:00+0800").toISOString()
+        endTime: new Date("2016-02-10T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.result
       .filter((x) => x.id === routeInst.id)
@@ -1047,9 +1047,9 @@ lab.experiment("Route manipulation", function () {
         endLat: endLatLng[1],
         endLng: endLatLng[0],
         startTime: new Date("2016-01-04T00:00:00+0800").toISOString(),
-        endTime: new Date("2016-01-10T00:00:00+0800").toISOString()
+        endTime: new Date("2016-01-10T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.result
       .filter((x) => x.id === routeInst.id)
@@ -1060,24 +1060,24 @@ lab.experiment("Route manipulation", function () {
       testInstances = testInstances.map((t) => t.destroy())
       await Promise.all(testInstances)
     } catch (err) {
-      console.log(err.stack)
+      console.error(err.stack)
     }
   })
 
   lab.test("Search by Lat Lon #3 (with tags)", async function () {
     // elements of testInstances will be destroyed at the end
-    var testInstances = []
-    var routes = [
+    let testInstances = []
+    let routes = [
       await models.Route.create(_.assign({
         tags: ['A'],
       }, routeInfo)),
       await models.Route.create(_.assign({
         tags: null,
-      }, routeInfo))
+      }, routeInfo)),
     ]
     testInstances.push(routes[0])
     testInstances.push(routes[1])
-    var trips = [
+    let trips = [
       {
         routeId: routes[0].id,
         capacity: 10,
@@ -1090,8 +1090,8 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([10020, 20000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([40030, 20020])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([40030, 20020])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
       },
       {
         routeId: routes[1].id,
@@ -1105,16 +1105,16 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([10000, 20000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
-      }
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
+      },
     ]
 
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
     for (let tr of trips) {
@@ -1122,9 +1122,9 @@ lab.experiment("Route manipulation", function () {
     }
 
     // Tag with A
-    var startLatLng = toWGS([10100, 19600]) // Nearby to both stops
-    var endLatLng = toWGS([40200, 20200])
-    var response = await server.inject({
+    let startLatLng = toWGS([10100, 19600]) // Nearby to both stops
+    let endLatLng = toWGS([40200, 20200])
+    let response = await server.inject({
       url: "/routes/search_by_latlon?" + querystring.stringify({
         startLat: startLatLng[1],
         startLng: startLatLng[0],
@@ -1133,13 +1133,13 @@ lab.experiment("Route manipulation", function () {
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
         endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
-        tags: JSON.stringify(['A'])
+        tags: JSON.stringify(['A']),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
 
-    var routeIds = response.result.map(r => r.id)
+    let routeIds = response.result.map(r => r.id)
     expect(routeIds).to.include(routes[0].id)
     expect(routeIds).to.not.include(routes[1].id)
 
@@ -1156,7 +1156,7 @@ lab.experiment("Route manipulation", function () {
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
         endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
 
@@ -1168,24 +1168,24 @@ lab.experiment("Route manipulation", function () {
       testInstances = testInstances.map((t) => t.destroy())
       await Promise.all(testInstances)
     } catch (err) {
-      console.log(err.stack)
+      console.error(err.stack)
     }
   })
 
   lab.test("Search by Lat Lon #4 (with transportCompanyId)", async function () {
   // elements of testInstances will be destroyed at the end
-    var testInstances = []
-    var routes = [
+    let testInstances = []
+    let routes = [
       await models.Route.create(_.defaults({
         transportCompanyId: transportCompany.id,
       }, routeInfo)),
       await models.Route.create(_.defaults({
-        transportCompanyId: transportCompany2.id
-      }, routeInfo))
+        transportCompanyId: transportCompany2.id,
+      }, routeInfo)),
     ]
     testInstances.push(routes[0])
     testInstances.push(routes[1])
-    var trips = [
+    let trips = [
       {
         routeId: routes[0].id,
         capacity: 10,
@@ -1198,8 +1198,8 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([10020, 20000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([40030, 20020])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([40030, 20020])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
       },
       {
         routeId: routes[1].id,
@@ -1213,16 +1213,16 @@ lab.experiment("Route manipulation", function () {
 
         tripStops: [
           { stop: { coordinates: {type: "Point", coordinates: toWGS([10000, 20000])}, description: "Some stop 1"}, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
-          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"}
-        ]
-      }
+          { stop: { coordinates: {type: "Point", coordinates: toWGS([40000, 20000])}, description: "Some stop 4"}, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
+        ],
+      },
     ]
 
     trips = trips.map((trInfo) => models.Trip.create(trInfo, {
       include: [{
         model: models.TripStop,
-        include: [models.Stop]
-      }]
+        include: [models.Stop],
+      }],
     }))
     trips = await Promise.all(trips)
     for (let tr of trips) {
@@ -1230,9 +1230,9 @@ lab.experiment("Route manipulation", function () {
     }
 
     // Tag with A
-    var startLatLng = toWGS([10100, 19600]) // Nearby to both stops
-    var endLatLng = toWGS([40200, 20200])
-    var response = await server.inject({
+    let startLatLng = toWGS([10100, 19600]) // Nearby to both stops
+    let endLatLng = toWGS([40200, 20200])
+    let response = await server.inject({
       url: "/routes/search_by_latlon?" + querystring.stringify({
         startLat: startLatLng[1],
         startLng: startLatLng[0],
@@ -1241,13 +1241,13 @@ lab.experiment("Route manipulation", function () {
         arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
         endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
-        transportCompanyId: transportCompany.id
+        transportCompanyId: transportCompany.id,
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
 
-    var routeIds = response.result.map(r => r.id)
+    let routeIds = response.result.map(r => r.id)
     expect(routeIds).to.include(routes[0].id)
     expect(routeIds).to.not.include(routes[1].id)
 
@@ -1264,7 +1264,7 @@ lab.experiment("Route manipulation", function () {
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
         endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),
-      method: "GET"
+      method: "GET",
     })
     expect(response.statusCode).to.equal(200)
 
@@ -1276,7 +1276,7 @@ lab.experiment("Route manipulation", function () {
       testInstances = testInstances.map((t) => t.destroy())
       await Promise.all(testInstances)
     } catch (err) {
-      console.log(err.stack)
+      console.error(err.stack)
     }
   })
 
@@ -1285,17 +1285,17 @@ lab.experiment("Route manipulation", function () {
     // elements of testInstances will be destroyed at the end
     const m = models
 
-    var stopInsts = [
+    let stopInsts = [
       await m.Stop.create({
         description: "Stop 1 Description",
-        road: "Stop 1 road"
+        road: "Stop 1 road",
       }),
       await m.Stop.create({
         description: "Stop 2 Description",
-        road: "Stop 2 road"
-      })
+        road: "Stop 2 road",
+      }),
     ]
-    var routeInsts = await Promise.all([
+    let routeInsts = await Promise.all([
       models.Route.create(_.assign({tags: ['tag1']}, routeInfo)),
       models.Route.create(_.assign({tags: ['tag2']}, routeInfo)),
       models.Route.create(_.assign({tags: ['tag1', 'tag2']}, routeInfo)),
@@ -1303,7 +1303,7 @@ lab.experiment("Route manipulation", function () {
       models.Route.create(_.assign({tags: null}, routeInfo)),
     ])
 
-    var tripData = {
+    let tripData = {
       capacity: 10,
       seatsAvailable: 10,
       status: "ACTIVE",
@@ -1315,10 +1315,10 @@ lab.experiment("Route manipulation", function () {
       tripStops: [
         { stopId: stopInsts[0].id, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
         { stopId: stopInsts[1].id, canBoard: false, canAlight: true, time: "2016-02-01T08:00:00+0800"},
-      ]
+      ],
     }
 
-    var tripInsts = await Promise.all([
+    let tripInsts = await Promise.all([
       models.Trip.create(
         _.assign({routeId: routeInsts[0].id}, tripData),
         {include: [models.TripStop]}),
@@ -1337,7 +1337,7 @@ lab.experiment("Route manipulation", function () {
     ])
 
     // Querying by tags should return the route
-    var queryResult = await server.inject({
+    let queryResult = await server.inject({
       url: '/routes?' + querystring.stringify({
         tags: JSON.stringify([]),
         startDate: '2016-02-01T07:59:00+0800',
@@ -1345,8 +1345,8 @@ lab.experiment("Route manipulation", function () {
       }),
       method: 'GET',
     })
-    var queryRoutes = queryResult.result
-    var routeIds = queryRoutes.map(r => r.id)
+    let queryRoutes = queryResult.result
+    let routeIds = queryRoutes.map(r => r.id)
 
     expect(routeIds).to.include(routeInsts[0].id)
     expect(routeIds).to.include(routeInsts[1].id)
@@ -1413,12 +1413,12 @@ lab.experiment("Route manipulation", function () {
 
   lab.test("Recent Routes", async function () {
     const m = models
-    var transportCompany = await m.TransportCompany.create({
+    let transportCompany = await m.TransportCompany.create({
     })
-    var user = await m.User.create({
-      email: new Date().toISOString() + "@example.com"
+    let user = await m.User.create({
+      email: new Date().toISOString() + "@example.com",
     })
-    var routes = [
+    let routes = [
       await m.Route.create({
         path: [],
         name: "Route 1",
@@ -1428,11 +1428,11 @@ lab.experiment("Route manipulation", function () {
         trips: [
           {
             transportCompanyId: transportCompany.id,
-            date: "2017-01-01"
-          }
-        ]
+            date: "2017-01-01",
+          },
+        ],
       }, {
-        include: [m.Trip]
+        include: [m.Trip],
       }),
       await m.Route.create({
         path: [],
@@ -1443,48 +1443,48 @@ lab.experiment("Route manipulation", function () {
         trips: [
           {
             transportCompanyId: transportCompany.id,
-            date: "2017-01-02"
-          }
-        ]
+            date: "2017-01-02",
+          },
+        ],
       }, {
-        include: [m.Trip]
-      })
+        include: [m.Trip],
+      }),
     ]
-    var stops = [
+    let stops = [
       await m.Stop.create({
         description: "Stop 1 Description",
-        road: "Stop 1 road"
+        road: "Stop 1 road",
       }),
       await m.Stop.create({
         description: "Stop 2 Description",
-        road: "Stop 2 road"
-      })
+        road: "Stop 2 road",
+      }),
     ]
-    var tripStops = [
+    let tripStops = [
       await m.TripStop.create({
         time: "2017-01-02T01:00",
         stopId: stops[0].id,
-        tripId: routes[0].trips[0].id
+        tripId: routes[0].trips[0].id,
       }),
       await m.TripStop.create({
         time: "2017-01-02T01:20",
         stopId: stops[1].id,
-        tripId: routes[0].trips[0].id
+        tripId: routes[0].trips[0].id,
       }),
       await m.TripStop.create({
         time: "2017-01-02T01:09",
         stopId: stops[1].id,
-        tripId: routes[1].trips[0].id
+        tripId: routes[1].trips[0].id,
       }),
       await m.TripStop.create({
         time: "2017-01-02T01:10",
         stopId: stops[0].id,
-        tripId: routes[1].trips[0].id
-      })
+        tripId: routes[1].trips[0].id,
+      }),
     ]
 
     // We have set up the environment, now we can create the ticket.
-    var tickets = [
+    let tickets = [
       await m.Ticket.create({
         boardStopId: tripStops[0].id,
         alightStopId: tripStops[1].id,
@@ -1498,20 +1498,20 @@ lab.experiment("Route manipulation", function () {
         userId: user.id,
         createdAt: "2017-02-03T00:00:00",
         status: 'valid',
-      })
+      }),
     ]
 
-    var loginResp = await loginAs("user", {
-      userId: user.id
+    let loginResp = await loginAs("user", {
+      userId: user.id,
     }, null)
-    var authHeaders = {
-      authorization: "Bearer " + loginResp.result.sessionToken
+    let authHeaders = {
+      authorization: "Bearer " + loginResp.result.sessionToken,
     }
 
-    var resp = await server.inject({
+    let resp = await server.inject({
       method: "GET",
       url: "/routes/recent",
-      headers: authHeaders
+      headers: authHeaders,
     })
 
     expect(resp.result[0].id).to.equal(routes[1].id)
@@ -1533,21 +1533,21 @@ WHERE id = :id
       {
         replacements: {
           createdAt: "2016-12-31T00:00:00",
-          id: tickets[1].id
-        }
+          id: tickets[1].id,
+        },
       }
     )
 
     resp = await server.inject({
       method: "GET",
       url: "/routes/recent",
-      headers: authHeaders
+      headers: authHeaders,
     })
 
     expect(resp.result[0].id).to.equal(routes[0].id)
     expect(resp.result[1].id).to.equal(routes[1].id)
 
-    var objects = [].concat(tickets, tripStops, stops, routes, [user, transportCompany])
+    let objects = [].concat(tickets, tripStops, stops, routes, [user, transportCompany])
 
     for (let o of objects) {
       await o.destroy()
@@ -1568,11 +1568,11 @@ WHERE id = :id
       trips: [
         {
           transportCompanyId: companyInstance.id,
-          date: "2017-01-01"
-        }
-      ]
+          date: "2017-01-01",
+        },
+      ],
     }, {
-      include: [m.Trip]
+      include: [m.Trip],
     })
     ))
     const headers = {authorization: `Bearer ${userInstance.makeToken()}`}
@@ -1580,36 +1580,36 @@ WHERE id = :id
       m.Stop.create({
         description: 'Inside botanic gardens (1)',
         coordinates: {
-          type: 'Point', coordinates: [103.815780, 1.311889]
-        }
+          type: 'Point', coordinates: [103.815780, 1.311889],
+        },
       }),
       m.Stop.create({
         description: 'Inside botanic gardens (2)',
         coordinates: {
-          type: 'Point', coordinates: [103.816155, 1.311449]
-        }
+          type: 'Point', coordinates: [103.816155, 1.311449],
+        },
       }),
       m.Stop.create({
         description: 'Mt Vernon (1)',
         coordinates: {
-          type: 'Point', coordinates: [103.880988, 1.340020]
-        }
+          type: 'Point', coordinates: [103.880988, 1.340020],
+        },
       }),
       m.Stop.create({
         description: 'Mt Vernon (2)',
         coordinates: {
-          type: 'Point', coordinates: [103.882555, 1.338111]
-        }
+          type: 'Point', coordinates: [103.882555, 1.338111],
+        },
       }),
       m.Stop.create({
         description: 'PLAB',
         coordinates: {
-          type: 'Point', coordinates: [103.900423, 1.350496]
-        }
+          type: 'Point', coordinates: [103.900423, 1.350496],
+        },
       }),
     ])
 
-    async function createTripOnRoute (route, stop1, stop2) {
+    const createTripOnRoute = async function (route, stop1, stop2) {
       return Promise.all([
         m.TripStop.create({
           tripId: route.trips[0].id,
@@ -1624,7 +1624,7 @@ WHERE id = :id
           canBoard: false,
           canAlight: true,
           time: "2017-01-01T08:00:00+0800",
-        })
+        }),
       ])
     }
 
@@ -1655,7 +1655,7 @@ WHERE id = :id
         startDateTime: '2016-12-01T00:00:00+0800',
         endDateTime: '2017-01-02T23:59:00+0800',
       }),
-      headers
+      headers,
     })
     const returnedRouteIds = resp.result.map(r => r.id)
     expect(returnedRouteIds).include(routes[0].id)
@@ -1680,7 +1680,7 @@ WHERE id = :id
         startDateTime: '2017-01-02T00:00:00+0800',
         endDateTime: '2017-01-03T23:59:00+0800',
       }),
-      headers
+      headers,
     })
     const returnedRouteIds2 = resp2.result.map(r => r.id)
     expect(returnedRouteIds2).not.include(routes[0].id)
@@ -1698,7 +1698,7 @@ WHERE id = :id
         startDateTime: '2017-01-01T00:00:00+0800',
         endDateTime: '2017-01-03T23:59:00+0800',
       }),
-      headers
+      headers,
     })
     const returnedRouteIds3 = resp3.result.map(r => r.id)
     expect(returnedRouteIds3).include(routes[0].id)
@@ -1709,28 +1709,28 @@ WHERE id = :id
     expect(returnedRouteIds3).include(routes[5].id)
   })
 
-  var routeLabel = "L1"
-  var liteUserName = "Test use r r r r"
-  var liteRouteInfo = {
+  let routeLabel = "L1"
+  let liteUserName = "Test use r r r r"
+  let liteRouteInfo = {
     name: "Name for Lite Testing",
     from: "Testing Lite Route From",
     to: "Testing Lite Route To",
     path: JSON.stringify({testing: "liteTesting"}),
     tags: ['lite'],
     label: routeLabel,
-    features: routeFeatures
+    features: routeFeatures,
   }
 
-  var liteRouteCleanup = async () => {
+  let liteRouteCleanup = async () => {
     // cleanup our test user
     await models.Subscription.destroy({
-      where: { routeLabel }
+      where: { routeLabel },
     })
     await models.Route.destroy({
-      where: { tags: {$contains: ['lite']} }
+      where: { tags: {$contains: ['lite']} },
     })
     await models.User.destroy({
-      where: { name: liteUserName }
+      where: { name: liteUserName },
     })
   }
 
@@ -1738,23 +1738,23 @@ WHERE id = :id
   lab.test("lite route subscriptions CRUD", async function () {
     await models.Route.create(liteRouteInfo)
 
-    var user = await models.User.create({
+    let user = await models.User.create({
       email: "testuser1" + new Date().getTime() +
                   "@testtestexample.com",
       name: liteUserName,
-      telephone: Date.now()
+      telephone: Date.now(),
     })
     // LOGIN
-    var loginResponse = await loginAs("user", user.id)
+    let loginResponse = await loginAs("user", user.id)
     authHeaders = {
-      authorization: "Bearer " + loginResponse.result.sessionToken
+      authorization: "Bearer " + loginResponse.result.sessionToken,
     }
     // CREATE
     await server.inject({
       method: "POST",
       url: "/liteRoutes/subscriptions",
       payload: {routeLabel: routeLabel},
-      headers: authHeaders
+      headers: authHeaders,
     })
       .then((resp) => {
         expect(resp.statusCode).to.equal(200)
@@ -1765,7 +1765,7 @@ WHERE id = :id
         return server.inject({
           method: "GET",
           url: "/liteRoutes/subscriptions",
-          headers: authHeaders
+          headers: authHeaders,
         })
       })
       .then((resp) => {
@@ -1778,7 +1778,7 @@ WHERE id = :id
         return server.inject({
           method: "DELETE",
           url: "/liteRoutes/subscriptions/" + routeLabel,
-          headers: authHeaders
+          headers: authHeaders,
         })
       })
       .then((resp) => {
@@ -1789,7 +1789,7 @@ WHERE id = :id
         return server.inject({
           method: "GET",
           url: "/liteRoutes/subscriptions",
-          headers: authHeaders
+          headers: authHeaders,
         })
       })
       .then((resp) => {
@@ -1806,10 +1806,10 @@ WHERE id = :id
     })
     await adminInstance.addTransportCompany(transportCompany, {permissions: ['manage-routes']})
     const authHeaders = {
-      authorization: "Bearer " + adminInstance.makeToken()
+      authorization: "Bearer " + adminInstance.makeToken(),
     }
     const superadminAuthHeaders = {
-      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken
+      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken,
     }
 
     // When admin tries to create a route, label and tags are deleted
@@ -1820,23 +1820,23 @@ WHERE id = :id
       to: 'To',
       name: 'Sample Route',
       features: 'Some feature',
-      transportCompanyId: transportCompany.id
+      transportCompanyId: transportCompany.id,
     }
 
-    function latest () {
+    const latest = function () {
       return models.Route.findOne({
-        order: [['id', 'desc']]
+        order: [['id', 'desc']],
       })
     }
-    function noLabelAndTags (r) {
+    const noLabelAndTags = function (r) {
       expect(r.label).null()
       expect(r.tags).null()
     }
-    function matchesLabelAndTags (r) {
+    const matchesLabelAndTags = function (r) {
       expect(r.label).equal(routeInfo.label)
       expect(r.tags).equal(routeInfo.tags)
     }
-    function matchesEverythingElse (r) {
+    const matchesEverythingElse = function (r) {
       expect(r.from).equal(routeInfo.from)
       expect(r.transportCompanyId).equal(routeInfo.transportCompanyId)
       expect(r.to).equal(routeInfo.to)
@@ -1849,7 +1849,7 @@ WHERE id = :id
       method: "POST",
       url: "/routes",
       payload: routeInfo,
-      headers: authHeaders
+      headers: authHeaders,
     })
     expect(response.statusCode).equal(200)
     const routePostByAdmin = await latest()
@@ -1861,7 +1861,7 @@ WHERE id = :id
       method: "POST",
       url: "/routes",
       payload: routeInfo,
-      headers: superadminAuthHeaders
+      headers: superadminAuthHeaders,
     })
     expect(response.statusCode).equal(200)
     const routePostBySuperadmin = await latest()
@@ -1878,7 +1878,7 @@ WHERE id = :id
         tags: ['new', 'tags'],
         companyTags: ['banana'],
       }, routeInfo),
-      headers: authHeaders
+      headers: authHeaders,
     })
     expect(response.statusCode).equal(200)
     const routePutByAdmin = await latest()
@@ -1893,7 +1893,7 @@ WHERE id = :id
         label: 'NewLabel',
         tags: ['new', 'tags'],
       }, routeInfo),
-      headers: superadminAuthHeaders
+      headers: superadminAuthHeaders,
     })
     expect(response.statusCode).equal(200)
     const routePutBySuperadmin = await latest()
@@ -1913,24 +1913,24 @@ WHERE id = :id
       to: 'To',
       name: 'Sample Route',
       features: 'Some feature',
-      transportCompanyId: transportCompany.id
+      transportCompanyId: transportCompany.id,
     }
 
     const superadminAuthHeaders = {
-      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken
+      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken,
     }
 
     let createResponse = await server.inject({
       method: "POST",
       url: "/routes",
       payload: routeInfo,
-      headers: superadminAuthHeaders
+      headers: superadminAuthHeaders,
     })
 
     expect(createResponse.statusCode).equal(200)
 
     let route = await models.Route.findOne({
-      order: [['id', 'desc']]
+      order: [['id', 'desc']],
     })
     expect(route.tags.length).equal(1)
 
@@ -1941,7 +1941,7 @@ WHERE id = :id
         label: 'NewLabel',
         tags: testTags2,
       }, routeInfo),
-      headers: superadminAuthHeaders
+      headers: superadminAuthHeaders,
     })
 
     expect(updateResponse.statusCode).equal(200)
@@ -1952,7 +1952,7 @@ WHERE id = :id
 
   lab.test("createdAt/updatedAt route timestamps cannot be overridden at POST", async function () {
     const headers = {
-      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken
+      authorization: "Bearer " + (await loginAs('superadmin')).result.sessionToken,
     }
 
     const payload = {
