@@ -19,7 +19,6 @@ export function register(server, options, next) {
       validate: {
         query: {
           label: Joi.string(),
-          includeTrips: Joi.boolean().default(true),
           startDate: Joi.date(),
         },
       },
@@ -30,6 +29,7 @@ export function register(server, options, next) {
     handler: async function(request, reply) {
       request.query.tags = request.query.tags || []
       request.query.tags.push("lite")
+      request.query.includeTrips = true
       const routes = await cachedFetchRoutes(request)
         .then(routes => filterCached(routes, request))
         .then(routes => routes.map(route => _.omit(route, ["tags", "id"])))
@@ -60,11 +60,27 @@ export function register(server, options, next) {
           const tripsAtMinTripDate = route.trips.filter(
             trip => trip.date === minTripDate
           )
-          const tripStopTimes = _.flatMap(tripsAtMinTripDate, t =>
-            t.tripStops.map(t => t.time)
-          )
+          const tripStops = _.flatMap(tripsAtMinTripDate, "tripStops")
+          route.stops = _(tripStops)
+            .groupBy(ts => ts.stop.id)
+            .mapValues(tripStopsAtStop => {
+              const [{ stop, canBoard }] = tripStopsAtStop
+              stop.canBoard = canBoard
+              stop.time = _(tripStopsAtStop)
+                .map("time")
+                .uniq()
+                .sort()
+                .value()
+              return stop
+            })
+            .values()
+            .value()
+          delete route.trips
+
+          const tripStopTimes = tripStops.map(t => t.time)
           route.startTime = _.min(tripStopTimes)
           route.endTime = _.max(tripStopTimes)
+
           route.isSubscribed = subLabels.includes(route.label)
           return route
         })
