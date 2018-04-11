@@ -20,6 +20,7 @@ export function register(server, options, next) {
         query: {
           label: Joi.string(),
           startDate: Joi.date(),
+          transportCompanyId: Joi.number().integer(),
         },
       },
       auth: { access: { scope: ["user", "public"] } },
