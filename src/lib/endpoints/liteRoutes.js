@@ -3,7 +3,11 @@ const Joi = require("joi")
 const Boom = require("boom")
 
 const { getModels, defaultErrorHandler } = require("../util/common")
-const { cachedFetchRoutes, filterCached } = require("../listings/routes")
+const {
+  cachedFetchRoutes,
+  filterCached,
+  uncachedFetchRoutes,
+} = require("../listings/routes")
 
 /**
  * @param {Object} server - a HAPI server
@@ -31,9 +35,14 @@ export function register(server, options, next) {
       request.query.tags = request.query.tags || []
       request.query.tags.push("lite")
       request.query.includeTrips = true
-      const routes = await cachedFetchRoutes(request)
-        .then(routes => filterCached(routes, request))
-        .then(routes => routes.map(route => _.omit(route, ["tags", "id"])))
+      request.query.limitTrips = 5
+      const routes = request.query.label
+        ? await uncachedFetchRoutes(request).then(routes =>
+            routes.map(route => _.omit(route, ["tags", "id"]))
+          )
+        : await cachedFetchRoutes(request)
+            .then(routes => filterCached(routes, request))
+            .then(routes => routes.map(route => _.omit(route, ["tags", "id"])))
 
       const subLabels = []
       const { userId } = request.auth.credentials
