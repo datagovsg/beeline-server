@@ -14,6 +14,7 @@ module.exports = (server, options, next) => {
       require("./endpoints/eventSubscriptions"),
       require("./endpoints/promotions"),
       require("./endpoints/regions"),
+      require("./endpoints/liteRoutes"),
       require("./endpoints/routes"),
       require("./endpoints/stops"),
       require("./endpoints/suggestions"),
