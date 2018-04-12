@@ -88,7 +88,9 @@ export function register(server, options, next) {
             })
             .values()
             .value()
-          route.tripIds = tripsAtMinTripDate.map(({ id }) => id)
+          route.tripIds = tripsAtMinTripDate
+            .filter(trip => trip.isRunning)
+            .map(({ id }) => id)
           delete route.trips
 
           const tripStopTimes = tripStops.map(t => t.time)
