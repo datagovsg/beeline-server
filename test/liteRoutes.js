@@ -53,7 +53,6 @@ lab.experiment("Lite route retrievals", function () {
       url: "/routes/lite?label=" + routeLabel,
     })
     expect(readResponse.statusCode).to.equal(200)
-    expect(readResponse.result[routeLabel]._cached).to.equal(true)
     expect(readResponse.result[routeLabel].label).to.equal(routeLabel)
     expect(readResponse.result[routeLabel].startTime).to.exist()
     expect(readResponse.result[routeLabel].endTime).to.exist()
