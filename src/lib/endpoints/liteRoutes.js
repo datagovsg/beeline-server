@@ -22,7 +22,10 @@ export function register(server, options, next) {
     config: {
       validate: {
         query: {
-          label: Joi.string(),
+          label: Joi.string().description(
+            "the route label. When specified, " +
+              "the routes returned will have an additional field - features"
+          ),
           startDate: Joi.date(),
           transportCompanyId: Joi.number().integer(),
         },
