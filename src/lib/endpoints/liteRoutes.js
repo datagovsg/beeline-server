@@ -69,9 +69,11 @@ export function register(server, options, next) {
               .sortBy("date")
               .value()
           }
-          const minTripDate = _.min(route.trips.map(trip => trip.date))
+          const minTripDate = _.min(
+            route.trips.map(trip => new Date(trip.date).getTime())
+          )
           const tripsAtMinTripDate = route.trips.filter(
-            trip => trip.date === minTripDate
+            trip => new Date(trip.date).getTime() === minTripDate
           )
           const tripStops = _.flatMap(tripsAtMinTripDate, "tripStops")
           route.stops = _(tripStops)
