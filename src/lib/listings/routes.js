@@ -132,7 +132,9 @@ const uncachedFetchRoutes = async request => {
           )`,
     ])
   }
-  if (request.query.includePath) {
+  if (request.query.includePath && request.query.includeFeatures) {
+    routeQuery.attributes = { include: ["path", "features"] }
+  } else if (request.query.includePath) {
     routeQuery.attributes = undefined
   } else {
     routeQuery.attributes.exclude.push("path")

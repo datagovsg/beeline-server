@@ -26,6 +26,7 @@ export function register(server, options, next) {
             "the route label. When specified, " +
               "the routes returned will have an additional field - features"
           ),
+          includeFeatures: Joi.boolean().default(true),
           includePath: Joi.boolean().default(false),
           startDate: Joi.date(),
           transportCompanyId: Joi.number().integer(),
