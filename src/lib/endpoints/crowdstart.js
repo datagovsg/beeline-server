@@ -84,8 +84,19 @@ export const register = function(server, options, next) {
             route.bids = bids[route.id] || []
           }
         }
+        const completionProgress = route => {
+          const bidCount = (route.bids || []).filter(
+            bid => bid.status === "bidded"
+          ).length
 
-        reply(routes)
+          const paxNeeded = _.get(route, "notes.tier[0].pax")
+          return paxNeeded ? -(bidCount / paxNeeded) : 0
+        }
+        reply(
+          _(routes)
+            .sortBy(completionProgress)
+            .value()
+        )
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
