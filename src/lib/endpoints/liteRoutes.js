@@ -26,7 +26,6 @@ export function register(server, options, next) {
             "the route label. When specified, " +
               "the routes returned will have an additional field - features"
           ),
-          includeFeatures: Joi.boolean().default(true),
           includePath: Joi.boolean().default(false),
           startDate: Joi.date(),
           transportCompanyId: Joi.number().integer(),
@@ -41,6 +40,9 @@ export function register(server, options, next) {
       request.query.tags.push("lite")
       request.query.includeTrips = true
       request.query.limitTrips = 5
+      if (request.query.label) {
+        request.query.includeFeatures = true
+      }
       const routes = request.query.label
         ? await uncachedFetchRoutes(request).then(routes =>
             routes.map(route => _.omit(route, ["tags", "id"]))
