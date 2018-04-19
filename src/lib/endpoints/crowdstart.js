@@ -331,7 +331,7 @@ marking all bids on this route as 'failed'
         },
       },
       auth: {
-        access: { scope: ["admin", "superadmin"] },
+        access: { scope: ["public", "admin", "superadmin"] },
       },
       tags: ["api"],
       description: `Returns all bids made for a given route`,
@@ -339,24 +339,31 @@ marking all bids on this route as 'failed'
     handler: handleRequestWith(
       request => getModels(request).Route.findById(request.params.routeId),
       async (route, request) => {
-        await auth.assertAdminRole(
-          request.auth.credentials,
-          "manage-routes",
-          route.transportCompanyId
-        )
+        if (request.auth.credentials.scope !== "public") {
+          await auth.assertAdminRole(
+            request.auth.credentials,
+            "manage-routes",
+            route.transportCompanyId
+          )
+        }
         return route
       },
       (route, request) => {
         const m = getModels(request)
-        return m.Bid.findAll({
+        const params = {
           where: { routeId: route.id },
-          include: [
+        }
+        if (request.auth.credentials.scope !== "public") {
+          params.include = [
             {
               model: m.User,
               attributes: ["name", "email", "telephone"],
             },
-          ],
-        })
+          ]
+        } else {
+          params.where.status = { $in: ["bidded", "failed", "void"] }
+        }
+        return m.Bid.findAll(params)
       },
       bids => bids.map(bid => bid.toJSON())
     ),
