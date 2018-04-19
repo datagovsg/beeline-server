@@ -227,6 +227,13 @@ lab.experiment("Crowdstart", function () {
     expect(allBids.statusCode).equal(200)
     expect(allBids.result.length).equal(2)
 
+    const allPublicBids = await server.inject({
+      method: 'GET',
+      url: `/crowdstart/routes/${routeInstance.id}/bids`,
+    })
+    expect(allPublicBids.statusCode).equal(200)
+    expect(allPublicBids.result.length).equal(2)
+
     // Test GET /bids
     const getResponse1 = await server.inject({
       method: 'GET',
