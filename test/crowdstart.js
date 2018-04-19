@@ -10,14 +10,16 @@ const {createUsersCompaniesRoutesAndTrips} = require('./test_data')
 const lab = exports.lab = Lab.script()
 
 lab.experiment("Crowdstart", function () {
-  let [userInstance, user2Instance] = []
+  let userInstance
+  let user2Instance
   let companyInstance
   let routeInstance
   let stopInstances
   let tripInstances
   let otherCompanyInstance
   let basePrice
-  let [addCardResponse, addCardResponse2] = []
+  let addCardResponse
+  let addCardResponse2
 
   const authHeaders = {}
 
