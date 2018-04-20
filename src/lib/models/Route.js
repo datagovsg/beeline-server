@@ -28,16 +28,10 @@ export default modelCache => {
 }
 
 export const makeAssociation = function(modelCache) {
-  let Region = modelCache.require("Region")
   let Route = modelCache.require("Route")
   let Trip = modelCache.require("Trip")
-  let RouteRegion = modelCache.require("RouteRegion")
   let RouteAnnouncement = modelCache.require("RouteAnnouncement")
   let IndicativeTrip = modelCache.require("IndicativeTrip")
-  Route.belongsToMany(Region, {
-    through: RouteRegion,
-    foreignKey: "routeId",
-  })
   Route.hasMany(Trip, {
     foreignKey: "routeId",
   })

@@ -492,66 +492,6 @@ the \`startDate\` defaults to the time of request.
     },
   })
 
-  server.route({
-    method: "GET",
-    path: "/routes/search_by_region",
-    config: {
-      tags: ["api"],
-      description: "Search by region.",
-      auth: false,
-      validate: {
-        query: {
-          regionId: Joi.number()
-            .integer()
-            .optional(),
-          areaName: Joi.string().optional(),
-          startTime: Joi.date().optional(),
-          endTime: Joi.date().optional(),
-        },
-      },
-    },
-    handler: function(request, reply) {
-      let db = getDB(request)
-      db
-        .query(
-          `
-            SELECT
-                routes.*,
-                (SELECT MAX(date) FROM trips WHERE trips."routeId" = routes."id") AS "last_trip",
-                (SELECT MIN(date) FROM trips WHERE trips."routeId" = routes."id") AS "first_trip",
-                (SELECT MAX(date) FROM trips WHERE trips."routeId" = routes."id") AS "lastTrip",
-                (SELECT MIN(date) FROM trips WHERE trips."routeId" = routes."id") AS "firstTrip"
-            FROM "routes"
-                INNER JOIN "routeRegions"
-                    ON "routeRegions"."routeId" = "routes"."id"
-                INNER JOIN "regions"
-                    ON "routeRegions"."regionId" = "regions"."id"
-            WHERE
-                (:regionId IS NULL OR "regions"."id" = :regionId)
-                AND (:areaName IS NULL OR "regions"."areaName" = :areaName)
-
-                AND EXISTS(SELECT * FROM trips
-                            WHERE
-                                trips."routeId" = routes."id"
-                                AND (:startTime IS NULL OR trips."date" >= :startTime)
-                                AND (:endTime IS NULL OR trips."date" <= :endTime))
-            `,
-          {
-            replacements: {
-              areaName: request.query.areaName || null,
-              regionId: request.query.regionId || null,
-              startTime: request.query.startTime || null,
-              endTime: request.query.endTime || null,
-            },
-            type: db.QueryTypes.SELECT,
-          }
-        )
-        .then(res => {
-          reply(res)
-        }, defaultErrorHandler(reply))
-    },
-  })
-
   const latLngDistance = (ll1, ll2) => {
     let svy1 = toSVY(ll1)
     let svy2 = toSVY(ll2)

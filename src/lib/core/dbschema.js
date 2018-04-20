@@ -14,8 +14,6 @@ const genModelAndTasks = seq => {
   modelCache.require("TransportCompany")
   modelCache.require("Route")
   modelCache.require("RouteAnnouncement")
-  modelCache.require("Region")
-  modelCache.require("RouteRegion")
   modelCache.require("Stop")
   modelCache.require("Driver")
   modelCache.require("Vehicle")

@@ -1,7 +1,5 @@
 /* eslint no-await-in-loop: 0 */
 
-import {resetRegions} from './resetRegions';
-
 const {
   db: sequelize,
   models,
@@ -811,7 +809,6 @@ async function createPassengers () {
 if (require.main === module) {
   const dbInit = Promise.resolve(null)
     .then(createTables)
-    .then(resetRegions);
 
   if (!process.env.SCHEMA_ONLY) {
     dbInit
