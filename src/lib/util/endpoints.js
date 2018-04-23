@@ -9,8 +9,9 @@ const auth = require("../core/auth")
  * Routes requests to a HAPI server to the specified
  * HAPI route configuration object over multiple RESTful paths
  * @param {Server} server - a HAPI server object
- * @param {Object} config - a route configuration object
  * @param {...(string|object)} paths - one or more strings or
+ * @param {Object} config - a route configuration object
+ * @return {undefined}
  * partial route configuration objects which contains at least
  * a path field that would be merged into a copy of config
  * @example
@@ -28,7 +29,7 @@ const auth = require("../core/auth")
  *           payload: Joi.object({
  *             ticketId: Joi.number().integer().min(0).required(),
  *             targetAmt: Joi.number().min(0).required(),
- *             creditTag: Joi.string().disallow(INVALID_CREDIT_TAGS).required()
+ *             tag: Joi.string().disallow(INVALID_CREDIT_TAGS).required()
  *           })
  *         }
  *       }
@@ -42,7 +43,7 @@ const auth = require("../core/auth")
  *           },
  *           payload: Joi.object({
  *             targetAmt: Joi.number().min(0).required(),
- *             creditTag: Joi.string().disallow(INVALID_CREDIT_TAGS).required()
+ *             tag: Joi.string().disallow(INVALID_CREDIT_TAGS).required()
  *           })
  *         }
  *       }
@@ -62,6 +63,7 @@ export const routeRequestsTo = (server, paths, config) => paths.forEach(path => 
  * Wraps an array of callbacks into a HAPI handler.
  * @param {...function} callbacks - functions that, when chained together,
  * will produce an object that is accepted by HAPI's reply callback
+ * @return {function} a request handler for HAPI
  * @example <caption>Using makeHandlerCallbackAdapter in HAPI routes</caption>
  *   // Define a function that looks up an instance for a given request
  *   const findContactListById = async (request) => {
