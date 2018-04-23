@@ -2,7 +2,7 @@
 
 const {db, models: m} = require('../src/lib/core/dbschema')()
 const {
-  resetTripInstances, loginAs, randomString, createStripeToken
+  resetTripInstances, loginAs, randomString, createStripeToken,
 } = require("./test_common")
 import {expect} from "code"
 import server from "../src/index"
@@ -12,16 +12,19 @@ import {createUsersCompaniesRoutesAndTrips, createTripInstancesFrom} from './tes
 import {initBuilderWithTicketSale} from '../src/lib/transactions/builder'
 import {routePassTagsFrom, applyRoutePass} from '../src/lib/transactions/routePass'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("Route Passes", function () {
-  var userInstance, companyInstance, routeInstance, stopInstances
-  var authHeaders = {}
-  var testTag
+  let userInstance
+  let companyInstance
+  let routeInstance
+  let stopInstances
+  let authHeaders = {}
+  let testTag
   const ticketPrice = '5.00'
   const ticketsBought = 5
   let itemInsts = []
-  var trips
+  let trips
 
   lab.before({timeout: 15000}, async function () {
     testTag = `rp-${Date.now()}`;
@@ -30,7 +33,7 @@ lab.experiment("Route Passes", function () {
         await createUsersCompaniesRoutesAndTrips(m, new Array(ticketsBought).fill(+ticketPrice)))
 
     await routeInstance.update({
-      tags: [testTag]
+      tags: [testTag],
     })
 
     trips.forEach((trip, i) => {
@@ -39,24 +42,24 @@ lab.experiment("Route Passes", function () {
           tripId: trip.id,
           boardStopId: trip.tripStops[0].id,
           alightStopId: trip.tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: i},
         price: trip.price,
-        trip
+        trip,
       })
     })
 
-    var userToken = (await loginAs("user", userInstance.id)).result.sessionToken
+    let userToken = (await loginAs("user", userInstance.id)).result.sessionToken
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund', 'manage-routes']
+      permissions: ['refund', 'manage-routes'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
-    var superToken = (await loginAs('superadmin')).result.sessionToken
+    let superToken = (await loginAs('superadmin')).result.sessionToken
     authHeaders.super = { authorization: 'Bearer ' + superToken }
   })
 
@@ -68,7 +71,7 @@ lab.experiment("Route Passes", function () {
   lab.beforeEach(async function () {
     await resetTripInstances(m, trips)
     await m.RoutePass.destroy({
-      where: {userId: userInstance.id}
+      where: {userId: userInstance.id},
     })
   })
 
@@ -88,7 +91,7 @@ lab.experiment("Route Passes", function () {
     const routePassPurchaseItem = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: pass.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     const poItems = itemInsts.map(it => it.item)
@@ -137,7 +140,7 @@ lab.experiment("Route Passes", function () {
     const routePassPurchaseItem = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: pass.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     const poItems = itemInsts.map(it => it.item)
@@ -174,7 +177,7 @@ lab.experiment("Route Passes", function () {
       makeTripItem(1, ['crowdstart-0', 'rp-1', 'others']),
       makeTripItem(2, ['rp-2', 'others']),
       makeTripItem(3, ['banana']),
-      makeTripItem(2, ['rp-2', 'others'])
+      makeTripItem(2, ['rp-2', 'others']),
     ]
     const tags = await routePassTagsFrom(items)
     expect(tags).include('crowdstart-0')
@@ -191,13 +194,13 @@ lab.experiment("Route Passes", function () {
       passes.map(pass => m.TransactionItem.create({
         itemType: 'routePass',
         itemId: pass.id,
-        debit: -ticketPrice
+        debit: -ticketPrice,
       }))
     )
 
     const makeTripItem = (routeId, tags) => ({
       item: { userId: userInstance.id },
-      trip: { routeId, route: { transportCompanyId: companyInstance.id, tags } }
+      trip: { routeId, route: { transportCompanyId: companyInstance.id, tags } },
     })
     const items = [
       makeTripItem(1, ['crowdstart-0', 'rp-1', 'others']),
@@ -231,7 +234,7 @@ lab.experiment("Route Passes", function () {
       routePasses.map(pass => m.TransactionItem.create({
         itemType: 'routePass',
         itemId: pass.id,
-        debit: -ticketPrice
+        debit: -ticketPrice,
       }))
     )
 
@@ -282,33 +285,33 @@ lab.experiment("Route Passes", function () {
           tripId: trips[0].id,
           boardStopId: trips[0].tripStops[0].id,
           alightStopId: trips[0].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 0},
         price: trips[0].price,
-        trip: trips[0]
+        trip: trips[0],
       },
       {
         item: {
           tripId: trips[1].id,
           boardStopId: trips[1].tripStops[0].id,
           alightStopId: trips[1].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 1},
         price: trips[1].price,
-        trip: trips[1]
+        trip: trips[1],
       },
       {
         item: {
           tripId: trips[2].id,
           boardStopId: trips[2].tripStops[0].id,
           alightStopId: trips[2].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 2},
         price: trips[2].price,
-        trip: trips[2]
+        trip: trips[2],
       },
     ]
 
@@ -327,7 +330,7 @@ lab.experiment("Route Passes", function () {
       routePasses.map(pass => m.TransactionItem.create({
         itemType: 'routePass',
         itemId: pass.id,
-        debit: -tripPrice
+        debit: -tripPrice,
       }))
     )
 
@@ -396,7 +399,7 @@ lab.experiment("Route Passes", function () {
     const routePassPurchaseItem = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: routePass.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     const purchaseItems = [{
@@ -417,7 +420,7 @@ lab.experiment("Route Passes", function () {
         applyRoutePass: true,
         stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(previewResponse.statusCode).to.equal(200)
 
@@ -429,7 +432,7 @@ lab.experiment("Route Passes", function () {
         applyRoutePass: true,
         stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -464,9 +467,9 @@ lab.experiment("Route Passes", function () {
         url: `/transactions/tickets/${refundedTicketItem.itemId}/refund/route_pass`,
         payload: {
           targetAmt: refundedTicketItem.credit,
-          creditTag: testTag
+          tag: testTag,
         },
-        headers: authHeaders.admin
+        headers: authHeaders.admin,
       })
       expect(refundResponse.statusCode).to.equal(200)
 
@@ -498,7 +501,7 @@ lab.experiment("Route Passes", function () {
     const routePassPurchaseItem = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: routePass.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     const saleResponse = await server.inject({
@@ -527,9 +530,9 @@ lab.experiment("Route Passes", function () {
           alightStopId: trips[4].tripStops[4].id,
         }],
         stripeToken: 'Fake stripe token',
-        creditTag: testTag,
+        applyRoutePass: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(402)
 
@@ -552,15 +555,15 @@ lab.experiment("Route Passes", function () {
         quantity: 2,
         tag,
         stripeToken: await createStripeToken(),
-        companyId: companyInstance.id
+        companyId: companyInstance.id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(purchaseResponse.statusCode).equal(200)
 
     // Check that the credits have been updated :)
     const passes = await m.RoutePass.findAll({
-      where: { userId, companyId, tag, status: 'valid' }
+      where: { userId, companyId, tag, status: 'valid' },
     })
     expect(passes.length).equal(2)
     await Promise.all(passes.map(p => p.destroy()))
@@ -577,8 +580,8 @@ lab.experiment("Route Passes", function () {
       url: `/users/${userId}/creditCards`,
       headers: authHeaders.user,
       payload: {
-        stripeToken: await createStripeToken()
-      }
+        stripeToken: await createStripeToken(),
+      },
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -591,15 +594,15 @@ lab.experiment("Route Passes", function () {
         tag: testTag,
         companyId: companyInstance.id,
         customerId: postResponse.result.id,
-        sourceId: postResponse.result.sources.data[0].id
+        sourceId: postResponse.result.sources.data[0].id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(purchaseResponse.statusCode).equal(200)
 
     // Check that the credits have been updated :)
     const passes = await m.RoutePass.findAll({
-      where: { userId, companyId, tag, status: 'valid' }
+      where: { userId, companyId, tag, status: 'valid' },
     })
     expect(passes.length).equal(2)
     await Promise.all(passes.map(p => p.destroy()))
@@ -622,21 +625,21 @@ lab.experiment("Route Passes", function () {
             schedule: [
               [20, 0.1],
               [40, 0.2],
-            ]
-          }
+            ],
+          },
         },
         usageLimit: {
           globalLimit: 4,
           userLimit: 4,
         },
-        qualifyingCriteria: []
+        qualifyingCriteria: [],
       },
       description: 'Bulk discounts for route pass purchase',
     })
 
     // Purchase some credits for this route
     // Returns [paid amount, discounted amount]
-    async function submitPurchase (amount) {
+    const submitPurchase = async function submitPurchase (amount) {
       return server.inject({
         method: 'POST',
         url: `/transactions/route_passes/payment`,
@@ -649,11 +652,11 @@ lab.experiment("Route Passes", function () {
           stripeToken: await createStripeToken(),
           companyId: companyInstance.id,
         },
-        headers: authHeaders.user
+        headers: authHeaders.user,
       })
     }
 
-    async function purchase (amount) {
+    const purchase = async function purchase (amount) {
       const purchaseResponse = await submitPurchase(amount)
       expect(purchaseResponse.statusCode, `Purchase of $${amount}`).equal(200)
 
@@ -696,7 +699,7 @@ lab.experiment("Route Passes", function () {
       'params.usageLimit': {
         globalLimit: 5,
         userLimit: 4,
-      }
+      },
     })
     let lateResponse = await submitPurchase(40.00)
     expect(lateResponse.statusCode).equal(400)
@@ -706,7 +709,7 @@ lab.experiment("Route Passes", function () {
       'params.usageLimit': {
         globalLimit: 4,
         userLimit: 5,
-      }
+      },
     })
     lateResponse = await submitPurchase(40.00)
     expect(lateResponse.statusCode).equal(400)
@@ -731,14 +734,14 @@ lab.experiment("Route Passes", function () {
             schedule: [
               [20, 0.1],
               [40, 0.2],
-            ]
-          }
+            ],
+          },
         },
         usageLimit: {
           globalLimit: 4,
           userLimit: 4,
         },
-        qualifyingCriteria: []
+        qualifyingCriteria: [],
       },
       description: 'Bulk discounts for route pass purchase',
     })
@@ -751,14 +754,14 @@ lab.experiment("Route Passes", function () {
         promoCode: {
           code,
         },
-        creditTag: testTag,
+        tag: testTag,
         stripeToken: await createStripeToken(),
         companyId: companyInstance.id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
 
-    var userUsage = await m.PromoUsage.find({ where: { promoId: promotion.id, userId: userInstance.id }})
+    let userUsage = await m.PromoUsage.find({ where: { promoId: promotion.id, userId: userInstance.id }})
     expect(userUsage.count).equal(1)
 
     await m.PromoUsage.subtractUserPromoUsage(promotion.id, userInstance.id, 1, {})
@@ -783,9 +786,9 @@ lab.experiment("Route Passes", function () {
         quantity: 2,
         tag,
         stripeToken: await createStripeToken(),
-        companyId: companyInstance.id
+        companyId: companyInstance.id,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(purchaseResponse.statusCode).equal(200)
     const routePassTxnItems = purchaseResponse.result.transactionItems
@@ -793,7 +796,7 @@ lab.experiment("Route Passes", function () {
 
     // Check that the credits have been updated :)
     const passes = await m.RoutePass.findAll({
-      where: { userId, companyId, tag, status: 'valid' }
+      where: { userId, companyId, tag, status: 'valid' },
     })
     expect(passes.length).equal(2)
 
@@ -802,9 +805,9 @@ lab.experiment("Route Passes", function () {
         method: 'POST',
         url: `/transactions/route_passes/${routePassTxnItem.itemId}/refund/payment`,
         payload: {
-          transactionItemId: routePassTxnItem.id
+          transactionItemId: routePassTxnItem.id,
         },
-        headers: authHeaders.admin
+        headers: authHeaders.admin,
       })
       expect(response.statusCode).equal(200)
       const refundPayments = response.result.transactionItems.map(t => t.refundPayment).filter(Boolean)
@@ -845,7 +848,7 @@ lab.experiment("Route Passes", function () {
       passes.map(pass => m.TransactionItem.create({
         itemType: 'routePass',
         itemId: pass.id,
-        debit: -1
+        debit: -1,
       }))
     )
 
@@ -873,7 +876,7 @@ lab.experiment("Route Passes", function () {
           applyRoutePass: true,
           stripeToken: 'SHOULDN\'T NEED ONE',
         },
-        headers: authHeaders.user
+        headers: authHeaders.user,
       })
 
       expect(saleResponse.statusCode).equal(200)

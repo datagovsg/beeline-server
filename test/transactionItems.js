@@ -115,7 +115,7 @@ lab.experiment("TransactionItems", function () {
       url: "/transactions/tickets/payment",
       payload: {
         trips: purchaseItems2,
-        creditTag: testTag,
+        applyRoutePass: true,
         stripeToken: 'Fake stripe token',
       },
       headers: authHeaders.user,
@@ -161,7 +161,7 @@ lab.experiment("TransactionItems", function () {
       url: `/transactions/tickets/${saleTIByType.ticketSale[0].itemId}/refund/route_pass`,
       payload: {
         targetAmt: ticketPrice,
-        creditTag: testTag,
+        tag: testTag,
       },
       headers: authHeaders.super,
     })
@@ -189,7 +189,7 @@ lab.experiment("TransactionItems", function () {
       url: `/transactions/route_passes/payment`,
       payload: {
         value: '5.00',
-        creditTag: testTag,
+        tag: testTag,
         stripeToken: await createStripeToken(),
         companyId,
       },
