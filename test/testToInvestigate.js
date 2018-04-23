@@ -199,7 +199,7 @@
 //       payload: {
 //         ticketId: saleTIByType.ticketSale[0].itemId,
 //         targetAmt: ticketPrice,
-//         creditTag: testTag
+//         tag: testTag
 //       },
 //       headers: authHeaders.super
 //     });

@@ -897,7 +897,7 @@ will not be refunded here, so we will make a net profit.`,
               ticketSale,
               company.id,
               ticket.userId,
-              creditTag
+              tag || creditTag
             )
 
             const [dbTransactionInstance] = await transactionBuilder.build({

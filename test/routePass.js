@@ -467,7 +467,7 @@ lab.experiment("Route Passes", function () {
         url: `/transactions/tickets/${refundedTicketItem.itemId}/refund/route_pass`,
         payload: {
           targetAmt: refundedTicketItem.credit,
-          creditTag: testTag,
+          tag: testTag,
         },
         headers: authHeaders.admin,
       })
@@ -530,7 +530,7 @@ lab.experiment("Route Passes", function () {
           alightStopId: trips[4].tripStops[4].id,
         }],
         stripeToken: 'Fake stripe token',
-        creditTag: testTag,
+        applyRoutePass: true,
       },
       headers: authHeaders.user,
     })
@@ -754,7 +754,7 @@ lab.experiment("Route Passes", function () {
         promoCode: {
           code,
         },
-        creditTag: testTag,
+        tag: testTag,
         stripeToken: await createStripeToken(),
         companyId: companyInstance.id,
       },
