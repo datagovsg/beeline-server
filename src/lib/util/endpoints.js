@@ -2,7 +2,12 @@ const Boom = require("boom")
 const _ = require("lodash")
 const assert = require("assert")
 
-const {NotFoundError, defaultErrorHandler, getDB, getModels} = require("../util/common")
+const {
+  NotFoundError,
+  defaultErrorHandler,
+  getDB,
+  getModels,
+} = require("../util/common")
 const auth = require("../core/auth")
 
 /**
@@ -55,9 +60,12 @@ const auth = require("../core/auth")
  *    handler: ...
  *  });
  */
-export const routeRequestsTo = (server, paths, config) => paths.forEach(path => {
-  server.route(_.merge({}, config, typeof path === 'string' ? { path } : path))
-})
+export const routeRequestsTo = (server, paths, config) =>
+  paths.forEach(path => {
+    server.route(
+      _.merge({}, config, typeof path === "string" ? { path } : path)
+    )
+  })
 
 /**
  * Wraps an array of callbacks into a HAPI handler.
@@ -108,34 +116,64 @@ export const routeRequestsTo = (server, paths, config) => paths.forEach(path => 
  */
 export const handleRequestWith = (...callbacks) => async (request, reply) => {
   const context = { db: getDB(request), models: getModels(request) }
-  return reply(Promise
-    .resolve(reduceCallbacksWith(request, request, context, callbacks))
-    .catch(defaultErrorHandler(response => response))
+  return reply(
+    Promise.resolve(
+      reduceCallbacksWith(request, request, context, callbacks)
+    ).catch(defaultErrorHandler(response => response))
   )
 }
 
-export const inSingleDBTransaction = (...callbacks) => (current, request, context) =>
-  context.db.transaction(transaction => reduceCallbacksWith(current, request, {...context, transaction}, callbacks))
+export const inSingleDBTransaction = (...callbacks) => (
+  current,
+  request,
+  context
+) =>
+  context.db.transaction(transaction =>
+    reduceCallbacksWith(
+      current,
+      request,
+      { ...context, transaction },
+      callbacks
+    )
+  )
 
-const reduceCallbacksWith = (initial, request, context, callbacks) => callbacks.reduce(
-  (current, callback) => current.then(val => callback(val, request, context)),
-  Promise.resolve(initial)
-)
+const reduceCallbacksWith = (initial, request, context, callbacks) =>
+  callbacks.reduce(
+    (current, callback) => current.then(val => callback(val, request, context)),
+    Promise.resolve(initial)
+  )
 
-export const authorizeByRole = (role, lookupId = (passthrough, request) => request.params.id) =>
-  (passthrough, request) => {
-    auth.assertAdminRole(request.auth.credentials, role, lookupId(passthrough, request))
-    return passthrough
-  }
-
-export const instToJSONOrNotFound = inst => inst ? inst.toJSON() : Boom.notFound()
-
-export const assertThat = (f, ErrorType, msg) => {
-  assert(Error.prototype.isPrototypeOf(new ErrorType()) && typeof ErrorType.assert === 'function')
-  return inst => { ErrorType.assert(f(inst), msg); return inst }
+export const authorizeByRole = (
+  role,
+  lookupId = (passthrough, request) => request.params.id
+) => (passthrough, request) => {
+  auth.assertAdminRole(
+    request.auth.credentials,
+    role,
+    lookupId(passthrough, request)
+  )
+  return passthrough
 }
 
-export const assertFound = assertThat(inst => inst, NotFoundError, 'Item not found')
+export const instToJSONOrNotFound = inst =>
+  inst ? inst.toJSON() : Boom.notFound()
+
+export const assertThat = (f, ErrorType, msg) => {
+  assert(
+    Error.prototype.isPrototypeOf(new ErrorType()) &&
+      typeof ErrorType.assert === "function"
+  )
+  return inst => {
+    ErrorType.assert(f(inst), msg)
+    return inst
+  }
+}
+
+export const assertFound = assertThat(
+  inst => inst,
+  NotFoundError,
+  "Item not found"
+)
 
 export const deleteInst = async inst => {
   if (inst) {
