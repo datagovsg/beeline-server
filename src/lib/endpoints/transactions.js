@@ -54,7 +54,7 @@ const INVALID_CREDIT_TAGS = [
 export const register = (server, options, next) => {
   routeRequestsTo(
     server,
-    ["/transactions/payment_ticket_sale", "/transactions/tickets/payment"],
+    ["/transactions/tickets/payment"],
     {
       method: "POST",
       config: {
@@ -394,7 +394,7 @@ export const register = (server, options, next) => {
 
   routeRequestsTo(
     server,
-    ["/transactions/ticket_sale", "/transactions/tickets/quote"],
+    ["/transactions/tickets/quote"],
     {
       method: "POST",
       config: {

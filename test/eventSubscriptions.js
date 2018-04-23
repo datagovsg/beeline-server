@@ -259,7 +259,7 @@ lab.experiment("Event subscriptions", function () {
     // Make a transaction that will fail
     await server.inject({
       method: 'POST',
-      url: '/transactions/payment_ticket_sale',
+      url: '/transactions/tickets/payment',
       payload: {
         trips: [
           {tripId: 1999,
