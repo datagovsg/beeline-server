@@ -78,9 +78,6 @@ export const register = (server, options, next) => {
                 .required(),
               options: Joi.object(),
             }).allow(null),
-            creditTag: Joi.string()
-              .optional()
-              .allow(null),
             applyRoutePass: Joi.boolean().default(false),
             applyReferralCredits: Joi.boolean().default(false),
             applyCredits: Joi.boolean().default(false),
@@ -118,7 +115,6 @@ export const register = (server, options, next) => {
           let [dbTxn, undoFn] = await prepareTicketSale([db, m], {
             trips: request.payload.trips,
             promoCode: request.payload.promoCode,
-            creditTag: request.payload.creditTag,
             applyRoutePass: request.payload.applyRoutePass,
             applyReferralCredits: request.payload.applyReferralCredits,
             applyCredits: request.payload.applyCredits,
@@ -281,9 +277,6 @@ export const register = (server, options, next) => {
           tag: Joi.string().description(
             "The tag of the route to purchase passes from"
           ),
-          creditTag: Joi.string().description(
-            "DEPRECATED. The tag of the route to purchase passes from"
-          ),
           companyId: Joi.number()
             .integer()
             .min(0)
@@ -330,7 +323,7 @@ export const register = (server, options, next) => {
           promoCode: request.payload.promoCode,
           value: request.payload.value,
           quantity: request.payload.quantity,
-          tag: request.payload.tag || request.payload.creditTag,
+          tag: request.payload.tag,
           companyId: request.payload.companyId,
           expectedPrice: request.payload.expectedPrice,
         })
@@ -419,9 +412,6 @@ export const register = (server, options, next) => {
                 alightStopId: Joi.number().integer(),
               })
             ),
-            creditTag: Joi.string()
-              .optional()
-              .allow(null),
             applyRoutePass: Joi.boolean().default(false),
             applyReferralCredits: Joi.boolean().default(false),
             applyCredits: Joi.boolean().default(false),
@@ -448,7 +438,6 @@ export const register = (server, options, next) => {
           let [preparedTransaction] = await prepareTicketSale([db, m], {
             trips: request.payload.trips,
             promoCode: request.payload.promoCode,
-            creditTag: request.payload.creditTag,
             applyRoutePass: request.payload.applyRoutePass,
             applyReferralCredits: request.payload.applyReferralCredits,
             applyCredits: request.payload.applyCredits,
@@ -713,12 +702,9 @@ will not be refunded here, so we will make a net profit.`,
               targetAmt: Joi.number()
                 .min(0)
                 .required(),
-              creditTag: Joi.string()
-                .disallow(INVALID_CREDIT_TAGS)
-                .optional(),
               tag: Joi.string()
                 .disallow(INVALID_CREDIT_TAGS)
-                .optional(),
+                .required(),
             }),
           },
         },
@@ -735,7 +721,7 @@ will not be refunded here, so we will make a net profit.`,
       async handler(request, reply) {
         let db = getDB(request)
         let m = getModels(request)
-        let { targetAmt, creditTag, tag } = request.payload
+        let { targetAmt, tag } = request.payload
         const ticketId = request.params.ticketId || request.payload.ticketId
 
         try {
@@ -760,7 +746,7 @@ will not be refunded here, so we will make a net profit.`,
             const tags = _.difference(route.tags, INVALID_CREDIT_TAGS)
 
             TransactionError.assert(
-              tags.includes(tag || creditTag),
+              tags.includes(tag),
               "The tag provided does not belong to the selected route"
             )
 
@@ -897,7 +883,7 @@ will not be refunded here, so we will make a net profit.`,
               ticketSale,
               company.id,
               ticket.userId,
-              tag || creditTag
+              tag
             )
 
             const [dbTransactionInstance] = await transactionBuilder.build({

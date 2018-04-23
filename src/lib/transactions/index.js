@@ -104,10 +104,6 @@ export async function prepareTicketSale(connection, optionsRaw) {
       .allow(null)
       .default(null),
 
-    creditTag: Joi.string()
-      .allow(null)
-      .optional(),
-
     dryRun: Joi.boolean().default(false),
     applyRoutePass: Joi.boolean().default(false),
     applyReferralCredits: Joi.boolean().default(false),
@@ -179,16 +175,12 @@ export async function prepareTicketSale(connection, optionsRaw) {
         // 2. Sanity checks on input
         runOrderChecks(transactionBuilder, options.checks)
 
-        if (options.applyRoutePass || options.creditTag) {
-          const routePassTags = options.creditTag
-            ? [options.creditTag]
-            : options.applyRoutePass
-              ? await routePassTagsFrom(
-                  transactionBuilder.items,
-                  transactionBuilder.models,
-                  transactionBuilder.transaction
-                )
-              : []
+        if (options.applyRoutePass) {
+          const routePassTags = await routePassTagsFrom(
+            transactionBuilder.items,
+            transactionBuilder.models,
+            transactionBuilder.transaction
+          )
           // If both crowdstart over rp tags are present on a route,
           // crowdstart will discount first through alphabetical order
           for (const tag of routePassTags) {
