@@ -715,7 +715,10 @@ will not be refunded here, so we will make a net profit.`,
                 .required(),
               creditTag: Joi.string()
                 .disallow(INVALID_CREDIT_TAGS)
-                .required(),
+                .optional(),
+              tag: Joi.string()
+                .disallow(INVALID_CREDIT_TAGS)
+                .optional(),
             }),
           },
         },
@@ -732,7 +735,7 @@ will not be refunded here, so we will make a net profit.`,
       async handler(request, reply) {
         let db = getDB(request)
         let m = getModels(request)
-        let { targetAmt, creditTag } = request.payload
+        let { targetAmt, creditTag, tag } = request.payload
         const ticketId = request.params.ticketId || request.payload.ticketId
 
         try {
@@ -757,7 +760,7 @@ will not be refunded here, so we will make a net profit.`,
             const tags = _.difference(route.tags, INVALID_CREDIT_TAGS)
 
             TransactionError.assert(
-              tags.includes(creditTag),
+              tags.includes(tag || creditTag),
               "The tag provided does not belong to the selected route"
             )
 
