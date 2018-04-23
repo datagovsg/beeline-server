@@ -7,14 +7,17 @@ import Lab from "lab"
 import _ from 'lodash'
 import querystring from 'querystring'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("TransactionItems", function () {
-  var userInstance, companyInstance, routeInstance, trips
-  var authHeaders = {}
+  let userInstance
+  let companyInstance
+  let routeInstance
+  let trips
+  let authHeaders = {}
   const ticketPrice = '5.00'
   const ticketsBought = 5
-  var testTag
+  let testTag
 
   lab.before({timeout: 30000}, async function () {
     ({userInstance, companyInstance, routeInstance, tripInstances: trips} =
@@ -23,19 +26,19 @@ lab.experiment("TransactionItems", function () {
     testTag = `rp-${Date.now()}`
 
     await routeInstance.update({
-      tags: [testTag]
+      tags: [testTag],
     })
 
-    var userToken = (await loginAs("user", userInstance.id)).result.sessionToken
+    let userToken = (await loginAs("user", userInstance.id)).result.sessionToken
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund', 'manage-routes', 'issue-tickets', 'view-transactions']
+      permissions: ['refund', 'manage-routes', 'issue-tickets', 'view-transactions'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
-    var superToken = (await loginAs('superadmin')).result.sessionToken
+    let superToken = (await loginAs('superadmin')).result.sessionToken
     authHeaders.super = { authorization: 'Bearer ' + superToken }
 
     // Set up pre-made transactions:
@@ -51,7 +54,7 @@ lab.experiment("TransactionItems", function () {
 
     // Create the user credits
     await m.RoutePass.destroy({
-      where: {userId, tag: testTag}
+      where: {userId, tag: testTag},
     })
 
     await server.inject({
@@ -62,7 +65,7 @@ lab.experiment("TransactionItems", function () {
         userId: userInstance.id,
         routeId: routeInstance.id,
         quantity: 2,
-        tag: testTag
+        tag: testTag,
       },
       headers: authHeaders.admin,
     })
@@ -101,7 +104,7 @@ lab.experiment("TransactionItems", function () {
         applyRoutePass: true,
         stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse1.statusCode).to.equal(200)
 
@@ -115,7 +118,7 @@ lab.experiment("TransactionItems", function () {
         creditTag: testTag,
         stripeToken: 'Fake stripe token',
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(failedSaleResponse.statusCode).to.equal(402)
 
@@ -129,7 +132,7 @@ lab.experiment("TransactionItems", function () {
         applyRoutePass: true,
         stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse2.statusCode).to.equal(200)
 
@@ -142,7 +145,7 @@ lab.experiment("TransactionItems", function () {
         trips: purchaseItems3,
         stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse3.statusCode).to.equal(200)
 
@@ -158,24 +161,24 @@ lab.experiment("TransactionItems", function () {
       url: `/transactions/tickets/${saleTIByType.ticketSale[0].itemId}/refund/route_pass`,
       payload: {
         targetAmt: ticketPrice,
-        creditTag: testTag
+        creditTag: testTag,
       },
-      headers: authHeaders.super
+      headers: authHeaders.super,
     })
     expect(refundResponse.statusCode).to.equal(200)
 
     await new Promise(resolve => setTimeout(resolve, 1000))
 
-    var compensationResponse = await server.inject({
+    let compensationResponse = await server.inject({
       method: "POST",
       url: "/transactions/route_passes/issue_free",
       payload: {
         description: 'Issue 1 Free Pass',
         userId,
         routeId: routeInstance.id,
-        tag: testTag
+        tag: testTag,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(compensationResponse.statusCode).to.equal(200)
 
@@ -188,9 +191,9 @@ lab.experiment("TransactionItems", function () {
         value: '5.00',
         creditTag: testTag,
         stripeToken: await createStripeToken(),
-        companyId
+        companyId,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(purchaseResponse.statusCode).equal(200)
 
@@ -205,7 +208,7 @@ lab.experiment("TransactionItems", function () {
     const txnResponse = await server.inject({
       method: 'GET',
       url: `/companies/${companyId}/transaction_items/route_passes`,
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(txnResponse.statusCode).equal(200)
 
@@ -228,14 +231,14 @@ lab.experiment("TransactionItems", function () {
     const csvResponse = await server.inject({
       method: 'GET',
       url: `/companies/${companyId}/transaction_items/route_passes?format=csvdump`,
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(csvResponse.statusCode).equal(200)
 
     const userResponse = await server.inject({
       method: 'GET',
       url: `/companies/${companyId}/transaction_items/route_passes`,
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(userResponse.statusCode).equal(403)
 
@@ -249,13 +252,13 @@ lab.experiment("TransactionItems", function () {
   lab.test('Summary for routePass transactions', {timeout: 20000}, async function () {
     const companyId = companyInstance.id
 
-    async function getSummary (queryOptions = {}) {
+    const getSummary = async function getSummary (queryOptions = {}) {
       const queryString = querystring.stringify(queryOptions)
 
       const txnResponse = await server.inject({
         method: 'GET',
         url: `/companies/${companyId}/transaction_items/route_passes/summary?` + queryString,
-        headers: authHeaders.admin
+        headers: authHeaders.admin,
       })
 
       expect(txnResponse.statusCode).equal(200)
@@ -277,7 +280,7 @@ lab.experiment("TransactionItems", function () {
     const userResponse = await server.inject({
       method: 'GET',
       url: `/companies/${companyId}/transaction_items/route_passes/summary`,
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(userResponse.statusCode).equal(403)
   })
