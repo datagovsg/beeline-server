@@ -89,7 +89,7 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload: {
         value: 50,
-        creditTag: 'TESTTAG',
+        tag: 'TESTTAG',
         companyId: companyInstance.id,
 
         customerId: customerInfo.id,
@@ -140,7 +140,7 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload: {
         value: 50,
-        creditTag: 'TESTTAG',
+        tag: 'TESTTAG',
         companyId: companyInstance.id,
         expectedPrice: 46,
         customerId: customerInfo.id,
@@ -161,7 +161,7 @@ lab.experiment("Integration with route pass transaction", function () {
 
     const payload = {
       value: 50,
-      creditTag: 'TESTTAG',
+      tag: 'TESTTAG',
       companyId: companyInstance.id,
 
       customerId: customerInfo.id,
@@ -243,7 +243,7 @@ lab.experiment("Integration with route pass transaction", function () {
 
     const payload = {
       value: 50,
-      creditTag: 'TESTTAG',
+      tag: 'TESTTAG',
       companyId: companyInstance.id,
 
       customerId: customerInfo.id,
@@ -297,12 +297,12 @@ lab.experiment("Integration with route pass transaction", function () {
       },
     })
 
-    const creditTag = 'rp-1337'
-    await routeInstance.update({ tags: ['TESTTAG', creditTag] })
+    const tag = 'rp-1337'
+    await routeInstance.update({ tags: ['TESTTAG', tag] })
 
     const payload = {
       value: 50,
-      creditTag,
+      tag,
       companyId: companyInstance.id,
 
       customerId: customerInfo.id,
@@ -330,7 +330,7 @@ lab.experiment("Integration with route pass transaction", function () {
     expect(saleResponse.result.description).include(items.discount[0].debit)
 
     const routePasses = await models.RoutePass.findAll({
-      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag },
+      where: { userId: userInstance.id, companyId: companyInstance.id, tag },
     })
     expect(routePasses.length).equal(10)
   })
@@ -366,12 +366,12 @@ lab.experiment("Integration with route pass transaction", function () {
       },
     })
 
-    const creditTag = 'TESTTAG'
-    await routeInstance.update({ tags: [creditTag] })
+    const tag = 'TESTTAG'
+    await routeInstance.update({ tags: [tag] })
 
     const payload = {
       value: 50,
-      creditTag,
+      tag,
       companyId: companyInstance.id,
 
       customerId: customerInfo.id,
@@ -417,7 +417,7 @@ lab.experiment("Integration with route pass transaction", function () {
     expect(saleResponse2.result.description).include(items.discount[0].debit)
 
     const routePasses = await models.RoutePass.findAll({
-      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag },
+      where: { userId: userInstance.id, companyId: companyInstance.id, tag },
     })
     expect(routePasses.length).equal(30)
   })
@@ -460,12 +460,12 @@ lab.experiment("Integration with route pass transaction", function () {
       },
     })
 
-    const creditTag = 'TESTTAG'
-    await routeInstance.update({ tags: [creditTag] })
+    const tag = 'TESTTAG'
+    await routeInstance.update({ tags: [tag] })
 
     const payload = {
       value: 50,
-      creditTag,
+      tag,
       companyId: companyInstance.id,
 
       customerId: customerInfo.id,
@@ -511,7 +511,7 @@ lab.experiment("Integration with route pass transaction", function () {
     expect(saleResponse2.result.description).include(items.discount[0].debit)
 
     const routePasses = await models.RoutePass.findAll({
-      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag },
+      where: { userId: userInstance.id, companyId: companyInstance.id, tag },
     })
     expect(routePasses.length).equal(30)
   })

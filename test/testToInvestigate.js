@@ -146,7 +146,7 @@
 //       url: "/transactions/tickets/payment",
 //       payload: {
 //         trips: purchaseItems1,
-//         creditTag: testTag,
+//         applyRoutePass: true,
 //         stripeToken: await createStripeToken(),
 //       },
 //       headers: authHeaders.user
@@ -158,7 +158,7 @@
 //       url: "/transactions/tickets/payment",
 //       payload: {
 //         trips: purchaseItems2,
-//         creditTag: testTag,
+//         applyRoutePass: true,
 //         stripeToken: 'Fake stripe token',
 //       },
 //       headers: authHeaders.user
@@ -170,7 +170,7 @@
 //       url: "/transactions/tickets/payment",
 //       payload: {
 //         trips: purchaseItems2,
-//         creditTag: testTag,
+//         applyRoutePass: true,
 //         stripeToken: await createStripeToken(),
 //       },
 //       headers: authHeaders.user
@@ -224,7 +224,7 @@
 //       url: `/transactions/route_passes/payment`,
 //       payload: {
 //         value: '5.00',
-//         creditTag: testTag,
+//         tag: testTag,
 //         stripeToken: await createStripeToken(),
 //         companyId
 //       },

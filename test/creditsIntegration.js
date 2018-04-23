@@ -235,7 +235,7 @@ lab.experiment("Credits integration test", function () {
         trips: poItems1,
         stripeToken: await createStripeToken(),
         applyCredits: true,
-        creditTag: testTag,
+        applyRoutePass: true,
         promoCode: { code: promoCode, options: {} },
       },
       headers: authHeaders.user,
