@@ -1,7 +1,7 @@
 const {db, models: m} = require('../src/lib/core/dbschema')()
 const {
   resetTripInstances, loginAs,
-  randomEmail, randomString, createStripeToken
+  randomEmail, createStripeToken,
 } = require("./test_common")
 import {expect, fail} from "code"
 import server from "../src/index"
@@ -11,23 +11,27 @@ import {createUsersCompaniesRoutesAndTrips, createTripInstancesFrom} from './tes
 import {initBuilderWithTicketSale, TransactionBuilder} from '../src/lib/transactions/builder'
 import * as ReferralCredits from '../src/lib/promotions/ReferralProgram'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("ReferralCredits", function () {
-  var userInstance, companyInstance, routeInstance, stopInstances, tripInstances
-  var templates
+  let userInstance
+  let companyInstance
+  let routeInstance
+  let stopInstances
+  let tripInstances
+  let templates
   const authHeaders = {}
 
   lab.before({timeout: 15000}, async function () {
     ({userInstance, companyInstance, routeInstance, tripInstances, stopInstances} =
         await createUsersCompaniesRoutesAndTrips(m))
 
-    var userToken = (await loginAs("user", userInstance.id)).result.sessionToken
+    let userToken = (await loginAs("user", userInstance.id)).result.sessionToken
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund']
+      permissions: ['refund'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
@@ -39,41 +43,41 @@ lab.experiment("ReferralCredits", function () {
             tripId: tripInstances[0].id,
             boardStopId: tripInstances[0].tripStops[0].id,
             alightStopId: tripInstances[0].tripStops[2].id,
-            userId: userInstance.id
+            userId: userInstance.id,
           },
           ticket: {id: 0},
           price: tripInstances[0].price,
-          trip: tripInstances[0]
+          trip: tripInstances[0],
         },
         {
           item: {
             tripId: tripInstances[1].id,
             boardStopId: tripInstances[1].tripStops[0].id,
             alightStopId: tripInstances[1].tripStops[2].id,
-            userId: userInstance.id
+            userId: userInstance.id,
           },
           ticket: {id: 1},
           price: tripInstances[1].price,
-          trip: tripInstances[1]
+          trip: tripInstances[1],
         },
         {
           item: {
             tripId: tripInstances[2].id,
             boardStopId: tripInstances[2].tripStops[0].id,
             alightStopId: tripInstances[2].tripStops[2].id,
-            userId: userInstance.id
+            userId: userInstance.id,
           },
           ticket: {id: 2},
           price: tripInstances[2].price,
-          trip: tripInstances[2]
-        }
+          trip: tripInstances[2],
+        },
       ],
       promoParams: {
         qualifyingCriteria: [
           {type: 'limitByCompany', params: {companyId: companyInstance.id}},
           {type: 'limitByRoute', params: {routeIds: [routeInstance.id]}},
         ],
-      }
+      },
     }
   })
 
@@ -85,13 +89,13 @@ lab.experiment("ReferralCredits", function () {
   lab.afterEach(async () => resetTripInstances(m, tripInstances))
 
   lab.test('Adding/subtracting of credits', {timeout: 20000}, async function () {
-    var userInst = await m.User.create({telephone: randomEmail()})
+    let userInst = await m.User.create({telephone: randomEmail()})
 
     // Test within a transaction
     await db.transaction({
       isolationLevel: 'SERIALIZABLE',
     }, async (t) => {
-      var initialCredit = await m.ReferralCredit.getReferralCredits(userInst.id, {transaction: t})
+      let initialCredit = await m.ReferralCredit.getReferralCredits(userInst.id, {transaction: t})
 
       expect(initialCredit).equal('0.00')
 
@@ -143,16 +147,16 @@ lab.experiment("ReferralCredits", function () {
   })
 
   lab.test('Referral Credits work as part of a purchase order', async function () {
-    var userId = userInstance.id
+    let userId = userInstance.id
 
     // Create the user credits
     await m.ReferralCredit.destroy({
-      where: {userId}
+      where: {userId},
     })
     // $5 credit...
     await m.ReferralCredit.create({
       userId,
-      balance: '5.00'
+      balance: '5.00',
     })
 
     const poItems = templates.items.map(it => it.item)
@@ -186,16 +190,16 @@ lab.experiment("ReferralCredits", function () {
 
   // FIXME: test the transactionBuilder
   lab.test('Referral Credits work as part of a purchase order (2) -- full subsidy', async function () {
-    var userId = userInstance.id
+    let userId = userInstance.id
 
     // Create the user credits
     await m.ReferralCredit.destroy({
-      where: {userId}
+      where: {userId},
     })
     // $5 credit...
     await m.ReferralCredit.create({
       userId,
-      balance: '1000.00'
+      balance: '1000.00',
     })
 
     const poItems = templates.items.map(it => it.item)
@@ -228,17 +232,17 @@ lab.experiment("ReferralCredits", function () {
   // Expect total discounted (~6.3000001) > balance (6.30)
   // Expect final balance in credits = 0 after deduction
   lab.test('Credits is able to deal with floating point discrepancies (totalDiscounted > creditBalance)', async function () {
-    var userId = userInstance.id
+    let userId = userInstance.id
 
     // Create the user credits
     await m.ReferralCredit.destroy({
       where: {
         userId,
-      }
+      },
     })
     await m.ReferralCredit.create({
       userId,
-      balance: '6.30'
+      balance: '6.30',
     })
 
     const trips = await createTripInstancesFrom(
@@ -253,33 +257,33 @@ lab.experiment("ReferralCredits", function () {
           tripId: trips[0].id,
           boardStopId: trips[0].tripStops[0].id,
           alightStopId: trips[0].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 0},
         price: trips[0].price,
-        trip: trips[0]
+        trip: trips[0],
       },
       {
         item: {
           tripId: trips[1].id,
           boardStopId: trips[1].tripStops[0].id,
           alightStopId: trips[1].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 1},
         price: trips[1].price,
-        trip: trips[1]
+        trip: trips[1],
       },
       {
         item: {
           tripId: trips[2].id,
           boardStopId: trips[2].tripStops[0].id,
           alightStopId: trips[2].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 2},
         price: trips[2].price,
-        trip: trips[2]
+        trip: trips[2],
       },
     ]
 
@@ -302,17 +306,17 @@ lab.experiment("ReferralCredits", function () {
   // Expect total discounted (~7.1999999) < balance (7.20)
   // Expect final balance in credits = 0 after deduction
   lab.test('Credits is able to deal with floating point discrepancies (totalDiscounted < creditBalance)', async function () {
-    var userId = userInstance.id
+    let userId = userInstance.id
 
     // Create the user credits
     await m.ReferralCredit.destroy({
       where: {
         userId,
-      }
+      },
     })
     await m.ReferralCredit.create({
       userId,
-      balance: '7.20'
+      balance: '7.20',
     })
 
     const trips = await createTripInstancesFrom(
@@ -327,33 +331,33 @@ lab.experiment("ReferralCredits", function () {
           tripId: trips[0].id,
           boardStopId: trips[0].tripStops[0].id,
           alightStopId: trips[0].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 0},
         price: trips[0].price,
-        trip: trips[0]
+        trip: trips[0],
       },
       {
         item: {
           tripId: trips[1].id,
           boardStopId: trips[1].tripStops[0].id,
           alightStopId: trips[1].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 1},
         price: trips[1].price,
-        trip: trips[1]
+        trip: trips[1],
       },
       {
         item: {
           tripId: trips[2].id,
           boardStopId: trips[2].tripStops[0].id,
           alightStopId: trips[2].tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: 2},
         price: trips[2].price,
-        trip: trips[2]
+        trip: trips[2],
       },
     ]
 
@@ -375,12 +379,12 @@ lab.experiment("ReferralCredits", function () {
 
     // Create the user credits
     await m.ReferralCredit.destroy({
-      where: {userId}
+      where: {userId},
     })
     // $5 credit...
     await m.ReferralCredit.create({
       userId,
-      balance: '5.00'
+      balance: '5.00',
     })
 
     const purchaseItems = [{
@@ -413,7 +417,7 @@ lab.experiment("ReferralCredits", function () {
         stripeToken: await createStripeToken(),
         applyReferralCredits: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
 
     const saleResponse = await server.inject({
@@ -451,12 +455,12 @@ lab.experiment("ReferralCredits", function () {
 
     // Create the user credits
     await m.ReferralCredit.destroy({
-      where: {userId}
+      where: {userId},
     })
     // $5 credit...
     await m.ReferralCredit.create({
       userId,
-      balance: '5.00'
+      balance: '5.00',
     })
 
     const saleResponse = await server.inject({
@@ -487,7 +491,7 @@ lab.experiment("ReferralCredits", function () {
         stripeToken: 'Fake stripe token',
         applyReferralCredits: true,
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(402)
 
@@ -498,25 +502,26 @@ lab.experiment("ReferralCredits", function () {
     expect(userInstance).exist()
 
     // Ensure accounts exist
-    var [accountInst] = await m.Account.findOrCreate({
+    let [accountInst] = await m.Account.findOrCreate({
       where: {name: 'Credits Expense'},
-      defaults: {name: 'Credits Expense'}
+      defaults: {name: 'Credits Expense'},
     })
 
     expect(accountInst).exist()
 
     const initialCredit = parseFloat(await m.ReferralCredit.getReferralCredits(userInstance.id))
-    var creditInst = await m.ReferralCredit.findById(userInstance.id)
+    let creditInst = await m.ReferralCredit.findById(userInstance.id)
 
     expect(creditInst).exist()
 
     // define variables
     const amtExchanged = 29.99
-    var expensesAccount = {itemType: 'account', itemId: accountInst.id}
-    var referralCreditAccount = {itemType: 'referralCredits', itemId: userInstance.id}
+    let expensesAccount = {itemType: 'account', itemId: accountInst.id}
+    let referralCreditAccount = {itemType: 'referralCredits', itemId: userInstance.id}
     let description = "Test moveCredits - add"
 
-    let tb, txnInst
+    let tb
+    let txnInst
 
     await db.transaction(async (transaction) => {
       tb = new TransactionBuilder({
@@ -544,26 +549,26 @@ lab.experiment("ReferralCredits", function () {
     expect(creditInst.balance).equal((initialCredit + amtExchanged).toFixed(2))
 
     // check if transaction entry, and transactionItem entries, are created correctly
-    var transactionInst = await m.Transaction.find({
+    let transactionInst = await m.Transaction.find({
       where: {
-        id: txnInst.id
+        id: txnInst.id,
       },
-      include: [m.TransactionItem]
+      include: [m.TransactionItem],
     })
 
     expect(transactionInst).exist()
 
-    var transactionItems = transactionInst.transactionItems
+    let transactionItems = transactionInst.transactionItems
 
     expect(transactionItems.length).equal(2)
 
-    var deductionInst = transactionItems.find(it => it.itemType === 'account')
+    let deductionInst = transactionItems.find(it => it.itemType === 'account')
 
     expect(deductionInst).exist()
     expect(deductionInst.itemId).equal(accountInst.id)
     expect(deductionInst.debit).equal((amtExchanged).toString())
 
-    var additionInst = transactionItems.find(it => it.itemType === 'referralCredits')
+    let additionInst = transactionItems.find(it => it.itemType === 'referralCredits')
 
     expect(additionInst).exist()
     expect(additionInst.itemId).equal(userInstance.id)
@@ -601,9 +606,9 @@ lab.experiment("ReferralCredits", function () {
     // check if transaction entry, and transactionItem entries, are created correctly
     transactionInst = await m.Transaction.find({
       where: {
-        id: txnInst.id
+        id: txnInst.id,
       },
-      include: [m.TransactionItem]
+      include: [m.TransactionItem],
     })
 
     expect(transactionInst).exist()
@@ -629,26 +634,26 @@ lab.experiment("ReferralCredits", function () {
     expect(userInstance).exist()
 
     // Ensure accounts exist
-    var [accountInst] = await m.Account.findOrCreate({
+    let [accountInst] = await m.Account.findOrCreate({
       where: {name: 'Credits distributed'},
-      defaults: {name: 'Credits distributed'}
+      defaults: {name: 'Credits distributed'},
     })
 
     expect(accountInst).exist()
 
-    var initialCredit = parseFloat(await m.ReferralCredit.getReferralCredits(userInstance.id))
-    var creditInst = await m.ReferralCredit.findById(userInstance.id)
+    let initialCredit = parseFloat(await m.ReferralCredit.getReferralCredits(userInstance.id))
+    let creditInst = await m.ReferralCredit.findById(userInstance.id)
 
     expect(creditInst).exist()
 
     // define variables
     const amtExchanged = 29.99
-    var expensesAccount = {itemType: 'account', itemId: accountInst.id}
-    var referralCreditAccount = {itemType: 'referralCredits', itemId: userInstance.id}
+    let expensesAccount = {itemType: 'account', itemId: accountInst.id}
+    let referralCreditAccount = {itemType: 'referralCredits', itemId: userInstance.id}
     const description = "Test moveCredits - in txn"
 
-    var transactionItemCount = (await m.TransactionItem.findAll({
-      attributes: [[db.fn('COUNT', db.col('id')), 'total']]
+    let transactionItemCount = (await m.TransactionItem.findAll({
+      attributes: [[db.fn('COUNT', db.col('id')), 'total']],
     }))[0].get('total')
 
     await db.transaction({
@@ -677,27 +682,27 @@ lab.experiment("ReferralCredits", function () {
       expect(creditInst.balance).equal((initialCredit + amtExchanged).toFixed(2))
 
       // check if transaction and transactionItem entries are created correctly
-      var transactionInst = await m.Transaction.find({
+      let transactionInst = await m.Transaction.find({
         where: {
-          id: txnInstance.id
+          id: txnInstance.id,
         },
         include: [m.TransactionItem],
-        transaction: t
+        transaction: t,
       })
 
       expect(transactionInst).exist()
 
-      var transactionItems = transactionInst.transactionItems
+      let transactionItems = transactionInst.transactionItems
 
       expect(transactionItems.length).equal(2)
 
-      var deductionInst = transactionItems.find(it => it.itemType === 'account')
+      let deductionInst = transactionItems.find(it => it.itemType === 'account')
 
       expect(deductionInst).exist()
       expect(deductionInst.itemId).equal(accountInst.id)
       expect(deductionInst.debit).equal((amtExchanged).toString())
 
-      var additionInst = transactionItems.find(it => it.itemType === 'referralCredits')
+      let additionInst = transactionItems.find(it => it.itemType === 'referralCredits')
 
       expect(additionInst).exist()
       expect(additionInst.itemId).equal(userInstance.id)
@@ -713,50 +718,50 @@ lab.experiment("ReferralCredits", function () {
     expect(await m.ReferralCredit.getReferralCredits(userInstance.id)).equal(initialCredit.toFixed(2))
 
     expect((await m.TransactionItem.findAll({
-      attributes: [[db.fn('COUNT', db.col('id')), 'total']]
+      attributes: [[db.fn('COUNT', db.col('id')), 'total']],
     }))[0].get('total')).equal(transactionItemCount)
   })
 
   lab.test("Test endpoint for GET referral credits", {timeout: 10000}, async () => {
     const userId = userInstance.id
-    var userInst = await m.User.create({telephone: randomEmail()})
+    let userInst = await m.User.create({telephone: randomEmail()})
     // Create the route credits
     await m.ReferralCredit.destroy({
-      where: {userId}
+      where: {userId},
     })
     // $5 credit...
     await m.ReferralCredit.create({
       userId,
-      balance: '5.00'
+      balance: '5.00',
     })
     // Clear credits for 2nd user instance
     await m.ReferralCredit.destroy({
-      where: {userId: userInst.id}
+      where: {userId: userInst.id},
     })
 
     const noAuthResponse = await server.inject({
       method: "GET",
-      url: "/user/referralCredits"
+      url: "/user/referralCredits",
     })
 
     const wrongAuthResponse = await server.inject({
       method: "GET",
       url: "/user/referralCredits",
-      headers: {authorization: _.get(authHeaders, 'user.authorization') + "xy21"}
+      headers: {authorization: _.get(authHeaders, 'user.authorization') + "xy21"},
     })
 
     const successNoCreditsResponse = await server.inject({
       method: "GET",
       url: "/user/referralCredits",
       headers: {
-        authorization: `Bearer ${userInst.makeToken()}`
-      }
+        authorization: `Bearer ${userInst.makeToken()}`,
+      },
     })
 
     const successResponse = await server.inject({
       method: "GET",
       url: "/user/referralCredits",
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
 
     expect(noAuthResponse.statusCode).to.equal(403)
@@ -770,17 +775,17 @@ lab.experiment("ReferralCredits", function () {
   })
 
   lab.test('Referral Credits - Correct TransactionItems are created on Purchase', async function () {
-    var userId = userInstance.id
+    let userId = userInstance.id
     const creditAmt = '20.00'
 
     // Create the user credits
     await m.ReferralCredit.destroy({
-      where: {userId}
+      where: {userId},
     })
     // $5 credit...
     await m.ReferralCredit.create({
       userId,
-      balance: creditAmt
+      balance: creditAmt,
     })
 
     const poItems = templates.items.map(it => it.item)
@@ -792,27 +797,27 @@ lab.experiment("ReferralCredits", function () {
     const finalized = await withCredits.finalizeForPayment(companyInstance.id)
     const [txnInstance] = await finalized.build()
 
-    var transactionInst = await m.Transaction.find({
+    let transactionInst = await m.Transaction.find({
       where: {
-        id: txnInstance.id
+        id: txnInstance.id,
       },
       include: [m.TransactionItem],
-      transaction: transactionBuilder.transaction
+      transaction: transactionBuilder.transaction,
     })
 
     expect(transactionInst).exist()
 
-    var transactionItems = transactionInst.transactionItems
+    let transactionItems = transactionInst.transactionItems
 
     expect(transactionItems.length).equal(8)
 
-    var accountInst = await m.Account.find({
+    let accountInst = await m.Account.find({
       where: {
-        name: 'Cost of Goods Sold'
-      }
+        name: 'Cost of Goods Sold',
+      },
     })
 
-    var transactionItemsByType = _.groupBy(transactionItems, ti => ti.itemType)
+    let transactionItemsByType = _.groupBy(transactionItems, ti => ti.itemType)
 
     const totalCOGS = _.sum(withCredits.transactionItemsByType.ticketSale.map(i => parseFloat(i.credit)))
 
@@ -821,7 +826,7 @@ lab.experiment("ReferralCredits", function () {
     expect(transactionItemsByType.account[0].itemId).equal(accountInst.id)
     expect(transactionItemsByType.account[0].debit).equal((totalCOGS).toString())
 
-    var creditsUsed = Math.min(creditAmt, totalCOGS / 2).toString()
+    let creditsUsed = Math.min(creditAmt, totalCOGS / 2).toString()
 
     expect(transactionItemsByType.referralCredits).exist()
     expect(transactionItemsByType.referralCredits.length).equal(1)
@@ -833,7 +838,7 @@ lab.experiment("ReferralCredits", function () {
     expect(transactionItemsByType.payables[0].itemId).equal(companyInstance.id)
     expect(transactionItemsByType.payables[0].debit).equal('-' + creditsUsed)
 
-    var amtDue = totalCOGS - parseFloat(creditsUsed)
+    let amtDue = totalCOGS - parseFloat(creditsUsed)
 
     expect(transactionItemsByType.payment).exist()
     expect(transactionItemsByType.payment.length).equal(1)
