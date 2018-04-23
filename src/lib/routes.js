@@ -13,7 +13,6 @@ module.exports = (server, options, next) => {
       require("./endpoints/onemap"),
       require("./endpoints/eventSubscriptions"),
       require("./endpoints/promotions"),
-      require("./endpoints/regions"),
       require("./endpoints/liteRoutes"),
       require("./endpoints/routes"),
       require("./endpoints/stops"),
