@@ -13,14 +13,14 @@ const stripe = Payment.stripe
 const {models} = require("../src/lib/core/dbschema")()
 
 lab.experiment("Integration with route pass transaction", function () {
-  var userInstance
-  var authHeaders = {}
+  let userInstance
+  let authHeaders = {}
 
-  var companyInstance
-  var routeInstance
-  var customerInfo
-  var stopInstances = []
-  var tripInstances = []
+  let companyInstance
+  let routeInstance
+  let customerInfo
+  let stopInstances = []
+  let tripInstances = []
 
   lab.beforeEach(() => models.RoutePass.destroy({ truncate: true }))
   lab.afterEach(async () => resetTripInstances(models, tripInstances))
@@ -29,21 +29,21 @@ lab.experiment("Integration with route pass transaction", function () {
     ({userInstance, companyInstance, tripInstances, stopInstances, routeInstance} =
       await testData.createUsersCompaniesRoutesAndTrips(models))
 
-    var userToken = userInstance.makeToken()
+    let userToken = userInstance.makeToken()
     authHeaders.user = {authorization: "Bearer " + userToken}
 
     const stripeToken = await createStripeToken()
     const c = await stripe.customers.create({
       source: stripeToken,
       metadata: {
-        userId: userInstance.id
-      }
+        userId: userInstance.id,
+      },
     })
     customerInfo = await stripe.customers.retrieve(c.id)
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund']
+      permissions: ['refund'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
@@ -55,20 +55,20 @@ lab.experiment("Integration with route pass transaction", function () {
         "description": "For test",
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.1}
+          "params": {"rate": 0.1},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     await routeInstance.update({ tags: ['public', promotion.params.tag] })
     await Promise.all(tripInstances.map(t => t.update({ price: '5' })))
@@ -96,10 +96,10 @@ lab.experiment("Integration with route pass transaction", function () {
         sourceId: customerInfo.sources.data[0].id,
         promoCode: {
           code: 'TEST PROMO',
-          options: {}
+          options: {},
         },
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -120,20 +120,20 @@ lab.experiment("Integration with route pass transaction", function () {
         "description": "Bad promo",
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.1}
+          "params": {"rate": 0.1},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     const saleResponse = await server.inject({
       method: "POST",
@@ -147,10 +147,10 @@ lab.experiment("Integration with route pass transaction", function () {
         sourceId: customerInfo.sources.data[0].id,
         promoCode: {
           code: 'TEST PROMO',
-          options: {}
+          options: {},
         },
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(400)
     await cleanlyDeletePromotions({code: 'TEST PROMO'})
@@ -168,7 +168,7 @@ lab.experiment("Integration with route pass transaction", function () {
       sourceId: customerInfo.sources.data[0].id,
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -177,8 +177,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
 
     expect(saleResponse.statusCode).equal(200)
@@ -202,20 +202,20 @@ lab.experiment("Integration with route pass transaction", function () {
         "description": "Bad promo",
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.1}
+          "params": {"rate": 0.1},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     await models.Promotion.create({
@@ -225,20 +225,20 @@ lab.experiment("Integration with route pass transaction", function () {
         "description": "Better promo",
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.2}
+          "params": {"rate": 0.2},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const payload = {
@@ -250,7 +250,7 @@ lab.experiment("Integration with route pass transaction", function () {
       sourceId: customerInfo.sources.data[0].id,
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -259,8 +259,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -281,20 +281,20 @@ lab.experiment("Integration with route pass transaction", function () {
         "description": "Better promo",
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.2}
+          "params": {"rate": 0.2},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const creditTag = 'rp-1337'
@@ -309,7 +309,7 @@ lab.experiment("Integration with route pass transaction", function () {
       sourceId: customerInfo.sources.data[0].id,
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -318,8 +318,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -330,7 +330,7 @@ lab.experiment("Integration with route pass transaction", function () {
     expect(saleResponse.result.description).include(items.discount[0].debit)
 
     const routePasses = await models.RoutePass.findAll({
-      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag }
+      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag },
     })
     expect(routePasses.length).equal(10)
   })
@@ -345,25 +345,25 @@ lab.experiment("Integration with route pass transaction", function () {
         "description": "Better promo",
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "tieredRateByTotalValue",
           "params": {
             "schedule": [
               [50, 0.2],
-              [100, 0.4]
-            ]
-          }
+              [100, 0.4],
+            ],
+          },
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const creditTag = 'TESTTAG'
@@ -378,7 +378,7 @@ lab.experiment("Integration with route pass transaction", function () {
       sourceId: customerInfo.sources.data[0].id,
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -387,8 +387,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -405,8 +405,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse2.statusCode).to.equal(200)
 
@@ -417,7 +417,7 @@ lab.experiment("Integration with route pass transaction", function () {
     expect(saleResponse2.result.description).include(items.discount[0].debit)
 
     const routePasses = await models.RoutePass.findAll({
-      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag }
+      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag },
     })
     expect(routePasses.length).equal(30)
   })
@@ -428,7 +428,7 @@ lab.experiment("Integration with route pass transaction", function () {
     const contactListInstance = await models.ContactList.create({
       transportCompanyId: routeInstance.transportCompanyId,
       telephones: [userInstance.telephone],
-      emails: []
+      emails: [],
     })
 
     await models.Promotion.create({
@@ -439,25 +439,25 @@ lab.experiment("Integration with route pass transaction", function () {
         "tag": "TESTTAG",
         "qualifyingCriteria": [{
           "type": "limitByContactList",
-          "params": { "contactListId": contactListInstance.id }
+          "params": { "contactListId": contactListInstance.id },
         }],
         "discountFunction": {
           "type": "tieredRateByTotalValue",
           "params": {
             "schedule": [
               [50, 0.2],
-              [100, 0.4]
-            ]
-          }
+              [100, 0.4],
+            ],
+          },
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const creditTag = 'TESTTAG'
@@ -472,7 +472,7 @@ lab.experiment("Integration with route pass transaction", function () {
       sourceId: customerInfo.sources.data[0].id,
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -481,8 +481,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -499,8 +499,8 @@ lab.experiment("Integration with route pass transaction", function () {
       url: "/transactions/route_passes/payment",
       payload,
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse2.statusCode).to.equal(200)
 
@@ -511,7 +511,7 @@ lab.experiment("Integration with route pass transaction", function () {
     expect(saleResponse2.result.description).include(items.discount[0].debit)
 
     const routePasses = await models.RoutePass.findAll({
-      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag }
+      where: { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag },
     })
     expect(routePasses.length).equal(30)
   })

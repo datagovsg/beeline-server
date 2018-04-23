@@ -2,23 +2,26 @@ import server from "../src/index"
 const {models: m} = require('../src/lib/core/dbschema')()
 const {
   resetTripInstances, loginAs, randomString,
-  createStripeToken, cleanlyDeletePromotions
+  createStripeToken, cleanlyDeletePromotions,
 } = require("./test_common")
 import {expect} from "code"
 import Lab from "lab"
 import _ from 'lodash'
 import {createUsersCompaniesRoutesAndTrips} from './test_data'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("Credits integration test", function () {
-  var templates, userInstance, companyInstance, routeInstance
-  var authHeaders = {}
-  var testTag
+  let templates
+  let userInstance
+  let companyInstance
+  let routeInstance
+  let authHeaders = {}
+  let testTag
   const ticketPrice = '5.00'
   const ticketsBought = 4
-  var itemInsts = []
-  var trips
+  let itemInsts = []
+  let trips
 
   lab.before({timeout: 15000}, async function () {
     testTag = `rp-${Date.now()}`;
@@ -27,7 +30,7 @@ lab.experiment("Credits integration test", function () {
         await createUsersCompaniesRoutesAndTrips(m, new Array(ticketsBought).fill(+ticketPrice)))
 
     await routeInstance.update({
-      tags: [testTag]
+      tags: [testTag],
     })
 
     itemInsts = []
@@ -41,16 +44,16 @@ lab.experiment("Credits integration test", function () {
         },
         ticket: {id: i},
         price: trip.price,
-        trip
+        trip,
       })
     })
 
-    var userToken = (await loginAs("user", userInstance.id)).result.sessionToken
+    let userToken = (await loginAs("user", userInstance.id)).result.sessionToken
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund', 'issue-tickets']
+      permissions: ['refund', 'issue-tickets'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
@@ -61,23 +64,23 @@ lab.experiment("Credits integration test", function () {
         ],
         discountFunction: {
           type: "simpleRate",
-          params: {"rate": 0.5}
+          params: {"rate": 0.5},
         },
         refundFunction: {
-          type: "refundDiscountedAmt"
+          type: "refundDiscountedAmt",
         },
         usageLimit: {
           globalLimit: 20,
-          userLimit: 10
-        }
-      }
+          userLimit: 10,
+        },
+      },
     }
   })
 
   lab.afterEach(async () => resetTripInstances(m, trips))
 
   lab.test("Using route pass, referralCredits, userCredits together", {timeout: 20000}, async () => {
-    var userId = userInstance.id
+    let userId = userInstance.id
     const usrCreditAmt = '5.00'
     const refCreditAmt = '5.00'
 
@@ -93,7 +96,7 @@ lab.experiment("Credits integration test", function () {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: testTag
+        tag: testTag,
       },
       headers: authHeaders.admin,
     })
@@ -120,10 +123,10 @@ lab.experiment("Credits integration test", function () {
 
     let transactionItemsByType = _.groupBy(transactionItems, ti => ti.itemType)
 
-    var accountInst = await m.Account.find({
+    let accountInst = await m.Account.find({
       where: {
-        name: 'Cost of Goods Sold'
-      }
+        name: 'Cost of Goods Sold',
+      },
     })
 
     // tickets bought -> total cost = 4 * $5 = 20
@@ -179,9 +182,9 @@ lab.experiment("Credits integration test", function () {
   })
 
   lab.test("Using routePass, userCredits, promoCodes together", {timeout: 20000}, async () => {
-    var userId = userInstance.id
+    let userId = userInstance.id
     const userCreditAmt = '5.00'
-    var promoCode = randomString()
+    let promoCode = randomString()
 
     await m.Credit.destroy({ where: { userId }})
     await m.Credit.create({ userId, balance: userCreditAmt})
@@ -193,7 +196,7 @@ lab.experiment("Credits integration test", function () {
         userId: userInstance.id,
         routeId: routeInstance.id,
         quantity: 2,
-        tag: testTag
+        tag: testTag,
       },
       headers: authHeaders.admin,
     })
@@ -203,19 +206,19 @@ lab.experiment("Credits integration test", function () {
       code: promoCode,
       type: 'Promotion',
       params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
     let userUsageInst = await m.PromoUsage.create({
       promoId: promoInst.id,
       userId: userInstance.id,
-      count: 0
+      count: 0,
     })
 
     let globalUsageInst = await m.PromoUsage.create({
       promoId: promoInst.id,
       userId: null,
-      count: 0
+      count: 0,
     })
 
     const poItems = itemInsts.map(it => it.item)
@@ -233,7 +236,7 @@ lab.experiment("Credits integration test", function () {
         stripeToken: await createStripeToken(),
         applyCredits: true,
         creditTag: testTag,
-        promoCode: { code: promoCode, options: {} }
+        promoCode: { code: promoCode, options: {} },
       },
       headers: authHeaders.user,
     })
@@ -265,7 +268,7 @@ lab.experiment("Credits integration test", function () {
         stripeToken: await createStripeToken(),
         applyCredits: true,
         applyRoutePass: true,
-        promoCode: { code: promoCode, options: {} }
+        promoCode: { code: promoCode, options: {} },
       },
       headers: authHeaders.user,
     })
