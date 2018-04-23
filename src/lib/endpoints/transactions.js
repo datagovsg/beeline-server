@@ -52,204 +52,191 @@ const INVALID_CREDIT_TAGS = [
 ]
 
 export const register = (server, options, next) => {
-  routeRequestsTo(
-    server,
-    ["/transactions/payment_ticket_sale", "/transactions/tickets/payment"],
-    {
-      method: "POST",
-      config: {
-        tags: ["api"],
-        description: `Prepare a transaction with tickets, charge Stripe, and then mark the
+  routeRequestsTo(server, ["/transactions/tickets/payment"], {
+    method: "POST",
+    config: {
+      tags: ["api"],
+      description: `Prepare a transaction with tickets, charge Stripe, and then mark the
   transaction as committed and the tickets as valid if Stripe has been
   successfully charged.`,
-        validate: {
-          payload: {
-            trips: Joi.array().items(
-              Joi.object({
-                tripId: Joi.number().integer(),
-                // qty: Joi.number().integer().default(1).min(1).max(1),
-                boardStopId: Joi.number().integer(),
-                alightStopId: Joi.number().integer(),
-              })
-            ),
-            promoCode: Joi.object({
-              code: Joi.string()
-                .allow("")
-                .required(),
-              options: Joi.object(),
-            }).allow(null),
-            creditTag: Joi.string()
-              .optional()
-              .allow(null),
-            applyRoutePass: Joi.boolean().default(false),
-            applyReferralCredits: Joi.boolean().default(false),
-            applyCredits: Joi.boolean().default(false),
-            stripeToken: Joi.string(),
-            customerId: Joi.string(),
-            sourceId: Joi.string(),
-            expectedPrice: Joi.number().allow(null),
-          },
+      validate: {
+        payload: {
+          trips: Joi.array().items(
+            Joi.object({
+              tripId: Joi.number().integer(),
+              // qty: Joi.number().integer().default(1).min(1).max(1),
+              boardStopId: Joi.number().integer(),
+              alightStopId: Joi.number().integer(),
+            })
+          ),
+          promoCode: Joi.object({
+            code: Joi.string()
+              .allow("")
+              .required(),
+            options: Joi.object(),
+          }).allow(null),
+          applyRoutePass: Joi.boolean().default(false),
+          applyReferralCredits: Joi.boolean().default(false),
+          applyCredits: Joi.boolean().default(false),
+          stripeToken: Joi.string(),
+          customerId: Joi.string(),
+          sourceId: Joi.string(),
+          expectedPrice: Joi.number().allow(null),
         },
       },
-      async handler(request, reply) {
-        let db = getDB(request)
-        let m = getModels(request)
+    },
+    async handler(request, reply) {
+      let db = getDB(request)
+      let m = getModels(request)
 
-        try {
-          // Add the user id to the trip orders
-          if (!options.dryRun && request.auth.credentials.scope !== "user") {
-            throw new SecurityError("Need to be logged in to make transaction")
-          }
-          for (let trip of request.payload.trips) {
-            trip.userId = request.auth.credentials.userId
-          }
-
-          // check payload has either stripe token or customerId
-          if (
-            !request.payload.stripeToken &&
-            (!request.payload.customerId || !request.payload.sourceId)
-          ) {
-            throw new InvalidArgumentError(
-              "No stripe token or customerId is provided"
-            )
-          }
-
-          /* Prepare the transaction */
-          let [dbTxn, undoFn] = await prepareTicketSale([db, m], {
-            trips: request.payload.trips,
-            promoCode: request.payload.promoCode,
-            creditTag: request.payload.creditTag,
-            applyRoutePass: request.payload.applyRoutePass,
-            applyReferralCredits: request.payload.applyReferralCredits,
-            applyCredits: request.payload.applyCredits,
-            dryRun: false,
-            committed: true,
-            convertToJson: false,
-            expectedPrice: request.payload.expectedPrice,
-            creator: {
-              type: "user",
-              id: request.auth.credentials.userId,
-            },
-          })
-
-          assert(dbTxn.id)
-
-          let chargeOptions = {
-            db,
-            models: m,
-            transaction: dbTxn,
-            tokenIat: request.auth.credentials.iat,
-            paymentDescription: `[Txn #${dbTxn.id}] ` + dbTxn.description,
-          }
-
-          if (request.payload.stripeToken) {
-            _.assign(chargeOptions, {
-              stripeToken: request.payload.stripeToken,
-            })
-          } else if (request.payload.customerId && request.payload.sourceId) {
-            _.assign(chargeOptions, {
-              customerId: request.payload.customerId,
-              sourceId: request.payload.sourceId,
-            })
-          }
-
-          // charge stripe
-          try {
-            await chargeSale(chargeOptions)
-          } catch (err) {
-            console.error(err)
-            if (err instanceof ChargeError) {
-              try {
-                await undoFn()
-              } catch (err2) {
-                events.emit("transactionFailure", {
-                  message: `!!! ERROR UNDOING ${dbTxn.id} with ${err2.message}`,
-                  userId: request.auth.credentials.userId,
-                })
-                console.error(err2)
-              }
-            }
-            throw err
-          }
-
-          dbTxn = await m.Transaction.findById(dbTxn.id, {
-            include: [m.TransactionItem],
-          })
-          await m.TransactionItem.getAssociatedItems(dbTxn.transactionItems);
-
-          // asynchronously reload the ticket data and run the hooks
-          (async function(tis) {
-            let ticketIds = tis
-              .filter(ti => ti.ticketSale)
-              .map(ti => ti.itemId)
-
-            ticketIds.forEach(async ticketId => {
-              try {
-                let newTicketInst = await m.Ticket.findById(ticketId, {
-                  include: [
-                    { model: m.TripStop, as: "boardStop" },
-                    { model: m.TripStop, as: "alightStop" },
-                  ],
-                })
-                let newTicketTrip = await m.Trip.find({
-                  include: [
-                    {
-                      model: m.TripStop,
-                      where: { id: newTicketInst.boardStopId },
-                    },
-                    m.Route,
-                  ],
-                })
-                events.emit("newBooking", {
-                  trip: newTicketTrip,
-                  ticket: newTicketInst,
-                })
-              } catch (err) {
-                console.error(err.stack)
-              }
-            })
-          })(dbTxn.transactionItems)
-
-          let transactionItemsByType = _.groupBy(
-            dbTxn.transactionItems,
-            ti => ti.itemType
-          )
-          let numValidPromoTickets = null
-          let promotionId = null
-
-          if (transactionItemsByType.discount) {
-            let promo = transactionItemsByType.discount.filter(
-              item => item.discount.promotionId
-            )
-            assert(
-              promo.length < 2,
-              `Only 1 promotion per purchase is allowed`
-            )
-            if (promo.length === 1) {
-              promotionId = promo[0].discount.promotionId
-              numValidPromoTickets = _.keys(promo[0].notes.tickets).filter(
-                ticketId => promo[0].notes.tickets[ticketId] > 0
-              ).length
-            }
-          }
-
-          events.emit("newPurchase", {
-            userId: request.auth.credentials.userId,
-            numValidPromoTickets,
-            promotionId,
-          })
-
-          reply(dbTxn.toJSON())
-        } catch (err) {
-          events.emit("transactionFailure", {
-            message: err.message,
-            userId: request.auth.credentials.userId,
-          })
-          defaultErrorHandler(reply)(err)
+      try {
+        // Add the user id to the trip orders
+        if (!options.dryRun && request.auth.credentials.scope !== "user") {
+          throw new SecurityError("Need to be logged in to make transaction")
         }
-      },
-    }
-  )
+        for (let trip of request.payload.trips) {
+          trip.userId = request.auth.credentials.userId
+        }
+
+        // check payload has either stripe token or customerId
+        if (
+          !request.payload.stripeToken &&
+          (!request.payload.customerId || !request.payload.sourceId)
+        ) {
+          throw new InvalidArgumentError(
+            "No stripe token or customerId is provided"
+          )
+        }
+
+        /* Prepare the transaction */
+        let [dbTxn, undoFn] = await prepareTicketSale([db, m], {
+          trips: request.payload.trips,
+          promoCode: request.payload.promoCode,
+          applyRoutePass: request.payload.applyRoutePass,
+          applyReferralCredits: request.payload.applyReferralCredits,
+          applyCredits: request.payload.applyCredits,
+          dryRun: false,
+          committed: true,
+          convertToJson: false,
+          expectedPrice: request.payload.expectedPrice,
+          creator: {
+            type: "user",
+            id: request.auth.credentials.userId,
+          },
+        })
+
+        assert(dbTxn.id)
+
+        let chargeOptions = {
+          db,
+          models: m,
+          transaction: dbTxn,
+          tokenIat: request.auth.credentials.iat,
+          paymentDescription: `[Txn #${dbTxn.id}] ` + dbTxn.description,
+        }
+
+        if (request.payload.stripeToken) {
+          _.assign(chargeOptions, {
+            stripeToken: request.payload.stripeToken,
+          })
+        } else if (request.payload.customerId && request.payload.sourceId) {
+          _.assign(chargeOptions, {
+            customerId: request.payload.customerId,
+            sourceId: request.payload.sourceId,
+          })
+        }
+
+        // charge stripe
+        try {
+          await chargeSale(chargeOptions)
+        } catch (err) {
+          console.error(err)
+          if (err instanceof ChargeError) {
+            try {
+              await undoFn()
+            } catch (err2) {
+              events.emit("transactionFailure", {
+                message: `!!! ERROR UNDOING ${dbTxn.id} with ${err2.message}`,
+                userId: request.auth.credentials.userId,
+              })
+              console.error(err2)
+            }
+          }
+          throw err
+        }
+
+        dbTxn = await m.Transaction.findById(dbTxn.id, {
+          include: [m.TransactionItem],
+        })
+        await m.TransactionItem.getAssociatedItems(dbTxn.transactionItems);
+
+        // asynchronously reload the ticket data and run the hooks
+        (async function(tis) {
+          let ticketIds = tis.filter(ti => ti.ticketSale).map(ti => ti.itemId)
+
+          ticketIds.forEach(async ticketId => {
+            try {
+              let newTicketInst = await m.Ticket.findById(ticketId, {
+                include: [
+                  { model: m.TripStop, as: "boardStop" },
+                  { model: m.TripStop, as: "alightStop" },
+                ],
+              })
+              let newTicketTrip = await m.Trip.find({
+                include: [
+                  {
+                    model: m.TripStop,
+                    where: { id: newTicketInst.boardStopId },
+                  },
+                  m.Route,
+                ],
+              })
+              events.emit("newBooking", {
+                trip: newTicketTrip,
+                ticket: newTicketInst,
+              })
+            } catch (err) {
+              console.error(err.stack)
+            }
+          })
+        })(dbTxn.transactionItems)
+
+        let transactionItemsByType = _.groupBy(
+          dbTxn.transactionItems,
+          ti => ti.itemType
+        )
+        let numValidPromoTickets = null
+        let promotionId = null
+
+        if (transactionItemsByType.discount) {
+          let promo = transactionItemsByType.discount.filter(
+            item => item.discount.promotionId
+          )
+          assert(promo.length < 2, `Only 1 promotion per purchase is allowed`)
+          if (promo.length === 1) {
+            promotionId = promo[0].discount.promotionId
+            numValidPromoTickets = _.keys(promo[0].notes.tickets).filter(
+              ticketId => promo[0].notes.tickets[ticketId] > 0
+            ).length
+          }
+        }
+
+        events.emit("newPurchase", {
+          userId: request.auth.credentials.userId,
+          numValidPromoTickets,
+          promotionId,
+        })
+
+        reply(dbTxn.toJSON())
+      } catch (err) {
+        events.emit("transactionFailure", {
+          message: err.message,
+          userId: request.auth.credentials.userId,
+        })
+        defaultErrorHandler(reply)(err)
+      }
+    },
+  })
 
   routeRequestsTo(server, ["/transactions/route_passes/payment"], {
     method: "POST",
@@ -280,9 +267,6 @@ export const register = (server, options, next) => {
             ),
           tag: Joi.string().description(
             "The tag of the route to purchase passes from"
-          ),
-          creditTag: Joi.string().description(
-            "DEPRECATED. The tag of the route to purchase passes from"
           ),
           companyId: Joi.number()
             .integer()
@@ -330,7 +314,7 @@ export const register = (server, options, next) => {
           promoCode: request.payload.promoCode,
           value: request.payload.value,
           quantity: request.payload.quantity,
-          tag: request.payload.tag || request.payload.creditTag,
+          tag: request.payload.tag,
           companyId: request.payload.companyId,
           expectedPrice: request.payload.expectedPrice,
         })
@@ -399,94 +383,86 @@ export const register = (server, options, next) => {
     },
   })
 
-  routeRequestsTo(
-    server,
-    ["/transactions/ticket_sale", "/transactions/tickets/quote"],
-    {
-      method: "POST",
-      config: {
-        tags: ["api"],
-        description: `Used to preview the result of a ticket payment
+  routeRequestsTo(server, ["/transactions/tickets/quote"], {
+    method: "POST",
+    config: {
+      tags: ["api"],
+      description: `Used to preview the result of a ticket payment
   `,
-        notes: `Payload must have an array \`trips\`, each an object with a \`tripId\`, \`boardStopId\` and \`alightStopId\`.
+      notes: `Payload must have an array \`trips\`, each an object with a \`tripId\`, \`boardStopId\` and \`alightStopId\`.
   `,
-        validate: {
-          payload: Joi.object({
-            trips: Joi.array().items(
-              Joi.object({
-                tripId: Joi.number().integer(),
-                boardStopId: Joi.number().integer(),
-                alightStopId: Joi.number().integer(),
-              })
-            ),
-            creditTag: Joi.string()
-              .optional()
-              .allow(null),
-            applyRoutePass: Joi.boolean().default(false),
-            applyReferralCredits: Joi.boolean().default(false),
-            applyCredits: Joi.boolean().default(false),
-            promoCode: Joi.object()
-              .keys({
-                code: Joi.string().allow(""),
-                options: Joi.object(),
-              })
-              .allow(null)
-              .default(null),
-            groupItemsByType: Joi.boolean().default(false),
-          }).unknown(),
-        },
+      validate: {
+        payload: Joi.object({
+          trips: Joi.array().items(
+            Joi.object({
+              tripId: Joi.number().integer(),
+              boardStopId: Joi.number().integer(),
+              alightStopId: Joi.number().integer(),
+            })
+          ),
+          applyRoutePass: Joi.boolean().default(false),
+          applyReferralCredits: Joi.boolean().default(false),
+          applyCredits: Joi.boolean().default(false),
+          promoCode: Joi.object()
+            .keys({
+              code: Joi.string().allow(""),
+              options: Joi.object(),
+            })
+            .allow(null)
+            .default(null),
+          groupItemsByType: Joi.boolean().default(false),
+        }).unknown(),
       },
+    },
 
-      async handler(request, reply) {
-        try {
-          for (let trip of request.payload.trips) {
-            trip.userId = request.auth.credentials.userId || 0
-          }
-
-          let db = getDB(request)
-          let m = getModels(request)
-          let [preparedTransaction] = await prepareTicketSale([db, m], {
-            trips: request.payload.trips,
-            promoCode: request.payload.promoCode,
-            creditTag: request.payload.creditTag,
-            applyRoutePass: request.payload.applyRoutePass,
-            applyReferralCredits: request.payload.applyReferralCredits,
-            applyCredits: request.payload.applyCredits,
-            dryRun: true,
-          })
-
-          const groupItemsByType = preparedTransaction => {
-            const groupedItems = _.groupBy(
-              preparedTransaction.transactionItems,
-              "itemType"
-            )
-            return {
-              ...preparedTransaction,
-              transactionItems: groupedItems,
-              totals: _(groupedItems)
-                .mapValues(items =>
-                  _(["credit", "debit"])
-                    .map(field => [
-                      field,
-                      _.sumBy(items, item => parseFloat(item[field])),
-                    ])
-                    .fromPairs()
-                    .value()
-                )
-                .value(),
-            }
-          }
-          reply(
-            request.payload.groupItemsByType
-              ? groupItemsByType(preparedTransaction)
-              : preparedTransaction
-          )
-        } catch (err) {
-          defaultErrorHandler(reply)(err)
+    async handler(request, reply) {
+      try {
+        for (let trip of request.payload.trips) {
+          trip.userId = request.auth.credentials.userId || 0
         }
-      },
-    }
-  )
+
+        let db = getDB(request)
+        let m = getModels(request)
+        let [preparedTransaction] = await prepareTicketSale([db, m], {
+          trips: request.payload.trips,
+          promoCode: request.payload.promoCode,
+          applyRoutePass: request.payload.applyRoutePass,
+          applyReferralCredits: request.payload.applyReferralCredits,
+          applyCredits: request.payload.applyCredits,
+          dryRun: true,
+        })
+
+        const groupItemsByType = preparedTransaction => {
+          const groupedItems = _.groupBy(
+            preparedTransaction.transactionItems,
+            "itemType"
+          )
+          return {
+            ...preparedTransaction,
+            transactionItems: groupedItems,
+            totals: _(groupedItems)
+              .mapValues(items =>
+                _(["credit", "debit"])
+                  .map(field => [
+                    field,
+                    _.sumBy(items, item => parseFloat(item[field])),
+                  ])
+                  .fromPairs()
+                  .value()
+              )
+              .value(),
+          }
+        }
+        reply(
+          request.payload.groupItemsByType
+            ? groupItemsByType(preparedTransaction)
+            : preparedTransaction
+        )
+      } catch (err) {
+        defaultErrorHandler(reply)(err)
+      }
+    },
+  })
 
   const refundViaStripeWithAccounting = async (
     { db, txn, undoFn, stripeRefundInfo },
@@ -713,12 +689,9 @@ will not be refunded here, so we will make a net profit.`,
               targetAmt: Joi.number()
                 .min(0)
                 .required(),
-              creditTag: Joi.string()
-                .disallow(INVALID_CREDIT_TAGS)
-                .optional(),
               tag: Joi.string()
                 .disallow(INVALID_CREDIT_TAGS)
-                .optional(),
+                .required(),
             }),
           },
         },
@@ -735,7 +708,7 @@ will not be refunded here, so we will make a net profit.`,
       async handler(request, reply) {
         let db = getDB(request)
         let m = getModels(request)
-        let { targetAmt, creditTag, tag } = request.payload
+        let { targetAmt, tag } = request.payload
         const ticketId = request.params.ticketId || request.payload.ticketId
 
         try {
@@ -760,7 +733,7 @@ will not be refunded here, so we will make a net profit.`,
             const tags = _.difference(route.tags, INVALID_CREDIT_TAGS)
 
             TransactionError.assert(
-              tags.includes(tag || creditTag),
+              tags.includes(tag),
               "The tag provided does not belong to the selected route"
             )
 
@@ -897,7 +870,7 @@ will not be refunded here, so we will make a net profit.`,
               ticketSale,
               company.id,
               ticket.userId,
-              tag || creditTag
+              tag
             )
 
             const [dbTransactionInstance] = await transactionBuilder.build({

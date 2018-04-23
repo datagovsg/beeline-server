@@ -9,31 +9,32 @@ import eventFormatters from '../src/lib/events/formatters'
 import * as eventHandlers from '../src/lib/events/handlers'
 import * as events from '../src/lib/events/events'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("Event subscriptions", function () {
-  var adminInst, companyInst
-  var lastMessage
+  let adminInst
+  let companyInst
+  let lastMessage
 
   lab.before({timeout: 10000}, async function () {
     eventDefinitions['testEvent'] = {
       schema: Joi.object({
-        num: Joi.number().required()
-      }).unknown()
+        num: Joi.number().required(),
+      }).unknown(),
     }
 
     eventDefinitions['testEventWithParams'] = {
       schema: Joi.object({
-        num: Joi.number().required()
+        num: Joi.number().required(),
       }).unknown(),
 
       params: Joi.object({
-        string: Joi.string().required()
+        string: Joi.string().required(),
       }),
 
       filter (params, data) {
         return parseInt(params.string) === data.num
-      }
+      },
     }
 
     eventFormatters['testEvent'] = {
@@ -52,13 +53,13 @@ lab.experiment("Event subscriptions", function () {
       },
       '1' (event) {
         return {
-          message: `Second is ${event.num}`
+          message: `Second is ${event.num}`,
         }
       },
     }
     adminInst = await m.Admin.create({
       email: 'test@example.com',
-      telephone: '+6581001860'
+      telephone: '+6581001860',
     })
     companyInst = await m.TransportCompany.create({})
 
@@ -84,29 +85,29 @@ lab.experiment("Event subscriptions", function () {
       where: {
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
-        }
-      }
+          email: adminInst.email,
+        },
+      },
     })
   })
 
   lab.test('Subscriptions are properly validated', async function () {
-    var createResult = await server.inject({
+    let createResult = await server.inject({
       method: 'POST',
       url: `/companies/${companyInst.id}/eventSubscriptions`,
       payload: {
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
+          email: adminInst.email,
         },
         event: 'testEventWithParams',
         formatter: '0',
         params: {invalidParams: true},
-        handler: 'test'
+        handler: 'test',
       },
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     })
     /* 500 because we don't have a reference to Joi.ValidationError and
     so we cannot trap it :( */
@@ -118,39 +119,39 @@ lab.experiment("Event subscriptions", function () {
       payload: {
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
+          email: adminInst.email,
         },
         event: 'testEventWithParams',
         formatter: '0',
         params: {string: '123'},
-        handler: 'test'
+        handler: 'test',
       },
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     })
     expect(createResult.statusCode).equal(200)
   })
 
   lab.test('Subscriptions are properly loaded', {timeout: 10000}, async function () {
-    var createResult = await server.inject({
+    let createResult = await server.inject({
       method: 'POST',
       url: `/companies/${companyInst.id}/eventSubscriptions`,
       payload: {
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
+          email: adminInst.email,
         },
         event: 'testEvent',
         formatter: '0',
         params: null,
-        handler: 'test'
+        handler: 'test',
       },
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     })
-    var subscriptionId = createResult.result.id
+    let subscriptionId = createResult.result.id
 
     // the reload is not synchronous, so let it wait...
     await new Promise((resolve) => setTimeout(resolve, 500))
@@ -166,16 +167,16 @@ lab.experiment("Event subscriptions", function () {
       payload: {
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
+          email: adminInst.email,
         },
         event: 'testEvent',
         formatter: '1',
         params: null,
-        handler: 'test'
+        handler: 'test',
       },
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     })
 
     // the reload is not synchronous, so let it wait...
@@ -190,8 +191,8 @@ lab.experiment("Event subscriptions", function () {
       method: 'DELETE',
       url: `/companies/${companyInst.id}/eventSubscriptions/${subscriptionId}`,
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
-      }
+        authorization: `Bearer ${adminInst.makeToken()}`,
+      },
     })
 
     // the reload is not synchronous, so let it wait...
@@ -205,12 +206,12 @@ lab.experiment("Event subscriptions", function () {
     await m.EventSubscription.create({
       agent: {
         telephone: adminInst.telephone,
-        email: adminInst.email
+        email: adminInst.email,
       },
       event: 'testEvent',
       formatter: '1',
       params: null,
-      handler: 'test'
+      handler: 'test',
     })
 
     await server.plugins['daemon-event-subscriptions'].reloadSubscriptions()
@@ -224,12 +225,12 @@ lab.experiment("Event subscriptions", function () {
     await m.EventSubscription.create({
       agent: {
         telephone: adminInst.telephone,
-        email: adminInst.email
+        email: adminInst.email,
       },
       event: 'testEventWithParams',
       formatter: '0',
       params: {string: '12'},
-      handler: 'test'
+      handler: 'test',
     })
 
     await server.plugins['daemon-event-subscriptions'].reloadSubscriptions()
@@ -243,34 +244,34 @@ lab.experiment("Event subscriptions", function () {
   })
 
   lab.test('Transaction failure event', {timeout: 10000}, async function () {
-    var userInst = await m.User.create({})
+    let userInst = await m.User.create({})
     await m.EventSubscription.create({
       agent: {
         telephone: adminInst.telephone,
-        email: adminInst.email
+        email: adminInst.email,
       },
       event: 'transactionFailure',
       formatter: '0',
       params: {string: '12'},
-      handler: 'test'
+      handler: 'test',
     })
     await server.plugins['daemon-event-subscriptions'].reloadSubscriptions()
 
     // Make a transaction that will fail
     await server.inject({
       method: 'POST',
-      url: '/transactions/payment_ticket_sale',
+      url: '/transactions/tickets/payment',
       payload: {
         trips: [
           {tripId: 1999,
             boardStopId: 22,
-            alightStopId: 22}
+            alightStopId: 22},
         ],
-        stripeToken: 'fake token'
+        stripeToken: 'fake token',
       },
       headers: {
-        authorization: `Bearer ${userInst.makeToken()}`
-      }
+        authorization: `Bearer ${userInst.makeToken()}`,
+      },
     })
 
     // Failure should be in message
@@ -280,42 +281,42 @@ lab.experiment("Event subscriptions", function () {
 
   lab.test('Trip cancellation event', {timeout: 10000}, async function () {
     // Some trip data
-    var a = await m.Admin.create({
+    let a = await m.Admin.create({
       email: 'test@asdfasdfasdfexample.com',
-      telephone: '+6599999999'
+      telephone: '+6599999999',
     })
-    var c = await m.TransportCompany.create({
-      name: 'Required for some reason'
+    let c = await m.TransportCompany.create({
+      name: 'Required for some reason',
     })
 
     await a.addTransportCompany(c, {permissions: ['manage-notifications', 'update-trip-status']})
 
-    var routeInst = await m.Route.create({
+    let routeInst = await m.Route.create({
       transportCompanyId: c.id,
     })
-    var stopInst = await m.Stop.create({
-      coordinates: {type: 'Point', coordinates: randomSingaporeLngLat()}
+    let stopInst = await m.Stop.create({
+      coordinates: {type: 'Point', coordinates: randomSingaporeLngLat()},
     })
-    var tripInst = await m.Trip.create({
+    let tripInst = await m.Trip.create({
       routeId: routeInst.id,
       tripStops: [
         {stopId: stopInst.id, time: '2016-01-01T00:00:00', canBoard: true, canAlight: true},
         {stopId: stopInst.id, time: '2016-01-01T04:00:00', canBoard: true, canAlight: true},
-      ]
+      ],
     }, {include: [m.TripStop]})
     const headers = {
-      authorization: `Bearer ${a.makeToken()}`
+      authorization: `Bearer ${a.makeToken()}`,
     }
       // Some event data
     await m.EventSubscription.create({
       agent: {
         telephone: adminInst.telephone,
-        email: adminInst.email
+        email: adminInst.email,
       },
       event: 'tripCancelled',
       formatter: '0',
       params: {routeIds: [routeInst.id], ignoreIfEmpty: false},
-      handler: 'test'
+      handler: 'test',
     })
     await server.plugins['daemon-event-subscriptions'].reloadSubscriptions()
     // Execute the cancellation
@@ -323,9 +324,9 @@ lab.experiment("Event subscriptions", function () {
       method: 'POST',
       url: `/trips/${tripInst.id}/statuses`,
       payload: {
-        status: 'cancelled'
+        status: 'cancelled',
       },
-      headers
+      headers,
     })
 
     // Failure should be in message
@@ -334,33 +335,33 @@ lab.experiment("Event subscriptions", function () {
 
   lab.test('Validation of unknown fields', {timeout: 10000}, async function () {
     // Some trip data
-    var companyInst = await m.TransportCompany.create({})
-    var routeInst = await m.Route.create({
+    let companyInst = await m.TransportCompany.create({})
+    let routeInst = await m.Route.create({
       transportCompanyId: companyInst.id,
     })
-    var stopInst = await m.Stop.create({
-      coordinates: {type: 'Point', coordinates: randomSingaporeLngLat()}
+    let stopInst = await m.Stop.create({
+      coordinates: {type: 'Point', coordinates: randomSingaporeLngLat()},
     })
-    var tripInst = await m.Trip.create({
+    let tripInst = await m.Trip.create({
       routeId: routeInst.id,
       tripStops: [
         {stopId: stopInst.id, time: '2016-01-01T00:00:00', canBoard: true, canAlight: true},
         {stopId: stopInst.id, time: '2016-01-01T04:00:00', canBoard: true, canAlight: true},
-      ]
+      ],
     }, {include: [m.TripStop]})
 
     // Some event data
     await m.EventSubscription.create({
       agent: {
         telephone: adminInst.telephone,
-        email: adminInst.email
+        email: adminInst.email,
       },
       event: 'tripCancelled',
       formatter: '0',
       params: {routeIds: [routeInst.id], unknownField: 'blah', ignoreIfEmpty: false},
-      handler: 'test'
+      handler: 'test',
     })
-    var login = await loginAs('superadmin')
+    let login = await loginAs('superadmin')
     await server.plugins['daemon-event-subscriptions'].reloadSubscriptions()
 
     // Execute the cancellation
@@ -368,11 +369,11 @@ lab.experiment("Event subscriptions", function () {
       method: 'POST',
       url: `/trips/${tripInst.id}/statuses`,
       payload: {
-        status: 'cancelled'
+        status: 'cancelled',
       },
       headers: {
-        authorization: `Bearer ${login.result.sessionToken}`
-      }
+        authorization: `Bearer ${login.result.sessionToken}`,
+      },
     })
 
     // Failure should be in message
@@ -380,7 +381,7 @@ lab.experiment("Event subscriptions", function () {
   })
 
   lab.test('Authorization of some endpoints', async function () {
-    var subscription = {}
+    let subscription = {}
 
     eventDefinitions.newBooking.authorize({}, 10, subscription)
     expect(subscription.transportCompanyIds[0]).equal(10)
@@ -391,22 +392,22 @@ lab.experiment("Event subscriptions", function () {
 
   lab.test('CRUD subscriptions', async function () {
     // Some trip data
-    var companyInst = await m.TransportCompany.create({})
+    let companyInst = await m.TransportCompany.create({})
     await m.Route.create({
       transportCompanyId: companyInst.id,
     })
     await m.Stop.create({
-      coordinates: {type: 'Point', coordinates: randomSingaporeLngLat()}
+      coordinates: {type: 'Point', coordinates: randomSingaporeLngLat()},
     })
-    var adminInst = await m.Admin.create({
-      email: randomEmail()
+    let adminInst = await m.Admin.create({
+      email: randomEmail(),
     })
     await adminInst.addTransportCompany(companyInst, {permissions: ['manage-notifications', 'update-trip-status']})
 
-    var headers = {
-      authorization: `Bearer ${adminInst.makeToken()}`
+    let headers = {
+      authorization: `Bearer ${adminInst.makeToken()}`,
     }
-    var response
+    let response
 
     // Create subscription
     response = await server.inject({
@@ -419,14 +420,14 @@ lab.experiment("Event subscriptions", function () {
         handler: 'test',
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
+          email: adminInst.email,
         },
       },
-      headers
+      headers,
     })
     expect(response.statusCode).equal(200)
 
-    var subscriptionObject = await m.EventSubscription.findById(response.result.id)
+    let subscriptionObject = await m.EventSubscription.findById(response.result.id)
     expect(subscriptionObject).exist()
 
     // check that authorization has worked, and the set of companies is restricted
@@ -441,23 +442,23 @@ lab.experiment("Event subscriptions", function () {
         handler: 'test',
         agent: {
           telephone: adminInst.telephone,
-          email: adminInst.email
+          email: adminInst.email,
         },
       },
-      headers
+      headers,
     })
     expect(response.statusCode).equal(200)
 
     subscriptionObject = await m.EventSubscription.findById(response.result.id)
     expect(subscriptionObject.params.transportCompanyIds[0]).equal(companyInst.id)
 
-    var createdSubscriptionId = response.result.id
+    let createdSubscriptionId = response.result.id
 
     // Read
     response = await server.inject({
       method: 'GET',
       url: `/companies/${companyInst.id}/eventSubscriptions`,
-      headers
+      headers,
     })
     expect(response.statusCode).equal(200)
     expect(response.result.find(t => t.id === createdSubscriptionId)).exist()
@@ -470,12 +471,12 @@ lab.experiment("Event subscriptions", function () {
         event: 'testEvent',
         params: { string: '2' },
         formatter: '0',
-        handler: 'test'
+        handler: 'test',
       },
-      headers
+      headers,
     })
     expect(response.statusCode).equal(200)
-    var subscrInst = await m.EventSubscription.findById(createdSubscriptionId)
+    let subscrInst = await m.EventSubscription.findById(createdSubscriptionId)
     expect(subscrInst.event).equal('testEvent')
     expect(subscrInst.params.string).equal('2')
 
@@ -483,7 +484,7 @@ lab.experiment("Event subscriptions", function () {
     response = await server.inject({
       method: 'DELETE',
       url: `/companies/${companyInst.id}/eventSubscriptions/${createdSubscriptionId}`,
-      headers
+      headers,
     })
     expect(response.statusCode).equal(200)
     subscrInst = await m.EventSubscription.findById(createdSubscriptionId)
@@ -492,7 +493,7 @@ lab.experiment("Event subscriptions", function () {
 })
 
 lab.experiment("Event handlers", function () {
-  var mocked = {
+  let mocked = {
     sendSMS ({to, from, body}) {
       expect(typeof to).equal('string')
       expect(typeof from).equal('string')
@@ -508,20 +509,20 @@ lab.experiment("Event handlers", function () {
     sendTelegram (chatId, message) {
       expect(typeof message).equal('string')
       expect(/^[0-9]+$/.test(chatId)).equal(true)
-    }
+    },
   }
 
-  var real = {
+  let real = {
     sendSMS: null,
     sendEmail: null,
-    sendTelegram: null
+    sendTelegram: null,
   }
 
   lab.before(async () => {
     real = {
       sendSMS: require('../src/lib/util/sms').sendSMS,
       sendMail: require('../src/lib/util/email').sendMail,
-      sendTelegram: require('../src/lib/util/telegram').sendTelegram
+      sendTelegram: require('../src/lib/util/telegram').sendTelegram,
     }
 
     require('../src/lib/util/sms').sendSMS = mocked.sendSMS
@@ -536,9 +537,9 @@ lab.experiment("Event handlers", function () {
   })
 
   lab.test('Event handlers succeed', async () => {
-    var payload = {
+    let payload = {
       message: 'Hello world!',
-      severity: 3
+      severity: 3,
     }
     eventHandlers.sms(
       {telephone: "+6588881111"},

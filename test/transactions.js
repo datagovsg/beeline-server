@@ -25,7 +25,7 @@ lab.experiment("Transactions", function () {
   let adminInstance
   let authHeaders = {}
   let stripeTokens = []
-  let creditTag
+  let tag
 
   // var testName = "Name for Testing";
   // var updatedTestName = "Updated name for Testing";
@@ -91,7 +91,7 @@ lab.experiment("Transactions", function () {
   }
 
   lab.before({timeout: 25000}, async () => {
-    creditTag = 'crowdstart-' + randomString()
+    tag = 'crowdstart-' + randomString()
 
     userInstance = await models.User.create({
       email: `testuser${new Date().getTime()}@example.com`,
@@ -128,7 +128,7 @@ lab.experiment("Transactions", function () {
       name: "Test route only",
       from: "FromHere",
       to: "ToHere",
-      tags: [creditTag, 'public'],
+      tags: [tag, 'public'],
       transportCompanyId: companyInstance.id,
     })
 
@@ -626,7 +626,7 @@ lab.experiment("Transactions", function () {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: creditTag,
+        tag,
       },
       headers: authHeaders[role],
     })
@@ -650,7 +650,7 @@ lab.experiment("Transactions", function () {
   lab.test("Issue Free Route Pass - is working for admin", {timeout: 15000}, issueFreeRoutePassWorksFor('admin'))
 
   const issueFreeRoutePassFailsFor = role => async () => {
-    const where = { userId: userInstance.id, companyId: companyInstance.id, tag: creditTag}
+    const where = { userId: userInstance.id, companyId: companyInstance.id, tag: tag}
     const initialRoutePassCount = await routePassCount(where)
 
     let response = await server.inject({
@@ -660,7 +660,7 @@ lab.experiment("Transactions", function () {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: creditTag,
+        tag,
       },
       headers: typeof role === 'string' ? authHeaders[role] : role,
     })
@@ -1620,7 +1620,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice,
-        creditTag,
+        tag,
       },
       headers: authHeaders.admin,
     })
@@ -1655,7 +1655,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice,
-        creditTag,
+        tag,
       },
       headers: authHeaders.admin,
     })
@@ -1664,7 +1664,7 @@ lab.experiment("Transactions", function () {
     expect(refundResponse2.result.message).equal('Unable to refund to routePass for partially refunded tickets')
   })
 
-  lab.test("Refund RoutePass fails for bad creditTags", {timeout: 30000}, async function () {
+  lab.test("Refund RoutePass fails for bad tags", {timeout: 30000}, async function () {
     const tripPrice = tripInstances[0].price
 
     let saleResponse = await server.inject({
@@ -1705,14 +1705,14 @@ lab.experiment("Transactions", function () {
     await tripInstances[0].reload()
     const seatsAvailable = tripInstances[0].seatsAvailable
 
-    const where = {userId: userInstance.id, companyId: companyInstance.id, tag: creditTag}
+    const where = {userId: userInstance.id, companyId: companyInstance.id, tag}
     const initialRoutePassCount = await routePassCount(where)
 
-    const makeAndValidateBadRefundRequest = async creditTag => {
+    const makeAndValidateBadRefundRequest = async tag => {
       let refundResponse = await server.inject({
         method: "POST",
         url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
-        payload: { creditTag, targetAmt: tripPrice },
+        payload: { tag, targetAmt: tripPrice },
         headers: authHeaders.admin,
       })
 
@@ -1724,7 +1724,7 @@ lab.experiment("Transactions", function () {
     }
 
     // Irrelevant tag
-    await makeAndValidateBadRefundRequest('BADCREDITTAG')
+    await makeAndValidateBadRefundRequest('BADTAG')
     // Non-credit tags
     await makeAndValidateBadRefundRequest('public')
   })
@@ -1763,7 +1763,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice - 2,
-        creditTag,
+        tag,
       },
       headers: authHeaders.admin,
     })
@@ -1778,7 +1778,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice + 2,
-        creditTag,
+        tag,
       },
       headers: authHeaders.admin,
     })
@@ -1866,7 +1866,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/tickets/${ticket.id}/refund/route_pass`,
       payload: {
         targetAmt: tripPrice,
-        creditTag,
+        tag,
       },
       headers: authHeaders.admin,
     })
@@ -1918,7 +1918,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/route_passes/payment`,
       payload: {
         quantity: 1,
-        tag: creditTag,
+        tag,
         stripeToken: await createStripeToken(),
         companyId: companyInstance.id,
       },
@@ -1963,7 +1963,7 @@ lab.experiment("Transactions", function () {
       code: promoCode,
       type: 'RoutePass',
       params: {
-        tag: creditTag,
+        tag,
         qualifyingCriteria: [
           {type: 'noLimit', params: {}},
         ],
@@ -1990,7 +1990,7 @@ lab.experiment("Transactions", function () {
       url: `/transactions/route_passes/payment`,
       payload: {
         quantity: 1,
-        tag: creditTag,
+        tag,
         stripeToken: await createStripeToken(),
         promoCode: { code: promoCode },
         companyId: companyInstance.id,
