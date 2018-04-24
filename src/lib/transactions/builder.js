@@ -1,3 +1,4 @@
+/* eslint-disable guard-for-in */
 const _ = require("lodash")
 const { TransactionError } = require("../util/errors")
 const { formatDateUTC } = require("../util/common")
@@ -154,7 +155,7 @@ transactionBuilder
   }
   The same connection object passed into the constructor.
 
-  @prop committed : boolean
+  committed : boolean
     Sets whether the transactions should be created with committed = true,
     and the tickets with status = 'valid'. If false, committed = false, and
     status = 'pending'.
@@ -214,46 +215,6 @@ transactionBuilder
   no effect on the running of the program, but is used to keep a record of what
   was originally purchased.
 
-### Methods:
-- build : () => Promise[models.Transaction]
-
-  Creates a models. Transaction with all the transactionItems specified in this
-  transactionBuilder (if dryRun == false), or creates a plain-old-data (POD) object
-  with the same properties as the transaction that would have been created.
-
-  If the models.Ticket instances in items have been updated, they will be also saved.
-
-- finalizeForPayment : (companyId: number) => TransactionBuilder
-  Returns a new, balanced transactionBuilder with a payment entry.
-
-- _excessCredit : () => number
-  Returns SUM(credits) - SUM(debits). This is equivalent to the amount that
-  has to be paid in an unfinalized transactionBuilder, after deducting discounts,
-  credits etc.
-
-Constructor:
-- TransactionBuilder(connection)
-  @arg connection. An object containing references to {db, models, transaction, dryRun}
-
-- TransactionBuilder(transactionBuilder)
-  Constructs a clone of transanctionBuilder.
-
-### Helper functions
-- outstandingAmounts : (items : typeof(transactionBuilder.items)) => Array[number]
-
-  (Self-documenting -- see source code)
-
-- updateTicketsWithDiscounts :
-    (items: typeof(transactionBuilder.items), code : string, quanta : Array[number], refundable : boolean)
-      => void
-
-  Updates `items[].transactionItem.notes.outstanding` (always) and
-  `items[].ticket.notes.discountValue` (only if refundable == true) if the
-  discount values specified in quanta are applied to the items.
-
-  Discount of amount quanta[0] will be applied to items[0], and quanta[1] to
-  items[1] etc., so the two arrays should have the same length.
-
 ## Writing transforms
 
 Each transform should perform the following:
@@ -281,6 +242,12 @@ For examples, refer to:
   on this object (e.g. via Array.push).
 **/
 export class TransactionBuilder {
+  /**
+   * Create a TransactionBuilder using either a configuration object or
+   * another TransactionBuilder
+   * @param {object|TransactionBuilder} connection - An object containing
+   * references to {db, models, transaction, dryRun}
+   */
   constructor(connection) {
     // Clone type
     if (connection instanceof TransactionBuilder) {
@@ -322,6 +289,14 @@ export class TransactionBuilder {
       this.committed = connection.committed
       this.connection = connection
       this.undoFunctions = []
+      /**
+       * An array of callbacks invoked after an accounting transaction
+       * has been created. Each callback will take in two parameters:
+       * <ul>
+       *   <li> `items` - the list of items held by transactionBuilder on initialization
+       *   <li> `transaction` - the Sequelize transaction
+       * </ul>
+       */
       this.postTransactionHooks = []
       this.transactionItemsByType = {}
       this.trips = this.tripsById = this.lineItems = this.items = null
@@ -343,8 +318,9 @@ export class TransactionBuilder {
 
   /**
    * Seal up the imbalance in credits as payment to ourselves
-   * @param destinationCompanyId - the company to make the payment to
-   * @param makeNotes - a callback generates notes for the payment to be made
+   * @param {number} destinationCompanyId - the company to make the payment to
+   * @param {function} makeNotes - a callback generates notes for the payment to be made
+   * @return {TransactionBuilder} a new, balanced transactionBuilder with a payment entry
    */
   async finalizeForPayment(
     destinationCompanyId,
@@ -378,6 +354,13 @@ export class TransactionBuilder {
     }
   }
 
+  /**
+   * Seal up the imbalance in credits as payment to ourselves
+   * @param {array} items - an array of transaction items for tickets
+   * @param {number} excessCredit - the credit balance that the sum of ticket values
+   * must be equal to
+   * @return {object} a map of tickets to respective outstanding amounts
+   */
   _mapTicketToOutstandingAmount(items, excessCredit) {
     let ticketSplit
     if (items) {
@@ -397,7 +380,13 @@ export class TransactionBuilder {
     }
   }
 
-  /* Transfer received payments to company */
+  /**
+   * Transfer received payments to company
+   * @param {number} destinationCompanyId - the id of the recipient company
+   * @param {number} amount - the amount to be transferred
+   * @return {TransactionBuilder} a clone of the original TransactionBuilder,
+   * with the transfer applied
+   */
   async transferToCompany(destinationCompanyId, amount) {
     let clone = new TransactionBuilder(this)
 
@@ -452,6 +441,13 @@ export class TransactionBuilder {
     return clone
   }
 
+  /**
+   * Sum the total net credit for the transaction
+   * items in this TransactionBuilder
+   * @return {number} SUM(credits) - SUM(debits). This is equivalent to the amount that
+   * has to be paid in an unfinalized transactionBuilder, after deducting discounts,
+   * credits etc.
+   */
   _excessCredit() {
     let netCredit = 0.0
     _.forEach(this.transactionItemsByType, tis => {
@@ -477,6 +473,7 @@ export class TransactionBuilder {
     return netCredit
   }
 
+  /** Assert that excess credit is zero, ie, debit and credit items balance **/
   _checkBalanced() {
     assert(
       Math.abs(this._excessCredit()) < 0.0001,
@@ -484,6 +481,7 @@ export class TransactionBuilder {
     )
   }
 
+  /** Assert that transactionItemsByType is grouping its items by the correct type **/
   _checkConsistency() {
     _.forEach(this.transactionItemsByType, (v, k) => {
       v.forEach(ti =>
@@ -520,17 +518,13 @@ export class TransactionBuilder {
   }
 
   /**
-   * Create a new Transaction instance and the corresponding
-   * TransactionItems that relate to it
-   *
-   * @param options - an object holding options that influence transaction insertion.
+   * Create a new Transaction instance and the corresponding TransactionItems that relate to it
+   * If the models.Ticket instances in items have been updated, they will be also saved.
+   * @param {object} options - an object holding options that influence transaction insertion.
    * Currently only supports one field - `type`, the type of the transaction made
-   * @param postTransactionHooks - an array of callbacks invoked after an accounting
-   * transaction has been created. Each callback will take in two parameters:
-   * <ul>
-   *   <li> `items` - the list of items held by transactionBuilder on initialization
-   *   <li> `transaction` - the Sequelize transaction
-   * </ul>
+   * @return {array} Transaction with all the transactionItems specified in this
+   * transactionBuilder, or (if dryRun == false) creates a plain-old-data (POD) object
+   * with the same properties as the transaction that would have been created
    */
   async build(options = {}) {
     let { type } = options
@@ -575,7 +569,7 @@ export class TransactionBuilder {
             Promise.all(_.reverse(this.undoFunctions).map(fn => fn(t)))
           )
         } catch (err) {
-          console.log(err.stack)
+          console.error(err.stack)
           throw err
         }
       }
@@ -585,6 +579,12 @@ export class TransactionBuilder {
   }
 }
 
+/**
+ * Create tickets as specified in lineItems
+ * @param {TransactionBuilder} tb - the transaction builder
+ * @param {array} lineItems - an array of ticket specs
+ * @return {promise} a promise that resolves on ticket creation
+ */
 function _makeTickets(tb, lineItems) {
   const { models, transaction, committed, dryRun } = tb.connection
 
@@ -638,6 +638,12 @@ function _makeTickets(tb, lineItems) {
   }
 }
 
+/**
+ * Create a transaction builder, and initialize with ticket sale transaction items
+ * @param {object} connection - a connection containing Sequelize models and a db txn
+ * @param {array} lineItems - working items for the creation of tickets
+ * @return {TransactionBuilder} the created transaction builder
+ */
 export async function initBuilderWithTicketSale(connection, lineItems) {
   const transactionBuilder = new TransactionBuilder(connection)
   const { models, transaction } = connection
@@ -756,10 +762,24 @@ export async function initBuilderWithTicketSale(connection, lineItems) {
   return transactionBuilder
 }
 
+/**
+ * Extract the outstanding amounts
+ * @param {array} items
+ * @return {array}
+ */
 export function outstandingAmounts(items) {
   return items.map(item => parseFloat(item.transactionItem.notes.outstanding))
 }
 
+/**
+ * Delegates to `updateItemsWithDiscounts`
+ * @param {array} items - the transaction items to be updated
+ * @param {string} code - the discount code used, to be recorded in each txn item
+ * @param {array} quanta - the discounts made against each corresponding item
+ * @param {boolean} refundable - is this transaction refundable?
+ * @param {string} sequelizeType - the Sequelize type for the txn items
+ * @return {*}
+ */
 export function updateTicketsWithDiscounts(
   items,
   code,
@@ -769,6 +789,18 @@ export function updateTicketsWithDiscounts(
   return updateItemsWithDiscounts(items, code, quanta, refundable, "ticket")
 }
 
+/**
+ * Updates `items[].transactionItem.notes.outstanding` (always) and
+ * `items[][sequelizeType].notes.discountValue` (only if refundable == true) if the
+ * discount values specified in quanta are applied to the items.
+ * Discount of amount quanta[0] will be applied to items[0], and quanta[1] to
+ * items[1] etc., so the two arrays should have the same length.
+ * @param {array} items - the transaction items to be updated
+ * @param {string} code - the discount code used, to be recorded in each txn item
+ * @param {array} quanta - the discounts made against each corresponding item
+ * @param {boolean} refundable - is this transaction refundable?
+ * @param {string} sequelizeType - the Sequelize type for the txn items
+ */
 function updateItemsWithDiscounts(
   items,
   code,
@@ -800,6 +832,10 @@ function updateItemsWithDiscounts(
  * Use this to look up the transaction items holding tickets or
  * similar Sequelize objects, and update such transaction items
  * with discounts
+ * @param {TransactionBuilder} transactionBuilder
+ * @param {object} promoCode
+ * @param {string} promoCode.code - the discount code used, to be recorded in each txn item
+ * @param {string} sequelizeType - the Sequelize type for the txn items
  */
 export function updateTransactionBuilderWithPromoDiscounts(
   transactionBuilder,
