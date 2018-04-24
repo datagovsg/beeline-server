@@ -1,7 +1,7 @@
-const _ = require('lodash')
-const {TransactionError} = require('../util/errors')
-const {formatDateUTC} = require('../util/common')
-const assert = require('assert')
+const _ = require("lodash")
+const { TransactionError } = require("../util/errors")
+const { formatDateUTC } = require("../util/common")
+const assert = require("assert")
 
 /**
 
@@ -281,14 +281,25 @@ For examples, refer to:
   on this object (e.g. via Array.push).
 **/
 export class TransactionBuilder {
-  constructor (connection) {
+  constructor(connection) {
     // Clone type
     if (connection instanceof TransactionBuilder) {
       const propertiesToClone = [
-        'lineItems', 'items', 'transactionItemsByType',
-        'tripsPromise', 'trips', 'transaction', 'db',
-        'models', 'dryRun', 'tripsById', 'connection',
-        'undoFunctions', 'postTransactionHooks', 'description', 'committed',
+        "lineItems",
+        "items",
+        "transactionItemsByType",
+        "tripsPromise",
+        "trips",
+        "transaction",
+        "db",
+        "models",
+        "dryRun",
+        "tripsById",
+        "connection",
+        "undoFunctions",
+        "postTransactionHooks",
+        "description",
+        "committed",
       ]
 
       // FIXME: obviously you will need deepClone to achieve
@@ -299,7 +310,9 @@ export class TransactionBuilder {
 
       // Further properties to clone more deeply
       for (let key in this.transactionItemsByType) {
-        this.transactionItemsByType[key] = _.clone(this.transactionItemsByType[key])
+        this.transactionItemsByType[key] = _.clone(
+          this.transactionItemsByType[key]
+        )
       }
     } else {
       this.transaction = connection.transaction
@@ -313,12 +326,17 @@ export class TransactionBuilder {
       this.transactionItemsByType = {}
       this.trips = this.tripsById = this.lineItems = this.items = null
 
-      assert(this.models, 'connection.models not set')
-      assert(typeof this.dryRun === 'boolean', 'connection.dryRun not set')
-      assert(typeof this.connection.committed === 'boolean', 'connection.committed not set')
+      assert(this.models, "connection.models not set")
+      assert(typeof this.dryRun === "boolean", "connection.dryRun not set")
+      assert(
+        typeof this.connection.committed === "boolean",
+        "connection.committed not set"
+      )
       assert(this.db, "connection.db not set")
       if (!this.dryRun && !this.transaction) {
-        console.error("A live transaction was requested, but no database transaction issued. Are you sure this is correct")
+        console.error(
+          "A live transaction was requested, but no database transaction issued. Are you sure this is correct"
+        )
       }
     }
   }
@@ -328,24 +346,29 @@ export class TransactionBuilder {
    * @param destinationCompanyId - the company to make the payment to
    * @param makeNotes - a callback generates notes for the payment to be made
    */
-  async finalizeForPayment (destinationCompanyId, makeNotes = this._mapTicketToOutstandingAmount) {
-    var clone = new TransactionBuilder(this)
+  async finalizeForPayment(
+    destinationCompanyId,
+    makeNotes = this._mapTicketToOutstandingAmount
+  ) {
+    let clone = new TransactionBuilder(this)
 
-    assert(!clone.transactionItemsByType.payment,
-      "Transaction has already been sealed for payment")
+    assert(
+      !clone.transactionItemsByType.payment,
+      "Transaction has already been sealed for payment"
+    )
 
     const excessCredit = this._excessCredit()
     const notes = makeNotes(this.items, excessCredit)
 
     clone.transactionItemsByType.payment = [
       {
-        itemType: 'payment',
+        itemType: "payment",
         payment: {
           incoming: excessCredit,
         },
         debit: excessCredit,
         notes,
-      }
+      },
     ]
 
     if (destinationCompanyId) {
@@ -355,13 +378,17 @@ export class TransactionBuilder {
     }
   }
 
-  _mapTicketToOutstandingAmount (items, excessCredit) {
+  _mapTicketToOutstandingAmount(items, excessCredit) {
     let ticketSplit
     if (items) {
-      ticketSplit = _.fromPairs(_.zip(items.map(i => i.ticket.id), outstandingAmounts(items)))
+      ticketSplit = _.fromPairs(
+        _.zip(items.map(i => i.ticket.id), outstandingAmounts(items))
+      )
 
-      assert(Math.abs(_.sum(_.values(ticketSplit)) - excessCredit) < 0.0001,
-        "Some discounts were not recorded on tickets")
+      assert(
+        Math.abs(_.sum(_.values(ticketSplit)) - excessCredit) < 0.0001,
+        "Some discounts were not recorded on tickets"
+      )
     } else {
       ticketSplit = null
     }
@@ -371,37 +398,46 @@ export class TransactionBuilder {
   }
 
   /* Transfer received payments to company */
-  async transferToCompany (destinationCompanyId, amount) {
-    var clone = new TransactionBuilder(this)
+  async transferToCompany(destinationCompanyId, amount) {
+    let clone = new TransactionBuilder(this)
 
     assert(destinationCompanyId)
 
     clone.transactionItemsByType.transfer =
       clone.transactionItemsByType.transfer || []
 
-    clone.transactionItemsByType.transfer =
-      clone.transactionItemsByType.transfer.concat([{
-        itemType: 'transfer',
-        transfer: {
-          transportCompanyId: destinationCompanyId,
-          outgoing: amount,
+    clone.transactionItemsByType.transfer = clone.transactionItemsByType.transfer.concat(
+      [
+        {
+          itemType: "transfer",
+          transfer: {
+            transportCompanyId: destinationCompanyId,
+            outgoing: amount,
+          },
+          credit: amount,
         },
-        credit: amount,
-      }])
+      ]
+    )
 
     /* Dummy account because we are too lazy to actually track the
       amounts owed to the company due to discounts on OUR part,
       and the discounts offered by the company to the user via
       us
     */
-    const cogsAccount = await this.models.Account.getByName("Cost of Goods Sold", {
-      transaction: this.transaction
-    })
+    const cogsAccount = await this.models.Account.getByName(
+      "Cost of Goods Sold",
+      {
+        transaction: this.transaction,
+      }
+    )
 
-    clone.transactionItemsByType.account = clone.transactionItemsByType.account || []
+    clone.transactionItemsByType.account =
+      clone.transactionItemsByType.account || []
 
-    const [cogsAccountItems, nonCogsAccountItems] =
-      _.partition(clone.transactionItemsByType.account, a => a.itemId === cogsAccount.id)
+    const [cogsAccountItems, nonCogsAccountItems] = _.partition(
+      clone.transactionItemsByType.account,
+      a => a.itemId === cogsAccount.id
+    )
 
     const newCogsAccountItem = {
       debit: _.sum(cogsAccountItems.map(i => i.debit)) + amount,
@@ -409,56 +445,77 @@ export class TransactionBuilder {
       itemType: "account",
     }
 
-    clone.transactionItemsByType.account = nonCogsAccountItems.concat(newCogsAccountItem)
+    clone.transactionItemsByType.account = nonCogsAccountItems.concat(
+      newCogsAccountItem
+    )
 
     return clone
   }
 
-  _excessCredit () {
-    var netCredit = 0.00
-    _.forEach(this.transactionItemsByType, (tis) => {
-      _.forEach(tis, (ti) => {
-        var credit = (typeof ti.credit === 'number' && isFinite(ti.credit))
-          ? ti.credit
-          : (typeof ti.credit === 'string')
-            ? parseFloat(ti.credit)
-            : (typeof ti.debit === 'number' && isFinite(ti.debit))
-              ? -ti.debit
-              : (typeof ti.debit === 'string') ? -parseFloat(ti.debit) : undefined
+  _excessCredit() {
+    let netCredit = 0.0
+    _.forEach(this.transactionItemsByType, tis => {
+      _.forEach(tis, ti => {
+        let credit =
+          typeof ti.credit === "number" && isFinite(ti.credit)
+            ? ti.credit
+            : typeof ti.credit === "string"
+              ? parseFloat(ti.credit)
+              : typeof ti.debit === "number" && isFinite(ti.debit)
+                ? -ti.debit
+                : typeof ti.debit === "string"
+                  ? -parseFloat(ti.debit)
+                  : undefined
 
-        assert(credit !== undefined, `No suitable credit/debit: ${ti.credit}, ${ti.debit}`)
+        assert(
+          credit !== undefined,
+          `No suitable credit/debit: ${ti.credit}, ${ti.debit}`
+        )
         netCredit += credit
       })
     })
     return netCredit
   }
 
-  _checkBalanced () {
-    assert(Math.abs(this._excessCredit()) < 0.0001,
-      "Debits and credits should balance")
+  _checkBalanced() {
+    assert(
+      Math.abs(this._excessCredit()) < 0.0001,
+      "Debits and credits should balance"
+    )
   }
 
-  _checkConsistency () {
+  _checkConsistency() {
     _.forEach(this.transactionItemsByType, (v, k) => {
-      v.forEach(ti => assert(ti.itemType === k, `"itemType" of ${JSON.stringify(ti)} is not ${k}`))
+      v.forEach(ti =>
+        assert(
+          ti.itemType === k,
+          `"itemType" of ${JSON.stringify(ti)} is not ${k}`
+        )
+      )
     })
   }
 
   /**
    * Save the tickets, if they have changed
    */
-  async _saveChangesToTickets () {
+  async _saveChangesToTickets() {
     if (this.items) {
-      await Promise.all(this.items.map(it => it.ticket.save({ transaction: this.transaction })))
+      await Promise.all(
+        this.items.map(it => it.ticket.save({ transaction: this.transaction }))
+      )
     }
   }
 
   /**
    * Save the tickets, if they have changed
    */
-  async _saveChangesToRoutePasses () {
+  async _saveChangesToRoutePasses() {
     if (this.items) {
-      await Promise.all(this.items.map(it => it.routePass.save({ transaction: this.transaction })))
+      await Promise.all(
+        this.items.map(it =>
+          it.routePass.save({ transaction: this.transaction })
+        )
+      )
     }
   }
 
@@ -475,8 +532,8 @@ export class TransactionBuilder {
    *   <li> `transaction` - the Sequelize transaction
    * </ul>
    */
-  async build (options = {}) {
-    var {type} = options
+  async build(options = {}) {
+    let { type } = options
 
     // Ensure we have somewhat sane values
     this._checkConsistency()
@@ -491,30 +548,32 @@ export class TransactionBuilder {
       description: this.description, // generic description
       creatorType: this.connection.creator && this.connection.creator.type,
       creatorId: this.connection.creator && this.connection.creator.id,
-      type: type || "ticketPurchase"
+      type: type || "ticketPurchase",
     }
 
     if (this.dryRun) {
       return [transactionData, null]
     } else {
       const dbTransactionInstance = this.dryRun
-        ? transactionData : await this.models.Transaction.create(transactionData, {
-          transaction: this.transaction,
-          include: this.models.Transaction.allTransactionTypes(),
-        })
+        ? transactionData
+        : await this.models.Transaction.create(transactionData, {
+            transaction: this.transaction,
+            include: this.models.Transaction.allTransactionTypes(),
+          })
 
       for (const hook of this.postTransactionHooks) {
         await hook.apply(this) // eslint-disable-line no-await-in-loop
       }
 
-      this.undoFunctions.push((t) =>
-        dbTransactionInstance.update({committed: false}, {transaction: t})
+      this.undoFunctions.push(t =>
+        dbTransactionInstance.update({ committed: false }, { transaction: t })
       )
 
       const undoFn = async () => {
         try {
-          await this.db.transaction((t) =>
-            Promise.all(_.reverse(this.undoFunctions).map(fn => fn(t))))
+          await this.db.transaction(t =>
+            Promise.all(_.reverse(this.undoFunctions).map(fn => fn(t)))
+          )
         } catch (err) {
           console.log(err.stack)
           throw err
@@ -526,86 +585,99 @@ export class TransactionBuilder {
   }
 }
 
-function _makeTickets (tb, lineItems) {
-  const {models, transaction, committed, dryRun} = tb.connection
+function _makeTickets(tb, lineItems) {
+  const { models, transaction, committed, dryRun } = tb.connection
 
-  var data = lineItems.map(lineItem => ({
+  let data = lineItems.map(lineItem => ({
     userId: lineItem.userId,
     boardStopId: lineItem.boardStopId,
     alightStopId: lineItem.alightStopId,
-    status: committed ? 'valid' : 'pending',
-    notes: {}
+    status: committed ? "valid" : "pending",
+    notes: {},
   }))
 
   if (dryRun) {
     return Promise.resolve(
-      data.map((ticketData, index) => _.assign(ticketData, {id: index}))
+      data.map((ticketData, index) => _.assign(ticketData, { id: index }))
     )
   } else {
-    const ticketCreationPromise = Promise.all(data.map(item => models.Ticket.create(item, {transaction})))
-
-    tb.undoFunctions.push(
-      t => ticketCreationPromise
-        .then(ticketInstances => Promise.all(ticketInstances.map(ticket => ticket.update(
-          {status: 'failed'},
-          { transaction: t }
-        ))))
+    const ticketCreationPromise = Promise.all(
+      data.map(item => models.Ticket.create(item, { transaction }))
     )
 
-    return ticketCreationPromise
-      .then(async (tickets) => {
-        const exhaustedTrip = await models.Trip.find({
-          where: {
-            id: {$in: lineItems.map(li => li.tripId)},
-            seatsAvailable: {$lt: 0}
-          },
-          transaction
-        })
+    tb.undoFunctions.push(t =>
+      ticketCreationPromise.then(ticketInstances =>
+        Promise.all(
+          ticketInstances.map(ticket =>
+            ticket.update({ status: "failed" }, { transaction: t })
+          )
+        )
+      )
+    )
 
-        if (exhaustedTrip) {
-          throw new TransactionError(`Tickets for ` +
-            `${formatDateUTC(tb.tripsById[exhaustedTrip.id].date)} are sold out.`)
-        }
-
-        return tickets
+    return ticketCreationPromise.then(async tickets => {
+      const exhaustedTrip = await models.Trip.find({
+        where: {
+          id: { $in: lineItems.map(li => li.tripId) },
+          seatsAvailable: { $lt: 0 },
+        },
+        transaction,
       })
+
+      if (exhaustedTrip) {
+        throw new TransactionError(
+          `Tickets for ` +
+            `${formatDateUTC(
+              tb.tripsById[exhaustedTrip.id].date
+            )} are sold out.`
+        )
+      }
+
+      return tickets
+    })
   }
 }
 
-export async function initBuilderWithTicketSale (connection, lineItems) {
+export async function initBuilderWithTicketSale(connection, lineItems) {
   const transactionBuilder = new TransactionBuilder(connection)
-  const {models, transaction} = connection
+  const { models, transaction } = connection
 
   // Construct from raw data
   const items = lineItems.map(item => ({
-    item, trip: null, discount: null, price: undefined,
+    item,
+    trip: null,
+    discount: null,
+    price: undefined,
   }))
 
   // Fetch data about the tickets
   const trips = await models.Trip.findAll({
-    where: {id: {$in: lineItems.map(item => item.tripId)}},
+    where: { id: { $in: lineItems.map(item => item.tripId) } },
     transaction,
     include: [
       {
         model: models.TripStop,
-        include: [{
-          model: models.Ticket,
-          where: {
-            userId: {$in: lineItems.map(item => item.userId)},
-            status: {$in: ['valid', 'pending', 'bidded']},
+        include: [
+          {
+            model: models.Ticket,
+            where: {
+              userId: { $in: lineItems.map(item => item.userId) },
+              status: { $in: ["valid", "pending", "bidded"] },
+            },
+            required: false,
           },
-          required: false,
-        }],
-      }, {
+        ],
+      },
+      {
         model: models.Route,
-        attributes: { exclude: ['path'] }
-      }
-    ]
+        attributes: { exclude: ["path"] },
+      },
+    ],
   })
 
-  const tripsById = _.keyBy(trips, 'id')
+  const tripsById = _.keyBy(trips, "id")
 
-  _.assign(transactionBuilder, {tripsById, trips})
+  _.assign(transactionBuilder, { tripsById, trips })
 
   const ticketInsts = await _makeTickets(transactionBuilder, lineItems)
 
@@ -615,74 +687,109 @@ export async function initBuilderWithTicketSale (connection, lineItems) {
     item.ticket = ticket
     item.id = ticket.id
     item.userId = item.item.userId
-    item.type = 'ticket'
+    item.type = "ticket"
 
     // FIXME: This creates an internal pointer which makes the object
     // difficult to clone correctly.
     item.transactionItem = {
-      itemType: 'ticketSale',
+      itemType: "ticketSale",
       itemId: item.ticket.id,
       credit: item.trip.price,
       notes: {
-        ticket: (item.ticket.toJSON ? item.ticket.toJSON() : item.ticket),
-        outstanding: parseFloat(item.trip.price)
-      }
+        ticket: item.ticket.toJSON ? item.ticket.toJSON() : item.ticket,
+        outstanding: parseFloat(item.trip.price),
+      },
     }
   }
 
   // Build the descriptions:
   // Example: B01 1,2,3 Mar; 4,5,6 Apr. B02 3 Feb
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const tripDescriptions = 'Purchase: ' + _(items)
-    .map(it => it.trip)
-    .groupBy(trip => trip.route && trip.route.id)
-    .values()
-    .map(trips => {
-      const routeDescription = trips[0].route ? trips[0].route.label : '[No Route]'
-      const datesDescription = _(trips)
-        .groupBy(t => t.date.getUTCMonth())
-        .toPairs()
-        .map(([month, trips]) => {
-          const daysString = trips.map(t => `${t.date.getUTCDate()}`).join(',')
-          return `${daysString} ${monthNames[month]}`
-        })
-        .join('; ')
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]
+  const tripDescriptions =
+    "Purchase: " +
+    _(items)
+      .map(it => it.trip)
+      .groupBy(trip => trip.route && trip.route.id)
+      .values()
+      .map(trips => {
+        const routeDescription = trips[0].route
+          ? trips[0].route.label
+          : "[No Route]"
+        const datesDescription = _(trips)
+          .groupBy(t => t.date.getUTCMonth())
+          .toPairs()
+          .map(([month, trips]) => {
+            const daysString = trips
+              .map(t => `${t.date.getUTCDate()}`)
+              .join(",")
+            return `${daysString} ${monthNames[month]}`
+          })
+          .join("; ")
 
-      return `${routeDescription} ${datesDescription}`
-    })
-    .join('. ')
+        return `${routeDescription} ${datesDescription}`
+      })
+      .join(". ")
 
   _.assign(transactionBuilder, {
-    items, lineItems,
-    description: tripDescriptions
+    items,
+    lineItems,
+    description: tripDescriptions,
   })
 
   transactionBuilder.transactionItemsByType = {
-    ticketSale: items.map((item) => item.transactionItem)
+    ticketSale: items.map(item => item.transactionItem),
   }
 
   return transactionBuilder
 }
 
-export function outstandingAmounts (items) {
-  return items.map((item) => parseFloat(item.transactionItem.notes.outstanding))
+export function outstandingAmounts(items) {
+  return items.map(item => parseFloat(item.transactionItem.notes.outstanding))
 }
 
-export function updateTicketsWithDiscounts (items, code, quanta, refundable = true) {
-  return updateItemsWithDiscounts(items, code, quanta, refundable, 'ticket')
+export function updateTicketsWithDiscounts(
+  items,
+  code,
+  quanta,
+  refundable = true
+) {
+  return updateItemsWithDiscounts(items, code, quanta, refundable, "ticket")
 }
 
-function updateItemsWithDiscounts (items, code, quanta, refundable, sequelizeType) {
+function updateItemsWithDiscounts(
+  items,
+  code,
+  quanta,
+  refundable,
+  sequelizeType
+) {
   // Add it to the discounted value of the item
   for (let [item, quantum] of _.zip(items, quanta)) {
     if (!refundable) {
       item[sequelizeType].notes = _.clone(item[sequelizeType].notes) // force update
-      item[sequelizeType].notes.discountCodes = item[sequelizeType].notes.discountCodes || []
+      item[sequelizeType].notes.discountCodes =
+        item[sequelizeType].notes.discountCodes || []
       item[sequelizeType].notes.discountCodes.push(code)
-      item[sequelizeType].notes.discountValue = item[sequelizeType].notes.discountValue || 0
+      item[sequelizeType].notes.discountValue =
+        item[sequelizeType].notes.discountValue || 0
       item[sequelizeType].notes.discountValue += quantum
     }
-    item.transactionItem.notes.outstanding = Math.round(item.transactionItem.notes.outstanding * 100 - quantum * 100) / 100
+    item.transactionItem.notes.outstanding =
+      Math.round(item.transactionItem.notes.outstanding * 100 - quantum * 100) /
+      100
   }
 }
 
@@ -694,16 +801,26 @@ function updateItemsWithDiscounts (items, code, quanta, refundable, sequelizeTyp
  * similar Sequelize objects, and update such transaction items
  * with discounts
  */
-export function updateTransactionBuilderWithPromoDiscounts (transactionBuilder, promoCode, sequelizeType = 'ticket') {
+export function updateTransactionBuilderWithPromoDiscounts(
+  transactionBuilder,
+  promoCode,
+  sequelizeType = "ticket"
+) {
   for (const d of transactionBuilder.transactionItemsByType.discount) {
     const discountedSales = []
     const discountAmounts = []
     for (const [id, discountAmount] of Object.entries(d.notes.tickets)) {
-      discountedSales.push(transactionBuilder.items.find(i => i.id === +id && i[sequelizeType]))
+      discountedSales.push(
+        transactionBuilder.items.find(i => i.id === +id && i[sequelizeType])
+      )
       discountAmounts.push(discountAmount)
     }
     updateItemsWithDiscounts(
-      discountedSales, promoCode.code, discountAmounts, false, sequelizeType
+      discountedSales,
+      promoCode.code,
+      discountAmounts,
+      false,
+      sequelizeType
     )
   }
 }
