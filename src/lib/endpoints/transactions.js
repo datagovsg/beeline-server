@@ -52,6 +52,31 @@ const INVALID_CREDIT_TAGS = [
 ]
 
 export const register = (server, options, next) => {
+  const { models } = server.plugins["sequelize"]
+  // Prompt update of promotions used upon completion of purchase
+  events.on("newPurchase", {}, async event => {
+    try {
+      if (event.promotionId) {
+        let promoInst = await models.Promotion.findById(event.promotionId)
+
+        if (promoInst.params.usageLimit.globalLimit) {
+          await models.PromoUsage.addGlobalPromoUsage(
+            promoInst.id,
+            event.numValidPromoTickets
+          )
+        }
+      }
+    } catch (err) {
+      console.error(err)
+
+      events.emit("transactionFailure", {
+        message: `Error updating total usage of promotion (id: ${
+          event.promoId
+        }), with message: ${err.message}`,
+      })
+    }
+  })
+
   routeRequestsTo(server, ["/transactions/tickets/payment"], {
     method: "POST",
     config: {
@@ -60,7 +85,7 @@ export const register = (server, options, next) => {
   transaction as committed and the tickets as valid if Stripe has been
   successfully charged.`,
       validate: {
-        payload: {
+        payload: Joi.object({
           trips: Joi.array().items(
             Joi.object({
               tripId: Joi.number().integer(),
@@ -76,13 +101,11 @@ export const register = (server, options, next) => {
             options: Joi.object(),
           }).allow(null),
           applyRoutePass: Joi.boolean().default(false),
-          applyReferralCredits: Joi.boolean().default(false),
-          applyCredits: Joi.boolean().default(false),
           stripeToken: Joi.string(),
           customerId: Joi.string(),
           sourceId: Joi.string(),
           expectedPrice: Joi.number().allow(null),
-        },
+        }).unknown(),
       },
     },
     async handler(request, reply) {
@@ -113,8 +136,6 @@ export const register = (server, options, next) => {
           trips: request.payload.trips,
           promoCode: request.payload.promoCode,
           applyRoutePass: request.payload.applyRoutePass,
-          applyReferralCredits: request.payload.applyReferralCredits,
-          applyCredits: request.payload.applyCredits,
           dryRun: false,
           committed: true,
           convertToJson: false,
@@ -272,7 +293,6 @@ export const register = (server, options, next) => {
             .integer()
             .min(0)
             .required(),
-          applyCredits: Joi.boolean().default(false),
           stripeToken: Joi.string(),
           customerId: Joi.string().description(
             "For payment with saved credit card"
@@ -401,8 +421,6 @@ export const register = (server, options, next) => {
             })
           ),
           applyRoutePass: Joi.boolean().default(false),
-          applyReferralCredits: Joi.boolean().default(false),
-          applyCredits: Joi.boolean().default(false),
           promoCode: Joi.object()
             .keys({
               code: Joi.string().allow(""),
@@ -427,8 +445,6 @@ export const register = (server, options, next) => {
           trips: request.payload.trips,
           promoCode: request.payload.promoCode,
           applyRoutePass: request.payload.applyRoutePass,
-          applyReferralCredits: request.payload.applyReferralCredits,
-          applyCredits: request.payload.applyCredits,
           dryRun: true,
         })
 

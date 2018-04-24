@@ -1428,10 +1428,18 @@ lab.experiment("Transactions", function () {
   lab.test("Refund Payment disallowed if payment is less than ticket value", {timeout: 15000}, async function () {
     const tripPrice = tripInstances[0].price
 
-    let creditInst = await models.Credit.create({
-      userId: userInstance.id,
-      balance: tripPrice - 2,
+    const firstPurchaseResponse = await server.inject({
+      method: 'POST',
+      url: `/transactions/route_passes/payment`,
+      payload: {
+        quantity: 1,
+        tag,
+        stripeToken: await createStripeToken(),
+        companyId: companyInstance.id,
+      },
+      headers: authHeaders.user,
     })
+    expect(firstPurchaseResponse.statusCode).to.equal(200)
 
     let saleResponse = await server.inject({
       method: "POST",
@@ -1444,7 +1452,7 @@ lab.experiment("Transactions", function () {
           // qty: 1
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true,
+        applyRoutePass: true,
       },
       headers: authHeaders.user,
     })
@@ -1470,16 +1478,26 @@ lab.experiment("Transactions", function () {
     })
 
     expect(refundResponse.statusCode).to.equal(400)
-    await creditInst.destroy()
+    await models.RoutePass.destroy({ truncate: true })
   })
 
   lab.test("Refund Payment allowed if payment is more than ticket value", {timeout: 15000}, async function () {
-    const tripPrice = tripInstances[0].price
-    await models.Credit.destroy({ truncate: true })
-    let creditInst = await models.Credit.create({
-      userId: userInstance.id,
-      balance: tripPrice - 2,
+    // The route pass will subsidise the 0th trip, so ask for a refund for the 1st
+    const tripPrice = tripInstances[1].price
+
+    await models.RoutePass.destroy({ truncate: true })
+    const firstPurchaseResponse = await server.inject({
+      method: 'POST',
+      url: `/transactions/route_passes/payment`,
+      payload: {
+        quantity: 1,
+        tag,
+        stripeToken: await createStripeToken(),
+        companyId: companyInstance.id,
+      },
+      headers: authHeaders.user,
     })
+    expect(firstPurchaseResponse.statusCode).to.equal(200)
 
     let saleResponse = await server.inject({
       method: "POST",
@@ -1497,7 +1515,7 @@ lab.experiment("Transactions", function () {
           // qty: 1
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true,
+        applyRoutePass: true,
       },
       headers: authHeaders.user,
     })
@@ -1510,7 +1528,7 @@ lab.experiment("Transactions", function () {
       })
     )
 
-    let ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    let ticket = tickets.find(t => t.boardStopId === tripInstances[1].tripStops[0].id)
 
     // Refund ticket at full price
     let refundResponse = await server.inject({
@@ -1530,7 +1548,7 @@ lab.experiment("Transactions", function () {
     expect(refundTIByType.refundPayment.length).equal(1)
     expect(refundTIByType.refundPayment[0].credit).equal(tripPrice)
 
-    await creditInst.destroy()
+    await models.RoutePass.destroy({ truncate: true })
   })
 
   lab.test("Refund Payment disallowed if targetAmt is less than ticket value", {timeout: 20000}, async function () {
@@ -1546,7 +1564,6 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[0].tripStops[0].id,
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true,
       },
       headers: authHeaders.user,
     })
@@ -1742,7 +1759,6 @@ lab.experiment("Transactions", function () {
           alightStopId: tripInstances[0].tripStops[0].id,
         }],
         stripeToken: await createStripeToken(),
-        applyCredits: true,
       },
       headers: authHeaders.user,
     })

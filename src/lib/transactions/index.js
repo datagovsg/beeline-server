@@ -7,8 +7,6 @@ import Sequelize from "sequelize"
 import { ChargeError, TransactionError } from "../util/errors"
 import { roundToNearestCent } from "../util/common"
 import { applyPromoCode } from "../promotions"
-import * as Credits from "../promotions/Credits"
-import * as ReferralCredits from "../promotions/ReferralProgram"
 
 import { routePassTagsFrom, applyRoutePass } from "./routePass"
 import {
@@ -106,8 +104,6 @@ export async function prepareTicketSale(connection, optionsRaw) {
 
     dryRun: Joi.boolean().default(false),
     applyRoutePass: Joi.boolean().default(false),
-    applyReferralCredits: Joi.boolean().default(false),
-    applyCredits: Joi.boolean().default(false),
 
     checks: Joi.object({
       ensureAvailability: Joi.boolean().default(true),
@@ -203,16 +199,6 @@ export async function prepareTicketSale(connection, optionsRaw) {
               promoCode
             )
           }
-        }
-
-        if (options.applyReferralCredits) {
-          transactionBuilder = await ReferralCredits.applyCredits(
-            transactionBuilder
-          )
-        }
-
-        if (options.applyCredits) {
-          transactionBuilder = await Credits.applyCredits(transactionBuilder)
         }
 
         // 7. payment of balance
