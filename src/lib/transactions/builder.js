@@ -1,7 +1,8 @@
-const _ = require('lodash')
-const {TransactionError} = require('../util/errors')
-const {formatDateUTC} = require('../util/common')
-const assert = require('assert')
+/* eslint-disable guard-for-in */
+const _ = require("lodash")
+const { TransactionError } = require("../util/errors")
+const { formatDateUTC } = require("../util/common")
+const assert = require("assert")
 
 /**
 
@@ -154,7 +155,7 @@ transactionBuilder
   }
   The same connection object passed into the constructor.
 
-  @prop committed : boolean
+  committed : boolean
     Sets whether the transactions should be created with committed = true,
     and the tickets with status = 'valid'. If false, committed = false, and
     status = 'pending'.
@@ -214,46 +215,6 @@ transactionBuilder
   no effect on the running of the program, but is used to keep a record of what
   was originally purchased.
 
-### Methods:
-- build : () => Promise[models.Transaction]
-
-  Creates a models. Transaction with all the transactionItems specified in this
-  transactionBuilder (if dryRun == false), or creates a plain-old-data (POD) object
-  with the same properties as the transaction that would have been created.
-
-  If the models.Ticket instances in items have been updated, they will be also saved.
-
-- finalizeForPayment : (companyId: number) => TransactionBuilder
-  Returns a new, balanced transactionBuilder with a payment entry.
-
-- _excessCredit : () => number
-  Returns SUM(credits) - SUM(debits). This is equivalent to the amount that
-  has to be paid in an unfinalized transactionBuilder, after deducting discounts,
-  credits etc.
-
-Constructor:
-- TransactionBuilder(connection)
-  @arg connection. An object containing references to {db, models, transaction, dryRun}
-
-- TransactionBuilder(transactionBuilder)
-  Constructs a clone of transanctionBuilder.
-
-### Helper functions
-- outstandingAmounts : (items : typeof(transactionBuilder.items)) => Array[number]
-
-  (Self-documenting -- see source code)
-
-- updateTicketsWithDiscounts :
-    (items: typeof(transactionBuilder.items), code : string, quanta : Array[number], refundable : boolean)
-      => void
-
-  Updates `items[].transactionItem.notes.outstanding` (always) and
-  `items[].ticket.notes.discountValue` (only if refundable == true) if the
-  discount values specified in quanta are applied to the items.
-
-  Discount of amount quanta[0] will be applied to items[0], and quanta[1] to
-  items[1] etc., so the two arrays should have the same length.
-
 ## Writing transforms
 
 Each transform should perform the following:
@@ -281,14 +242,31 @@ For examples, refer to:
   on this object (e.g. via Array.push).
 **/
 export class TransactionBuilder {
-  constructor (connection) {
+  /**
+   * Create a TransactionBuilder using either a configuration object or
+   * another TransactionBuilder
+   * @param {object|TransactionBuilder} connection - An object containing
+   * references to {db, models, transaction, dryRun}
+   */
+  constructor(connection) {
     // Clone type
     if (connection instanceof TransactionBuilder) {
       const propertiesToClone = [
-        'lineItems', 'items', 'transactionItemsByType',
-        'tripsPromise', 'trips', 'transaction', 'db',
-        'models', 'dryRun', 'tripsById', 'connection',
-        'undoFunctions', 'postTransactionHooks', 'description', 'committed',
+        "lineItems",
+        "items",
+        "transactionItemsByType",
+        "tripsPromise",
+        "trips",
+        "transaction",
+        "db",
+        "models",
+        "dryRun",
+        "tripsById",
+        "connection",
+        "undoFunctions",
+        "postTransactionHooks",
+        "description",
+        "committed",
       ]
 
       // FIXME: obviously you will need deepClone to achieve
@@ -299,7 +277,9 @@ export class TransactionBuilder {
 
       // Further properties to clone more deeply
       for (let key in this.transactionItemsByType) {
-        this.transactionItemsByType[key] = _.clone(this.transactionItemsByType[key])
+        this.transactionItemsByType[key] = _.clone(
+          this.transactionItemsByType[key]
+        )
       }
     } else {
       this.transaction = connection.transaction
@@ -309,43 +289,62 @@ export class TransactionBuilder {
       this.committed = connection.committed
       this.connection = connection
       this.undoFunctions = []
+      /**
+       * An array of callbacks invoked after an accounting transaction
+       * has been created. Each callback will take in two parameters:
+       * <ul>
+       *   <li> `items` - the list of items held by transactionBuilder on initialization
+       *   <li> `transaction` - the Sequelize transaction
+       * </ul>
+       */
       this.postTransactionHooks = []
       this.transactionItemsByType = {}
       this.trips = this.tripsById = this.lineItems = this.items = null
 
-      assert(this.models, 'connection.models not set')
-      assert(typeof this.dryRun === 'boolean', 'connection.dryRun not set')
-      assert(typeof this.connection.committed === 'boolean', 'connection.committed not set')
+      assert(this.models, "connection.models not set")
+      assert(typeof this.dryRun === "boolean", "connection.dryRun not set")
+      assert(
+        typeof this.connection.committed === "boolean",
+        "connection.committed not set"
+      )
       assert(this.db, "connection.db not set")
       if (!this.dryRun && !this.transaction) {
-        console.error("A live transaction was requested, but no database transaction issued. Are you sure this is correct")
+        console.error(
+          "A live transaction was requested, but no database transaction issued. Are you sure this is correct"
+        )
       }
     }
   }
 
   /**
    * Seal up the imbalance in credits as payment to ourselves
-   * @param destinationCompanyId - the company to make the payment to
-   * @param makeNotes - a callback generates notes for the payment to be made
+   * @param {number} destinationCompanyId - the company to make the payment to
+   * @param {function} makeNotes - a callback generates notes for the payment to be made
+   * @return {TransactionBuilder} a new, balanced transactionBuilder with a payment entry
    */
-  async finalizeForPayment (destinationCompanyId, makeNotes = this._mapTicketToOutstandingAmount) {
-    var clone = new TransactionBuilder(this)
+  async finalizeForPayment(
+    destinationCompanyId,
+    makeNotes = this._mapTicketToOutstandingAmount
+  ) {
+    let clone = new TransactionBuilder(this)
 
-    assert(!clone.transactionItemsByType.payment,
-      "Transaction has already been sealed for payment")
+    assert(
+      !clone.transactionItemsByType.payment,
+      "Transaction has already been sealed for payment"
+    )
 
     const excessCredit = this._excessCredit()
     const notes = makeNotes(this.items, excessCredit)
 
     clone.transactionItemsByType.payment = [
       {
-        itemType: 'payment',
+        itemType: "payment",
         payment: {
           incoming: excessCredit,
         },
         debit: excessCredit,
         notes,
-      }
+      },
     ]
 
     if (destinationCompanyId) {
@@ -355,13 +354,24 @@ export class TransactionBuilder {
     }
   }
 
-  _mapTicketToOutstandingAmount (items, excessCredit) {
+  /**
+   * Seal up the imbalance in credits as payment to ourselves
+   * @param {array} items - an array of transaction items for tickets
+   * @param {number} excessCredit - the credit balance that the sum of ticket values
+   * must be equal to
+   * @return {object} a map of tickets to respective outstanding amounts
+   */
+  _mapTicketToOutstandingAmount(items, excessCredit) {
     let ticketSplit
     if (items) {
-      ticketSplit = _.fromPairs(_.zip(items.map(i => i.ticket.id), outstandingAmounts(items)))
+      ticketSplit = _.fromPairs(
+        _.zip(items.map(i => i.ticket.id), outstandingAmounts(items))
+      )
 
-      assert(Math.abs(_.sum(_.values(ticketSplit)) - excessCredit) < 0.0001,
-        "Some discounts were not recorded on tickets")
+      assert(
+        Math.abs(_.sum(_.values(ticketSplit)) - excessCredit) < 0.0001,
+        "Some discounts were not recorded on tickets"
+      )
     } else {
       ticketSplit = null
     }
@@ -370,38 +380,53 @@ export class TransactionBuilder {
     }
   }
 
-  /* Transfer received payments to company */
-  async transferToCompany (destinationCompanyId, amount) {
-    var clone = new TransactionBuilder(this)
+  /**
+   * Transfer received payments to company
+   * @param {number} destinationCompanyId - the id of the recipient company
+   * @param {number} amount - the amount to be transferred
+   * @return {TransactionBuilder} a clone of the original TransactionBuilder,
+   * with the transfer applied
+   */
+  async transferToCompany(destinationCompanyId, amount) {
+    let clone = new TransactionBuilder(this)
 
     assert(destinationCompanyId)
 
     clone.transactionItemsByType.transfer =
       clone.transactionItemsByType.transfer || []
 
-    clone.transactionItemsByType.transfer =
-      clone.transactionItemsByType.transfer.concat([{
-        itemType: 'transfer',
-        transfer: {
-          transportCompanyId: destinationCompanyId,
-          outgoing: amount,
+    clone.transactionItemsByType.transfer = clone.transactionItemsByType.transfer.concat(
+      [
+        {
+          itemType: "transfer",
+          transfer: {
+            transportCompanyId: destinationCompanyId,
+            outgoing: amount,
+          },
+          credit: amount,
         },
-        credit: amount,
-      }])
+      ]
+    )
 
     /* Dummy account because we are too lazy to actually track the
       amounts owed to the company due to discounts on OUR part,
       and the discounts offered by the company to the user via
       us
     */
-    const cogsAccount = await this.models.Account.getByName("Cost of Goods Sold", {
-      transaction: this.transaction
-    })
+    const cogsAccount = await this.models.Account.getByName(
+      "Cost of Goods Sold",
+      {
+        transaction: this.transaction,
+      }
+    )
 
-    clone.transactionItemsByType.account = clone.transactionItemsByType.account || []
+    clone.transactionItemsByType.account =
+      clone.transactionItemsByType.account || []
 
-    const [cogsAccountItems, nonCogsAccountItems] =
-      _.partition(clone.transactionItemsByType.account, a => a.itemId === cogsAccount.id)
+    const [cogsAccountItems, nonCogsAccountItems] = _.partition(
+      clone.transactionItemsByType.account,
+      a => a.itemId === cogsAccount.id
+    )
 
     const newCogsAccountItem = {
       debit: _.sum(cogsAccountItems.map(i => i.debit)) + amount,
@@ -409,74 +434,100 @@ export class TransactionBuilder {
       itemType: "account",
     }
 
-    clone.transactionItemsByType.account = nonCogsAccountItems.concat(newCogsAccountItem)
+    clone.transactionItemsByType.account = nonCogsAccountItems.concat(
+      newCogsAccountItem
+    )
 
     return clone
   }
 
-  _excessCredit () {
-    var netCredit = 0.00
-    _.forEach(this.transactionItemsByType, (tis) => {
-      _.forEach(tis, (ti) => {
-        var credit = (typeof ti.credit === 'number' && isFinite(ti.credit))
-          ? ti.credit
-          : (typeof ti.credit === 'string')
-            ? parseFloat(ti.credit)
-            : (typeof ti.debit === 'number' && isFinite(ti.debit))
-              ? -ti.debit
-              : (typeof ti.debit === 'string') ? -parseFloat(ti.debit) : undefined
+  /**
+   * Sum the total net credit for the transaction
+   * items in this TransactionBuilder
+   * @return {number} SUM(credits) - SUM(debits). This is equivalent to the amount that
+   * has to be paid in an unfinalized transactionBuilder, after deducting discounts,
+   * credits etc.
+   */
+  _excessCredit() {
+    let netCredit = 0.0
+    _.forEach(this.transactionItemsByType, tis => {
+      _.forEach(tis, ti => {
+        let credit =
+          typeof ti.credit === "number" && isFinite(ti.credit)
+            ? ti.credit
+            : typeof ti.credit === "string"
+              ? parseFloat(ti.credit)
+              : typeof ti.debit === "number" && isFinite(ti.debit)
+                ? -ti.debit
+                : typeof ti.debit === "string"
+                  ? -parseFloat(ti.debit)
+                  : undefined
 
-        assert(credit !== undefined, `No suitable credit/debit: ${ti.credit}, ${ti.debit}`)
+        assert(
+          credit !== undefined,
+          `No suitable credit/debit: ${ti.credit}, ${ti.debit}`
+        )
         netCredit += credit
       })
     })
     return netCredit
   }
 
-  _checkBalanced () {
-    assert(Math.abs(this._excessCredit()) < 0.0001,
-      "Debits and credits should balance")
+  /** Assert that excess credit is zero, ie, debit and credit items balance **/
+  _checkBalanced() {
+    assert(
+      Math.abs(this._excessCredit()) < 0.0001,
+      "Debits and credits should balance"
+    )
   }
 
-  _checkConsistency () {
+  /** Assert that transactionItemsByType is grouping its items by the correct type **/
+  _checkConsistency() {
     _.forEach(this.transactionItemsByType, (v, k) => {
-      v.forEach(ti => assert(ti.itemType === k, `"itemType" of ${JSON.stringify(ti)} is not ${k}`))
+      v.forEach(ti =>
+        assert(
+          ti.itemType === k,
+          `"itemType" of ${JSON.stringify(ti)} is not ${k}`
+        )
+      )
     })
   }
 
   /**
    * Save the tickets, if they have changed
    */
-  async _saveChangesToTickets () {
+  async _saveChangesToTickets() {
     if (this.items) {
-      await Promise.all(this.items.map(it => it.ticket.save({ transaction: this.transaction })))
+      await Promise.all(
+        this.items.map(it => it.ticket.save({ transaction: this.transaction }))
+      )
     }
   }
 
   /**
    * Save the tickets, if they have changed
    */
-  async _saveChangesToRoutePasses () {
+  async _saveChangesToRoutePasses() {
     if (this.items) {
-      await Promise.all(this.items.map(it => it.routePass.save({ transaction: this.transaction })))
+      await Promise.all(
+        this.items.map(it =>
+          it.routePass.save({ transaction: this.transaction })
+        )
+      )
     }
   }
 
   /**
-   * Create a new Transaction instance and the corresponding
-   * TransactionItems that relate to it
-   *
-   * @param options - an object holding options that influence transaction insertion.
+   * Create a new Transaction instance and the corresponding TransactionItems that relate to it
+   * If the models.Ticket instances in items have been updated, they will be also saved.
+   * @param {object} options - an object holding options that influence transaction insertion.
    * Currently only supports one field - `type`, the type of the transaction made
-   * @param postTransactionHooks - an array of callbacks invoked after an accounting
-   * transaction has been created. Each callback will take in two parameters:
-   * <ul>
-   *   <li> `items` - the list of items held by transactionBuilder on initialization
-   *   <li> `transaction` - the Sequelize transaction
-   * </ul>
+   * @return {array} Transaction with all the transactionItems specified in this
+   * transactionBuilder, or (if dryRun == false) creates a plain-old-data (POD) object
+   * with the same properties as the transaction that would have been created
    */
-  async build (options = {}) {
-    var {type} = options
+  async build(options = {}) {
+    let { type } = options
 
     // Ensure we have somewhat sane values
     this._checkConsistency()
@@ -491,32 +542,34 @@ export class TransactionBuilder {
       description: this.description, // generic description
       creatorType: this.connection.creator && this.connection.creator.type,
       creatorId: this.connection.creator && this.connection.creator.id,
-      type: type || "ticketPurchase"
+      type: type || "ticketPurchase",
     }
 
     if (this.dryRun) {
       return [transactionData, null]
     } else {
       const dbTransactionInstance = this.dryRun
-        ? transactionData : await this.models.Transaction.create(transactionData, {
-          transaction: this.transaction,
-          include: this.models.Transaction.allTransactionTypes(),
-        })
+        ? transactionData
+        : await this.models.Transaction.create(transactionData, {
+            transaction: this.transaction,
+            include: this.models.Transaction.allTransactionTypes(),
+          })
 
       for (const hook of this.postTransactionHooks) {
         await hook.apply(this) // eslint-disable-line no-await-in-loop
       }
 
-      this.undoFunctions.push((t) =>
-        dbTransactionInstance.update({committed: false}, {transaction: t})
+      this.undoFunctions.push(t =>
+        dbTransactionInstance.update({ committed: false }, { transaction: t })
       )
 
       const undoFn = async () => {
         try {
-          await this.db.transaction((t) =>
-            Promise.all(_.reverse(this.undoFunctions).map(fn => fn(t))))
+          await this.db.transaction(t =>
+            Promise.all(_.reverse(this.undoFunctions).map(fn => fn(t)))
+          )
         } catch (err) {
-          console.log(err.stack)
+          console.error(err.stack)
           throw err
         }
       }
@@ -526,86 +579,111 @@ export class TransactionBuilder {
   }
 }
 
-function _makeTickets (tb, lineItems) {
-  const {models, transaction, committed, dryRun} = tb.connection
+/**
+ * Create tickets as specified in lineItems
+ * @param {TransactionBuilder} tb - the transaction builder
+ * @param {array} lineItems - an array of ticket specs
+ * @return {promise} a promise that resolves on ticket creation
+ */
+function _makeTickets(tb, lineItems) {
+  const { models, transaction, committed, dryRun } = tb.connection
 
-  var data = lineItems.map(lineItem => ({
+  let data = lineItems.map(lineItem => ({
     userId: lineItem.userId,
     boardStopId: lineItem.boardStopId,
     alightStopId: lineItem.alightStopId,
-    status: committed ? 'valid' : 'pending',
-    notes: {}
+    status: committed ? "valid" : "pending",
+    notes: {},
   }))
 
   if (dryRun) {
     return Promise.resolve(
-      data.map((ticketData, index) => _.assign(ticketData, {id: index}))
+      data.map((ticketData, index) => _.assign(ticketData, { id: index }))
     )
   } else {
-    const ticketCreationPromise = Promise.all(data.map(item => models.Ticket.create(item, {transaction})))
-
-    tb.undoFunctions.push(
-      t => ticketCreationPromise
-        .then(ticketInstances => Promise.all(ticketInstances.map(ticket => ticket.update(
-          {status: 'failed'},
-          { transaction: t }
-        ))))
+    const ticketCreationPromise = Promise.all(
+      data.map(item => models.Ticket.create(item, { transaction }))
     )
 
-    return ticketCreationPromise
-      .then(async (tickets) => {
-        const exhaustedTrip = await models.Trip.find({
-          where: {
-            id: {$in: lineItems.map(li => li.tripId)},
-            seatsAvailable: {$lt: 0}
-          },
-          transaction
-        })
+    tb.undoFunctions.push(t =>
+      ticketCreationPromise.then(ticketInstances =>
+        Promise.all(
+          ticketInstances.map(ticket =>
+            ticket.update({ status: "failed" }, { transaction: t })
+          )
+        )
+      )
+    )
 
-        if (exhaustedTrip) {
-          throw new TransactionError(`Tickets for ` +
-            `${formatDateUTC(tb.tripsById[exhaustedTrip.id].date)} are sold out.`)
-        }
-
-        return tickets
+    return ticketCreationPromise.then(async tickets => {
+      const exhaustedTrip = await models.Trip.find({
+        where: {
+          id: { $in: lineItems.map(li => li.tripId) },
+          seatsAvailable: { $lt: 0 },
+        },
+        transaction,
       })
+
+      if (exhaustedTrip) {
+        throw new TransactionError(
+          `Tickets for ` +
+            `${formatDateUTC(
+              tb.tripsById[exhaustedTrip.id].date
+            )} are sold out.`
+        )
+      }
+
+      return tickets
+    })
   }
 }
 
-export async function initBuilderWithTicketSale (connection, lineItems) {
+/**
+ * Create a transaction builder, and initialize with ticket sale transaction items
+ * @param {object} connection - a connection containing Sequelize models and a db txn
+ * @param {array} lineItems - working items for the creation of tickets
+ * @return {TransactionBuilder} the created transaction builder
+ */
+export async function initBuilderWithTicketSale(connection, lineItems) {
   const transactionBuilder = new TransactionBuilder(connection)
-  const {models, transaction} = connection
+  const { models, transaction } = connection
 
   // Construct from raw data
   const items = lineItems.map(item => ({
-    item, trip: null, discount: null, price: undefined,
+    item,
+    trip: null,
+    discount: null,
+    price: undefined,
   }))
 
   // Fetch data about the tickets
   const trips = await models.Trip.findAll({
-    where: {id: {$in: lineItems.map(item => item.tripId)}},
+    where: { id: { $in: lineItems.map(item => item.tripId) } },
     transaction,
     include: [
       {
         model: models.TripStop,
-        include: [{
-          model: models.Ticket,
-          where: {
-            userId: {$in: lineItems.map(item => item.userId)},
-            status: {$in: ['valid', 'pending', 'bidded']},
+        include: [
+          {
+            model: models.Ticket,
+            where: {
+              userId: { $in: lineItems.map(item => item.userId) },
+              status: { $in: ["valid", "pending", "bidded"] },
+            },
+            required: false,
           },
-          required: false,
-        }],
-      }, {
+        ],
+      },
+      {
         model: models.Route,
-        attributes: { exclude: ['path'] }
-      }
-    ]
+        attributes: { exclude: ["path"] },
+      },
+    ],
   })
 
-  const tripsById = _.keyBy(trips, 'id')
+  const tripsById = _.keyBy(trips, "id")
 
-  _.assign(transactionBuilder, {tripsById, trips})
+  _.assign(transactionBuilder, { tripsById, trips })
 
   const ticketInsts = await _makeTickets(transactionBuilder, lineItems)
 
@@ -615,74 +693,135 @@ export async function initBuilderWithTicketSale (connection, lineItems) {
     item.ticket = ticket
     item.id = ticket.id
     item.userId = item.item.userId
-    item.type = 'ticket'
+    item.type = "ticket"
 
     // FIXME: This creates an internal pointer which makes the object
     // difficult to clone correctly.
     item.transactionItem = {
-      itemType: 'ticketSale',
+      itemType: "ticketSale",
       itemId: item.ticket.id,
       credit: item.trip.price,
       notes: {
-        ticket: (item.ticket.toJSON ? item.ticket.toJSON() : item.ticket),
-        outstanding: parseFloat(item.trip.price)
-      }
+        ticket: item.ticket.toJSON ? item.ticket.toJSON() : item.ticket,
+        outstanding: parseFloat(item.trip.price),
+      },
     }
   }
 
   // Build the descriptions:
   // Example: B01 1,2,3 Mar; 4,5,6 Apr. B02 3 Feb
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const tripDescriptions = 'Purchase: ' + _(items)
-    .map(it => it.trip)
-    .groupBy(trip => trip.route && trip.route.id)
-    .values()
-    .map(trips => {
-      const routeDescription = trips[0].route ? trips[0].route.label : '[No Route]'
-      const datesDescription = _(trips)
-        .groupBy(t => t.date.getUTCMonth())
-        .toPairs()
-        .map(([month, trips]) => {
-          const daysString = trips.map(t => `${t.date.getUTCDate()}`).join(',')
-          return `${daysString} ${monthNames[month]}`
-        })
-        .join('; ')
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]
+  const tripDescriptions =
+    "Purchase: " +
+    _(items)
+      .map(it => it.trip)
+      .groupBy(trip => trip.route && trip.route.id)
+      .values()
+      .map(trips => {
+        const routeDescription = trips[0].route
+          ? trips[0].route.label
+          : "[No Route]"
+        const datesDescription = _(trips)
+          .groupBy(t => t.date.getUTCMonth())
+          .toPairs()
+          .map(([month, trips]) => {
+            const daysString = trips
+              .map(t => `${t.date.getUTCDate()}`)
+              .join(",")
+            return `${daysString} ${monthNames[month]}`
+          })
+          .join("; ")
 
-      return `${routeDescription} ${datesDescription}`
-    })
-    .join('. ')
+        return `${routeDescription} ${datesDescription}`
+      })
+      .join(". ")
 
   _.assign(transactionBuilder, {
-    items, lineItems,
-    description: tripDescriptions
+    items,
+    lineItems,
+    description: tripDescriptions,
   })
 
   transactionBuilder.transactionItemsByType = {
-    ticketSale: items.map((item) => item.transactionItem)
+    ticketSale: items.map(item => item.transactionItem),
   }
 
   return transactionBuilder
 }
 
-export function outstandingAmounts (items) {
-  return items.map((item) => parseFloat(item.transactionItem.notes.outstanding))
+/**
+ * Extract the outstanding amounts
+ * @param {array} items
+ * @return {array}
+ */
+export function outstandingAmounts(items) {
+  return items.map(item => parseFloat(item.transactionItem.notes.outstanding))
 }
 
-export function updateTicketsWithDiscounts (items, code, quanta, refundable = true) {
-  return updateItemsWithDiscounts(items, code, quanta, refundable, 'ticket')
+/**
+ * Delegates to `updateItemsWithDiscounts`
+ * @param {array} items - the transaction items to be updated
+ * @param {string} code - the discount code used, to be recorded in each txn item
+ * @param {array} quanta - the discounts made against each corresponding item
+ * @param {boolean} refundable - is this transaction refundable?
+ * @param {string} sequelizeType - the Sequelize type for the txn items
+ * @return {*}
+ */
+export function updateTicketsWithDiscounts(
+  items,
+  code,
+  quanta,
+  refundable = true
+) {
+  return updateItemsWithDiscounts(items, code, quanta, refundable, "ticket")
 }
 
-function updateItemsWithDiscounts (items, code, quanta, refundable, sequelizeType) {
+/**
+ * Updates `items[].transactionItem.notes.outstanding` (always) and
+ * `items[][sequelizeType].notes.discountValue` (only if refundable == true) if the
+ * discount values specified in quanta are applied to the items.
+ * Discount of amount quanta[0] will be applied to items[0], and quanta[1] to
+ * items[1] etc., so the two arrays should have the same length.
+ * @param {array} items - the transaction items to be updated
+ * @param {string} code - the discount code used, to be recorded in each txn item
+ * @param {array} quanta - the discounts made against each corresponding item
+ * @param {boolean} refundable - is this transaction refundable?
+ * @param {string} sequelizeType - the Sequelize type for the txn items
+ */
+function updateItemsWithDiscounts(
+  items,
+  code,
+  quanta,
+  refundable,
+  sequelizeType
+) {
   // Add it to the discounted value of the item
   for (let [item, quantum] of _.zip(items, quanta)) {
     if (!refundable) {
       item[sequelizeType].notes = _.clone(item[sequelizeType].notes) // force update
-      item[sequelizeType].notes.discountCodes = item[sequelizeType].notes.discountCodes || []
+      item[sequelizeType].notes.discountCodes =
+        item[sequelizeType].notes.discountCodes || []
       item[sequelizeType].notes.discountCodes.push(code)
-      item[sequelizeType].notes.discountValue = item[sequelizeType].notes.discountValue || 0
+      item[sequelizeType].notes.discountValue =
+        item[sequelizeType].notes.discountValue || 0
       item[sequelizeType].notes.discountValue += quantum
     }
-    item.transactionItem.notes.outstanding = Math.round(item.transactionItem.notes.outstanding * 100 - quantum * 100) / 100
+    item.transactionItem.notes.outstanding =
+      Math.round(item.transactionItem.notes.outstanding * 100 - quantum * 100) /
+      100
   }
 }
 
@@ -693,17 +832,31 @@ function updateItemsWithDiscounts (items, code, quanta, refundable, sequelizeTyp
  * Use this to look up the transaction items holding tickets or
  * similar Sequelize objects, and update such transaction items
  * with discounts
+ * @param {TransactionBuilder} transactionBuilder
+ * @param {object} promoCode
+ * @param {string} promoCode.code - the discount code used, to be recorded in each txn item
+ * @param {string} sequelizeType - the Sequelize type for the txn items
  */
-export function updateTransactionBuilderWithPromoDiscounts (transactionBuilder, promoCode, sequelizeType = 'ticket') {
+export function updateTransactionBuilderWithPromoDiscounts(
+  transactionBuilder,
+  promoCode,
+  sequelizeType = "ticket"
+) {
   for (const d of transactionBuilder.transactionItemsByType.discount) {
     const discountedSales = []
     const discountAmounts = []
     for (const [id, discountAmount] of Object.entries(d.notes.tickets)) {
-      discountedSales.push(transactionBuilder.items.find(i => i.id === +id && i[sequelizeType]))
+      discountedSales.push(
+        transactionBuilder.items.find(i => i.id === +id && i[sequelizeType])
+      )
       discountAmounts.push(discountAmount)
     }
     updateItemsWithDiscounts(
-      discountedSales, promoCode.code, discountAmounts, false, sequelizeType
+      discountedSales,
+      promoCode.code,
+      discountAmounts,
+      false,
+      sequelizeType
     )
   }
 }
