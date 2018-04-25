@@ -83,8 +83,9 @@ export function register(server, options, next) {
           route.stops = _(tripStops)
             .groupBy(ts => ts.stop.id)
             .mapValues(tripStopsAtStop => {
-              const [{ stop, canBoard }] = tripStopsAtStop
+              const [{ stop, canBoard, canAlight }] = tripStopsAtStop
               stop.canBoard = canBoard
+              stop.canAlight = canAlight
               stop.time = _(tripStopsAtStop)
                 .map("time")
                 .uniq()
