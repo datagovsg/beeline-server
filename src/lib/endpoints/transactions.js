@@ -105,7 +105,7 @@ export const register = (server, options, next) => {
           customerId: Joi.string(),
           sourceId: Joi.string(),
           expectedPrice: Joi.number().allow(null),
-        }).unknown(),
+        }).unknown(), // FIXME: remove after app store builds drop applyCredits
       },
     },
     async handler(request, reply) {
@@ -429,7 +429,7 @@ export const register = (server, options, next) => {
             .allow(null)
             .default(null),
           groupItemsByType: Joi.boolean().default(false),
-        }).unknown(),
+        }).unknown(), // FIXME: remove after app store builds drop applyCredits
       },
     },
 
