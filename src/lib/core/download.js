@@ -12,7 +12,7 @@ const Request = require("request")
 module.exports = (server, options, next) => {
   server.route({
     method: "POST",
-    path: "/makeDownloadLink",
+    path: "/downloads",
     config: {
       description:
         "Creates a download link that is valid for a short time (10mins)",
@@ -55,24 +55,24 @@ module.exports = (server, options, next) => {
 
   server.route({
     method: "GET",
-    path: "/downloadLink",
+    path: "/downloads/{token}",
     config: {
       tags: ["api"],
       validate: {
-        query: {
+        params: {
           token: Joi.string(),
         },
       },
     },
     async handler(request, reply) {
       try {
-        const t = jwt.decode(request.query.token)
+        const t = jwt.decode(request.params.token)
 
         // leave the verification to the injected function
         Request({
           url: `http://127.0.0.1:${request.connection.info.port}${t.uri}`,
           headers: {
-            authorization: `Bearer ${request.query.token}`,
+            authorization: `Bearer ${request.params.token}`,
           },
         })
           .on("response", http => {

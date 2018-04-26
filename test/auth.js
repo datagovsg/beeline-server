@@ -4,7 +4,6 @@ import {expect} from "code"
 import server from "../src/index"
 import Lab from "lab"
 import * as auth from "../src/lib/core/auth"
-import querystring from "querystring"
 
 export const lab = Lab.script()
 
@@ -111,13 +110,13 @@ lab.experiment("Auth stuff", function () {
     expect(credentials.email).equal(adminEmail)
   })
 
-  lab.test("downloadLink", async () => {
+  lab.test("download link", async () => {
     let userInst = await m.User.create({
       telephone: randomEmail(),
     })
 
     let makeLinkResponse = await server.inject({
-      url: "/makeDownloadLink",
+      url: "/downloads",
       method: "POST",
       payload: {
         uri: "/user",
@@ -127,7 +126,7 @@ lab.experiment("Auth stuff", function () {
     expect(makeLinkResponse.statusCode).equal(200)
 
     let downloadResponse = await server.inject({
-      url: "/downloadLink?" + querystring.stringify({token: makeLinkResponse.result.token}),
+      url: `/downloads/${makeLinkResponse.result.token}`,
       method: "GET",
     })
     expect(downloadResponse.statusCode).equal(200)
@@ -137,13 +136,13 @@ lab.experiment("Auth stuff", function () {
     expect(downloadResult.id).equal(userInst.id)
   })
 
-  lab.test("downloadLink -- with old iat", async () => {
+  lab.test(" -- with old iat", async () => {
     let userInst = await m.User.create({
       telephone: randomEmail(),
     })
 
     let makeLinkResponse = await server.inject({
-      url: "/makeDownloadLink",
+      url: "/downloads",
       method: "POST",
       payload: {
         uri: "/user",
@@ -153,7 +152,7 @@ lab.experiment("Auth stuff", function () {
     expect(makeLinkResponse.statusCode).equal(200)
 
     let downloadResponse = await server.inject({
-      url: "/downloadLink?" + querystring.stringify({token: makeLinkResponse.result.token}),
+      url: `/downloads/${makeLinkResponse.result.token}`,
       method: "GET",
     })
     expect(downloadResponse.statusCode).equal(200)
