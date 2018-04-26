@@ -73,10 +73,6 @@ const initialTransaction = await initBuilderWithTicketSale(connection, lineItems
 const transactionAfterDiscounts = wantApplyDiscounts ?
   await applyDiscounts(initialTransaction) : initialTransaction;
 
-// Apply credits
-const transactionAfterCredits = wantApplyCredits ?
-  await applyCredits(transactionAfterDiscounts) : transactionAfterDiscounts;
-
 // Seal for payment
 const sealed = await transactionsAfterCredits.finalizeForPayment(companyId)
 
@@ -235,7 +231,6 @@ DO NOT:
 
 For examples, refer to:
 - transactionBuilder.finalizeForPayment
-- Credits.applyCredits
 - [util/transactions].absorbSmallPayments
 
   This is an *immutable collection*. Do not mutate the collections

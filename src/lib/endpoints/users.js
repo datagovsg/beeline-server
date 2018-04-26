@@ -23,15 +23,7 @@ export const register = function register(server, options, next) {
     handler: async function(request, reply) {
       let m = common.getModels(request)
 
-      let userInst = await m.User.findById(request.auth.credentials.userId, {
-        include: [
-          {
-            attributes: ["code"],
-            model: m.Promotion,
-            as: "referralCode",
-          },
-        ],
-      })
+      let userInst = await m.User.findById(request.auth.credentials.userId)
       reply(userInst.toJSON())
     },
   })
@@ -55,15 +47,7 @@ export const register = function register(server, options, next) {
       let m = common.getModels(request)
 
       try {
-        let userInst = await m.User.findById(request.params.userId, {
-          include: [
-            {
-              attributes: ["code"],
-              model: m.Promotion,
-              as: "referralCode",
-            },
-          ],
-        })
+        let userInst = await m.User.findById(request.params.userId)
         NotFoundError.assert(userInst, "User not found")
 
         reply(userInst.toJSON())
@@ -319,25 +303,13 @@ Beeline Team
 
         let loginTime = Date.now()
 
-        if (!userInst.refCodeId) {
-          await userInst.generateRefCode()
-        }
-
         await userInst.update({
           telephoneCode: null,
           status: "valid",
           lastLogin: loginTime,
         })
 
-        userInst = await m.User.findById(userInst.id, {
-          include: [
-            {
-              attributes: ["code"],
-              model: m.Promotion,
-              as: "referralCode",
-            },
-          ],
-        })
+        userInst = await m.User.findById(userInst.id)
 
         reply({
           sessionToken: userInst.makeToken(loginTime),
@@ -413,15 +385,7 @@ Beeline Team
       try {
         let m = getModels(request)
 
-        let userInst = await m.User.findById(request.auth.credentials.userId, {
-          include: [
-            {
-              attributes: ["code"],
-              model: m.Promotion,
-              as: "referralCode",
-            },
-          ],
-        })
+        let userInst = await m.User.findById(request.auth.credentials.userId)
 
         await userInst.update(request.payload)
         reply(userInst.toJSON())

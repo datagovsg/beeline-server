@@ -124,16 +124,6 @@ export function expectEvent (eventName, params) {
 
 export async function cleanlyDeleteUsers (where) {
   const userIds = (await models.User.findAll({where})).map(u => u.id)
-  await models.Credit.destroy({
-    where: {
-      userId: {$in: userIds},
-    },
-  })
-  await models.ReferralCredit.destroy({
-    where: {
-      userId: {$in: userIds},
-    },
-  })
   await models.Ticket.destroy({
     where: {
       userId: {$in: userIds},

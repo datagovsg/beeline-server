@@ -16,13 +16,11 @@ export default modelCache => {
             args: [
               [
                 "ticketRefund",
-                "referralCredits",
                 "payment",
                 "refundPayment",
                 "account",
                 "routePass",
                 "routeCredits",
-                "userCredit",
                 "ticketSale",
                 "ticketExpense",
                 "discount",
@@ -194,8 +192,6 @@ export const makeAssociation = function makeAssociation(modelCache) {
   let Discount = modelCache.require("Discount")
   let Transfer = modelCache.require("Transfer")
   let Ticket = modelCache.require("Ticket")
-  let Credit = modelCache.require("Credit")
-  let ReferralCredit = modelCache.require("ReferralCredit")
   let RouteCredit = modelCache.require("RouteCredit")
   let RoutePass = modelCache.require("RoutePass")
   TransactionItem.belongsTo(Transaction, {
@@ -241,16 +237,6 @@ export const makeAssociation = function makeAssociation(modelCache) {
     foreignKey: "itemId",
     constraints: false,
     as: "ticketRefund",
-  })
-  TransactionItem.belongsTo(Credit, {
-    foreignKey: "itemId",
-    constraints: false,
-    as: "userCredit",
-  })
-  TransactionItem.belongsTo(ReferralCredit, {
-    foreignKey: "itemId",
-    constraints: false,
-    as: "referralCredit",
   })
   TransactionItem.belongsTo(RouteCredit, {
     foreignKey: "itemId",
