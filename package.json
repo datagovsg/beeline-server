@@ -38,6 +38,7 @@
     "handlebars": "^4.0.5",
     "hapi": "^16.4.3",
     "hapi-swagger": "^7.2.0",
+    "hoek": "^4.2.1",
     "ical": "^0.5.0",
     "inert": "^4.0.2",
     "inquirer": "^2.0.0",
