@@ -425,7 +425,7 @@ export function register(server, options, next) {
         { type: db.QueryTypes.SELECT, replacements: { ids } }
       )
       .then(keyBy("id"))
-    const paymentMetadata = db
+    const paymentMetadata = await db
       .query(
         `SELECT
           ti."id",
