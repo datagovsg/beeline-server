@@ -44,7 +44,7 @@
     "inquirer": "^2.0.0",
     "joi": "^10.6.0",
     "jsdom": "^11.1.0",
-    "jsonwebtoken": "^7.1.9",
+    "jsonwebtoken": "^8.2.1",
     "lab": "^13.0.1",
     "lab-babel": "^1.1.1",
     "left-pad": "^1.0.1",
