@@ -265,20 +265,30 @@ export async function purchaseRoutePass(options) {
       tb.lineItems = null
       tb.description = `Purchase of route pass (${tag})`
 
-      // Find the route and its indicative trip and get the trip price
+      // Find the route and then the next trip, and get the trip price
       // Use this to infer the number of route passes to buy, or the
       // value of the purchase made, whichever is missing
       const route = await m.Route.find({
-        attributes: ["tags"],
+        attributes: ["tags", "id"],
         where: { tags: { $contains: [tag] } },
-        include: [m.IndicativeTrip],
         transaction,
       })
       assert(route, "Unable to find the route identified by " + tag)
-      const tags = route.tags
+      const { tags, id: routeId } = route
 
-      const price = +route.indicativeTrip.nextPrice
-      assert(price, "Unable to find price of indicative trip for route")
+      const trip = await m.Trip.find({
+        where: {
+          routeId,
+          date: { $gte: new Date() },
+        },
+        attributes: ["price"],
+        order: "date",
+        transaction,
+      })
+      assert(trip, "Unable to find the next trip available for route " + tag)
+
+      const { price } = trip
+      assert(price, "Unable to find price of indicative trip for route " + tag)
       assert(
         (options.quantity && !options.value) ||
           (!options.quantity && options.value),
