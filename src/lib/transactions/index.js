@@ -465,10 +465,12 @@ export const prepareRoutePassRefund = options => async transaction => {
     },
   ]
 
+  const lastStatus = routePass.status
+
   await routePass.update({ status: "refunded" }, { transaction })
 
   transactionBuilder.undoFunctions.push(t =>
-    routePass.update({ status: "valid" }, { transaction: t })
+    routePass.update({ status: lastStatus }, { transaction: t })
   )
   transactionBuilder = await Payment.refund(
     transactionBuilder,
@@ -481,6 +483,16 @@ export const prepareRoutePassRefund = options => async transaction => {
   const [dbTransactionInstance, undoFn] = await transactionBuilder.build({
     type: "refundPayment",
   })
+
+  const routePassRefund = dbTransactionInstance.transactionItems.find(
+    item => item.itemType === "routePass" && item.itemId === routePass.id
+  )
+
+  if (routePassRefund) {
+    transactionBuilder.undoFunctions.unshift(t =>
+      routePassRefund.update({ notes: null }, { transaction: t })
+    )
+  }
 
   return [dbTransactionInstance, undoFn, stripeRefundInfo]
 }

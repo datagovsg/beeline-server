@@ -827,6 +827,67 @@ lab.experiment("Route Passes", function () {
     await Promise.all(passes.map(p => p.destroy()))
   })
 
+  lab.test('Failed refunds due to dispute -> no link to original transaction', {timeout: 20000}, async function () {
+    const userId = userInstance.id
+    const tag = testTag
+    const companyId = companyInstance.id
+
+    // Purchase some credits for this route
+    const purchaseResponse = await server.inject({
+      method: 'POST',
+      url: `/transactions/route_passes/payment`,
+      payload: {
+        quantity: 1,
+        tag,
+        stripeToken: await createStripeToken(4000000000000259),
+        companyId: companyInstance.id,
+      },
+      headers: authHeaders.user,
+    })
+    expect(purchaseResponse.statusCode).equal(200)
+    const routePassTxnItems = purchaseResponse.result.transactionItems
+      .filter(i => i.itemType === 'routePass')
+
+    // Check that the credits have been updated :)
+    const passes = await m.RoutePass.findAll({
+      where: { userId, companyId, tag, status: 'valid' },
+    })
+    expect(passes.length).equal(1)
+
+    const [pass] = passes
+
+    const refundRoutePass = async routePassTxnItem => {
+      const response = await server.inject({
+        method: 'POST',
+        url: `/transactions/route_passes/${routePassTxnItem.itemId}/refund/payment`,
+        payload: {
+          transactionItemId: routePassTxnItem.id,
+        },
+        headers: authHeaders.admin,
+      })
+      expect(response.statusCode).equal(402)
+    }
+
+    await Promise.all(routePassTxnItems.map(refundRoutePass))
+
+    const routePassRefundTxnItem = await m.TransactionItem.find({
+      where: {
+        itemType: 'routePass',
+        itemId: pass.id,
+        id: { $ne: routePassTxnItems[0].id },
+      },
+    })
+    expect(routePassRefundTxnItem.notes).equal(null)
+
+    const refundTransaction = await m.Transaction.findById(routePassRefundTxnItem.transactionId)
+    expect(refundTransaction.committed).equal(false)
+
+    await pass.reload()
+    expect(pass.status).equal('valid')
+
+    await pass.destroy()
+  })
+
   lab.test('Multiple passes can be applied', async function () {
     // Set up the multiple tags
     // 1. Create the tags
