@@ -232,6 +232,12 @@ lab.experiment("Route pass administration", function () {
       headers: authHeaders.user,
     })
 
+    const successExpiriesResponse = await server.inject({
+      method: "GET",
+      url: "/route_passes/expiries",
+      headers: authHeaders.user,
+    })
+
     expect(noAuthResponse.statusCode).to.equal(403)
     expect(wrongAuthResponse.statusCode).to.equal(403)
 
@@ -245,6 +251,11 @@ lab.experiment("Route pass administration", function () {
     expect(successResponse.result[tags[0]]).to.equal(1)
     expect(successResponse.result[tags[1]]).to.equal(1)
     expect(successResponse.result[tags[2]]).to.equal(1)
+
+    expect(successExpiriesResponse.result).to.only.include(tags)
+    expect(Object.values(successExpiriesResponse.result[tags[0]])[0]).to.equal(1)
+    expect(Object.values(successExpiriesResponse.result[tags[1]])[0]).to.equal(1)
+    expect(Object.values(successExpiriesResponse.result[tags[2]])[0]).to.equal(1)
   })
 
   lab.test('Route passes can be expired', {timeout: 20000}, async function () {

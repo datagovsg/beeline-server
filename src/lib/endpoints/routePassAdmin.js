@@ -11,6 +11,18 @@ import {
 import { TransactionBuilder } from "../transactions/builder"
 
 export const register = function register(server, options, next) {
+  const fetchValidRoutePassesThen = transform =>
+    handleRequestWith(
+      (ignored, request, { models }) =>
+        models.RoutePass.findAll({
+          where: {
+            userId: request.auth.credentials.userId,
+            status: "valid",
+          },
+        }),
+      routePasses => routePasses.map(r => r.toJSON()),
+      transform
+    )
 
   server.route({
     method: "GET",
@@ -20,15 +32,25 @@ export const register = function register(server, options, next) {
       description: "Get current user's route passes in JSON, keyed by tag",
       auth: { access: { scope: ["user"] } },
     },
-    handler: handleRequestWith(
-      (ignored, request, {models}) => models.RoutePass.findAll({
-        where: {
-          userId: request.auth.credentials.userId,
-          status: 'valid',
-        },
-      }),
-      routePasses => routePasses.map(r => r.toJSON()),
-      routePasses => _.countBy(routePasses, 'tag')
+    handler: fetchValidRoutePassesThen(routePasses =>
+      _.countBy(routePasses, "tag")
+    ),
+  })
+
+  server.route({
+    method: "GET",
+    path: "/route_passes/expiries",
+    config: {
+      tags: ["api"],
+      description:
+        "Get current user's route passes in JSON, keyed by tag and expiry date",
+      auth: { access: { scope: ["user"] } },
+    },
+    handler: fetchValidRoutePassesThen(routePasses =>
+      _(routePasses)
+        .groupBy("tag")
+        .mapValues(routePasses => _.countBy(routePasses, "expiresAt"))
+        .value()
     ),
   })
 
