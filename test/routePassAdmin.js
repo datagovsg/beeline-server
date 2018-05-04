@@ -1,6 +1,6 @@
 /* eslint no-await-in-loop: 0 */
 
-const {db, models: m} = require('../src/lib/core/dbschema')()
+const {models: m} = require('../src/lib/core/dbschema')()
 const {
   resetTripInstances, loginAs,
   randomEmail, randomString,
@@ -12,16 +12,18 @@ import Joi from 'joi'
 import _ from 'lodash'
 import {createUsersCompaniesRoutesAndTrips, companies} from './test_data'
 
-export var lab = Lab.script()
+export const lab = Lab.script()
 
 lab.experiment("Route pass administration", function () {
-  var userInstance, companyInstance, routeInstance
-  var authHeaders = {}
-  var testTag
+  let userInstance
+  let companyInstance
+  let routeInstance
+  let authHeaders = {}
+  let testTag
   const ticketPrice = '5.00'
   const ticketsBought = 5
   let itemInsts = []
-  var trips
+  let trips
 
   lab.before({timeout: 15000}, async function () {
     testTag = `rp-${Date.now()}`;
@@ -30,7 +32,7 @@ lab.experiment("Route pass administration", function () {
         await createUsersCompaniesRoutesAndTrips(m, new Array(ticketsBought).fill(+ticketPrice)))
 
     await routeInstance.update({
-      tags: [testTag]
+      tags: [testTag],
     })
 
     trips.forEach((trip, i) => {
@@ -39,24 +41,24 @@ lab.experiment("Route pass administration", function () {
           tripId: trip.id,
           boardStopId: trip.tripStops[0].id,
           alightStopId: trip.tripStops[2].id,
-          userId: userInstance.id
+          userId: userInstance.id,
         },
         ticket: {id: i},
         price: trip.price,
-        trip
+        trip,
       })
     })
 
-    var userToken = (await loginAs("user", userInstance.id)).result.sessionToken
+    let userToken = (await loginAs("user", userInstance.id)).result.sessionToken
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund', 'manage-routes']
+      permissions: ['refund', 'manage-routes'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
-    var superToken = (await loginAs('superadmin')).result.sessionToken
+    let superToken = (await loginAs('superadmin')).result.sessionToken
     authHeaders.super = { authorization: 'Bearer ' + superToken }
   })
 
@@ -68,7 +70,7 @@ lab.experiment("Route pass administration", function () {
   lab.beforeEach(async function () {
     await resetTripInstances(m, trips)
     await m.RoutePass.destroy({
-      where: {userId: userInstance.id}
+      where: {userId: userInstance.id},
     })
   })
 
@@ -89,7 +91,7 @@ lab.experiment("Route pass administration", function () {
     const routePassPurchaseItem = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: pass.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     let anotherCompany = await m.TransportCompany.create(companies[0])
@@ -104,7 +106,7 @@ lab.experiment("Route pass administration", function () {
     const routePassPurchaseItem2 = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: pass2.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     const companyId = companyInstance.id
@@ -118,31 +120,31 @@ lab.experiment("Route pass administration", function () {
     const wrongAuthResponse = await server.inject({
       method: "GET",
       url: `/companies/${companyId}/route_passes/all/users/${userId}`,
-      headers: {authorization: _.get(authHeaders, 'user.authorization') + "blaer231"}
+      headers: {authorization: _.get(authHeaders, 'user.authorization') + "blaer231"},
     })
 
     const userResponse = await server.inject({
       method: "GET",
       url: `/companies/${companyId}/route_passes/all/users/${userId}`,
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
 
     const adminResponse = await server.inject({
       method: "GET",
       url: `/companies/${companyId}/route_passes/all/users/${userId}`,
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     const adminNotAllowedResponse = await server.inject({
       method: "GET",
       url: `/companies/${companyId2}/route_passes/all/users/${userId}`,
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     const superAdminResponse = await server.inject({
       method: "GET",
       url: `/companies/${companyId}/route_passes/all/users/${userId}`,
-      headers: authHeaders.super
+      headers: authHeaders.super,
     })
 
     expect(noAuthResponse.statusCode).to.equal(403)
@@ -159,7 +161,7 @@ lab.experiment("Route pass administration", function () {
     const adminJoiResult = Joi.validate(adminResult.dataValues,
       Joi.array().items(Joi.object({
         tag: Joi.string(),
-        balance: Joi.string()
+        balance: Joi.string(),
       }))
     )
 
@@ -168,7 +170,7 @@ lab.experiment("Route pass administration", function () {
     const superAdminJoiResult = Joi.validate(superAdminResult.dataValues,
       Joi.array().items(Joi.object({
         tag: Joi.string(),
-        balance: Joi.string()
+        balance: Joi.string(),
       }))
     )
 
@@ -187,7 +189,7 @@ lab.experiment("Route pass administration", function () {
 
   lab.test("Test endpoint for GET current user's route credits", {timeout: 10000}, async () => {
     const userId = userInstance.id
-    var userInst = await m.User.create({telephone: randomEmail()})
+    let userInst = await m.User.create({telephone: randomEmail()})
 
     const tags = ["asjf4546", "efsdk39", "jasdfk129"]
 
@@ -202,32 +204,38 @@ lab.experiment("Route pass administration", function () {
 
     // Clear credits for 2nd user instance
     await m.RoutePass.destroy({
-      where: {userId: userInst.id}
+      where: {userId: userInst.id},
     })
 
     const noAuthResponse = await server.inject({
       method: "GET",
-      url: "/route_passes"
+      url: "/route_passes",
     })
 
     const wrongAuthResponse = await server.inject({
       method: "GET",
       url: "/route_passes",
-      headers: {authorization: _.get(authHeaders, 'user.authorization') + "xy21"}
+      headers: {authorization: _.get(authHeaders, 'user.authorization') + "xy21"},
     })
 
     const successNoCreditsResponse = await server.inject({
       method: "GET",
       url: "/route_passes",
       headers: {
-        authorization: `Bearer ${userInst.makeToken()}`
-      }
+        authorization: `Bearer ${userInst.makeToken()}`,
+      },
     })
 
     const successResponse = await server.inject({
       method: "GET",
       url: "/route_passes",
-      headers: authHeaders.user
+      headers: authHeaders.user,
+    })
+
+    const successExpiriesResponse = await server.inject({
+      method: "GET",
+      url: "/route_passes/expiries",
+      headers: authHeaders.user,
     })
 
     expect(noAuthResponse.statusCode).to.equal(403)
@@ -243,6 +251,11 @@ lab.experiment("Route pass administration", function () {
     expect(successResponse.result[tags[0]]).to.equal(1)
     expect(successResponse.result[tags[1]]).to.equal(1)
     expect(successResponse.result[tags[2]]).to.equal(1)
+
+    expect(successExpiriesResponse.result).to.only.include(tags)
+    expect(Object.values(successExpiriesResponse.result[tags[0]])[0]).to.equal(1)
+    expect(Object.values(successExpiriesResponse.result[tags[1]])[0]).to.equal(1)
+    expect(Object.values(successExpiriesResponse.result[tags[2]])[0]).to.equal(1)
   })
 
   lab.test('Route passes can be expired', {timeout: 20000}, async function () {
@@ -254,7 +267,7 @@ lab.experiment("Route pass administration", function () {
     const routePassPurchaseItem = await m.TransactionItem.create({
       itemType: 'routePass',
       itemId: routePassInst.id,
-      debit: -ticketPrice
+      debit: -ticketPrice,
     })
 
     const expireResponse = await server.inject({
@@ -285,7 +298,7 @@ lab.experiment("Route pass administration", function () {
         pass => m.TransactionItem.create({
           itemType: 'routePass',
           itemId: pass.id,
-          debit: -ticketPrice
+          debit: -ticketPrice,
         })
       )
     )
@@ -294,7 +307,7 @@ lab.experiment("Route pass administration", function () {
       method: 'POST',
       url: `/companies/${companyInstance.id}/route_passes/${tag}/users/${userId}/expire`,
       headers: authHeaders.admin,
-      payload: { quantity: 2 }
+      payload: { quantity: 2 },
     })
     expect(expireResponse.result.length).equal(2)
     expect(expireResponse.result[0].status).equal('expired')
@@ -354,7 +367,7 @@ lab.experiment("Route pass administration", function () {
     const creditEntriesResponse = await server.inject({
       url: `/companies/${companyInstance.id}/route_passes/${testTag}/users`,
       method: 'GET',
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(creditEntriesResponse.statusCode).equal(200)
@@ -364,7 +377,7 @@ lab.experiment("Route pass administration", function () {
     const companyWideCreditEntriesResponse = await server.inject({
       url: `/companies/${companyInstance.id}/route_passes`,
       method: 'GET',
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(companyWideCreditEntriesResponse.statusCode).equal(200)
@@ -375,7 +388,7 @@ lab.experiment("Route pass administration", function () {
     const firstFetchResponse = await server.inject({
       url: `/companies/${companyInstance.id}/route_passes/${testTag}/users/${userInstance.id}/history`,
       method: 'GET',
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(firstFetchResponse.statusCode).equal(200)
@@ -386,7 +399,7 @@ lab.experiment("Route pass administration", function () {
     const nextFetchResponse = await server.inject({
       url: `/companies/${companyInstance.id}/route_passes/${testTag}/users/${userInstance.id}/history?lastId=${firstFetchResponse.result[19].id}`,
       method: 'GET',
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
 
     expect(nextFetchResponse.statusCode).equal(200)
