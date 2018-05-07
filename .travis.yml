@@ -87,7 +87,7 @@ deploy:
     secret_access_key: $AWS_SECRET_ACCESS_KEY
     region: "ap-southeast-1"
     app: "beeline-server"
-    env: "beeline-server"
+    env: "beeline-server-prod"
     bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
     on:
       branch: $PROD_BRANCH
