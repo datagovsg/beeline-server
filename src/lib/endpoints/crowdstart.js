@@ -25,6 +25,9 @@ export const register = function(server, options, next) {
   routeRequestsTo(server, mapToRoots("/status"), {
     method: "GET",
     config: {
+      auth: {
+        access: { scope: ["public", "user", "admin", "superadmin"] },
+      },
       tags: ["api"],
       validate: {
         query: {
@@ -37,10 +40,19 @@ export const register = function(server, options, next) {
     async handler(request, reply) {
       try {
         let m = getModels(request)
-
+        const isAdmin = ["admin", "superadmin"].includes(
+          request.auth.credentials.scope
+        )
         let crowdstartQuery = {
           where: {
-            tags: { $contains: ["crowdstart"] },
+            tags: isAdmin
+              ? {
+                  $or: [
+                    { $contains: ["crowdstart"] },
+                    { $contains: ["crowdstart-private"] },
+                  ],
+                }
+              : { $contains: ["crowdstart"] },
           },
           include: [
             {

@@ -61,8 +61,9 @@ export default modelCache => {
               userInst.savedPaymentInfo.default_source,
             "You need to provide payment information."
           )
+          const { tags } = routeInst
           TransactionError.assert(
-            routeInst.tags.includes("crowdstart"),
+            tags.includes("crowdstart") || tags.includes("crowdstart-private"),
             "Selected route is not a crowdstart route"
           )
 
