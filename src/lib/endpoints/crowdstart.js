@@ -331,7 +331,7 @@ marking all bids on this route as 'failed'
         },
       },
       auth: {
-        access: { scope: ["public", "admin", "superadmin"] },
+        access: { scope: ["public", "user", "admin", "superadmin"] },
       },
       tags: ["api"],
       description: `Returns all bids made for a given route`,
@@ -339,7 +339,7 @@ marking all bids on this route as 'failed'
     handler: handleRequestWith(
       request => getModels(request).Route.findById(request.params.routeId),
       async (route, request) => {
-        if (request.auth.credentials.scope !== "public") {
+        if (!["public", "user"].includes(request.auth.credentials.scope)) {
           await auth.assertAdminRole(
             request.auth.credentials,
             "manage-routes",
@@ -353,7 +353,7 @@ marking all bids on this route as 'failed'
         const params = {
           where: { routeId: route.id },
         }
-        if (request.auth.credentials.scope !== "public") {
+        if (["public", "user"].includes(request.auth.credentials.scope)) {
           params.include = [
             {
               model: m.User,
