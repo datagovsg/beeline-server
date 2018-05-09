@@ -365,7 +365,7 @@ marking all bids on this route as 'failed'
         const params = {
           where: { routeId: route.id },
         }
-        if (["public", "user"].includes(request.auth.credentials.scope)) {
+        if (["admin", "superadmin"].includes(request.auth.credentials.scope)) {
           params.include = [
             {
               model: m.User,
