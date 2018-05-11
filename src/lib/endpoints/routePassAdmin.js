@@ -53,6 +53,8 @@ export const register = function register(server, options, next) {
         .mapValues(routePasses =>
           _(routePasses)
             .countBy("expiresAt")
+            // coerce the date keys into Date objects, then
+            // use moment to format them into ISO date strings
             .mapKeys(date => moment(new Date(date)).format("YYYY-MM-DD"))
             .value()
         )
