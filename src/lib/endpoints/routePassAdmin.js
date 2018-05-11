@@ -1,6 +1,7 @@
 import _ from "lodash"
 import Joi from "joi"
 import assert from "assert"
+import moment from "moment"
 import { InvalidArgumentError } from "../util/common"
 import {
   handleRequestWith,
@@ -49,7 +50,14 @@ export const register = function register(server, options, next) {
     handler: fetchValidRoutePassesThen(routePasses =>
       _(routePasses)
         .groupBy("tag")
-        .mapValues(routePasses => _.countBy(routePasses, "expiresAt"))
+        .mapValues(routePasses =>
+          _(routePasses)
+            .countBy("expiresAt")
+            // coerce the date keys into Date objects, then
+            // use moment to format them into ISO date strings
+            .mapKeys(date => moment(new Date(date)).format("YYYY-MM-DD"))
+            .value()
+        )
         .value()
     ),
   })
