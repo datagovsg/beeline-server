@@ -163,8 +163,7 @@ the \`startDate\` defaults to the time of request.
             raw: true,
             type: db.QueryTypes.SELECT,
           })
-          route.dates =
-            routeDates && routeDates.length > 0 ? routeDates[0] : {}
+          route.dates = routeDates && routeDates.length > 0 ? routeDates[0] : {}
         }
 
         if (request.query.includeTrips) {
@@ -235,19 +234,18 @@ the \`startDate\` defaults to the time of request.
     },
     handler: async function(request, reply) {
       const m = getModels(request)
-      const route = await m.Route.find({
-        where: { id: request.params.id },
-        include: [
-          {
-            model: m.IndicativeTrip,
-            attributes: ["nextPrice"],
-          },
-        ],
+      const trip = await m.Trip.find({
+        where: {
+          routeId: request.params.id,
+          date: { $gte: new Date() },
+        },
+        attributes: ["price"],
+        order: "date",
       })
-      if (!route) {
+      if (!trip) {
         return reply(Boom.notFound())
       }
-      const ticketPrice = route.indicativeTrip.nextPrice
+      const ticketPrice = trip.price
       const pricing = {
         1: {
           quantity: 1,
@@ -256,6 +254,7 @@ the \`startDate\` defaults to the time of request.
         },
       }
 
+      const route = await m.Route.findById(request.params.id)
       const eligibleTags = route.tags.filter(t => t.startsWith("rp-"))
 
       if (eligibleTags.length > 0 && route.notes && route.notes.passSizes) {
