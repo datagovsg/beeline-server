@@ -3,7 +3,11 @@ import _ from "lodash"
 import { TransactionError } from "../transactions"
 import { TransactionBuilder } from "../transactions/builder"
 
-export async function applyPromoCode(tb, promoCode, type) {
+export const applyPromoCode = async function applyPromoCode(
+  tb,
+  promoCode,
+  type
+) {
   const clone = new TransactionBuilder(tb)
 
   // Identify applicable promotions
@@ -198,7 +202,7 @@ const promotions = {
   RoutePass: require("./RoutePass").RoutePass,
 }
 
-export function createCalculation(
+export const createCalculation = function createCalculation(
   promoType,
   transactionBuilder,
   params,
