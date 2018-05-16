@@ -189,10 +189,10 @@ export const register = (server, options, next) => {
         dbTxn = await m.Transaction.findById(dbTxn.id, {
           include: [m.TransactionItem],
         })
-        await m.TransactionItem.getAssociatedItems(dbTxn.transactionItems);
+        await m.TransactionItem.getAssociatedItems(dbTxn.transactionItems)
 
         // asynchronously reload the ticket data and run the hooks
-        (async function(tis) {
+        ;(async function(tis) {
           let ticketIds = tis.filter(ti => ti.ticketSale).map(ti => ti.itemId)
 
           ticketIds.forEach(async ticketId => {
@@ -553,7 +553,8 @@ export const register = (server, options, next) => {
           events.emit("transactionFailure", {
             message: `Error performing refund. ${err.message}`,
             userId:
-              request.auth.credentials.adminId || request.auth.credentials.email,
+              request.auth.credentials.adminId ||
+              request.auth.credentials.email,
           })
         }
       }
@@ -782,11 +783,7 @@ will not be refunded here, so we will make a net profit.`,
                 },
               }
             )
-            auth.assertAdminRole(
-              request.auth.credentials,
-              "refund",
-              company.id
-            )
+            auth.assertAdminRole(request.auth.credentials, "refund", company.id)
 
             // Reverse search from ticket id, get transaction entry + related transactionItems
             let ticketSale = await m.TransactionItem.find({
@@ -872,10 +869,7 @@ will not be refunded here, so we will make a net profit.`,
               ticket.id
             }`
 
-            ticket = await ticket.update(
-              { status: "void" },
-              { transaction: t }
-            )
+            ticket = await ticket.update({ status: "void" }, { transaction: t })
 
             transactionBuilder.undoFunctions.push(t =>
               ticket.update({ status: "valid" }, { transaction: t })
@@ -901,7 +895,8 @@ will not be refunded here, so we will make a net profit.`,
           events.emit("transactionFailure", {
             message: `Error performing refund ${err.message}`,
             userId:
-              request.auth.credentials.adminId || request.auth.credentials.email,
+              request.auth.credentials.adminId ||
+              request.auth.credentials.email,
           })
           defaultErrorHandler(reply)(err)
         }
@@ -1486,9 +1481,7 @@ OFFSET :offset
                 ticketItems[0].ticketSale ||
                 ticketItems[0].ticketRefund ||
                 ticketItems[0].ticketExpense
-              deal.forEach(
-                d => (d.routeId = ticketItem.boardStop.trip.routeId)
-              )
+              deal.forEach(d => (d.routeId = ticketItem.boardStop.trip.routeId))
             } else if (routePassItems) {
               const routePassItem =
                 routePassItems[0].routeCredits || routePassItems[0].routePass
@@ -1627,16 +1620,27 @@ OFFSET :offset
           searchOptions.where.id = { $in: transactionIds }
         }
 
-        let { count, rows } = await m.Transaction.findAndCountAll(
-          searchOptions
-        )
+        let { count, rows } = await m.Transaction.findAndCountAll(searchOptions)
+
+        let tripIncludes = [
+          {
+            model: m.Route,
+            attributes: ["id", "transportCompanyId", "label"],
+            include: [
+              {
+                model: m.TransportCompany,
+                attributes: ["id", "name"],
+              },
+            ],
+          },
+        ]
 
         // Pull in the associated items
         let ticketIncludes = [
           {
             model: m.TripStop,
             as: "boardStop",
-            include: [m.Stop, { model: m.Trip }],
+            include: [m.Stop, { model: m.Trip, include: tripIncludes }],
           },
           { model: m.TripStop, as: "alightStop", include: [m.Stop] },
           { model: m.User, attributes: ["email", "name", "telephone"] },
