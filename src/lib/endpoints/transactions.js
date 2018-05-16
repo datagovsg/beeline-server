@@ -1377,14 +1377,16 @@ refunded, issued)`,
         ]
 
         // Pull in the associated items
-        let ticketIncludes = [
-          {
-            model: m.TripStop,
-            as: "boardStop",
-            include: [m.Stop, { model: m.Trip, include: tripIncludes }],
-          },
-          { model: m.TripStop, as: "alightStop", include: [m.Stop] },
-        ]
+        let ticketIncludes = {
+          include: [
+            {
+              model: m.TripStop,
+              as: "boardStop",
+              include: [m.Stop, { model: m.Trip, include: tripIncludes }],
+            },
+            { model: m.TripStop, as: "alightStop", include: [m.Stop] },
+          ],
+        }
 
         // var ticketStatuses = ["valid", "refunded"];
         let ticketTypes = ["ticketSale", "ticketExpense", "ticketRefund"]
