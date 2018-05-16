@@ -1,30 +1,30 @@
-export default function (modelCache) {
-  var DataTypes = modelCache.db.Sequelize
-  return modelCache.db.define('refundPayment', {
+export default modelCache => {
+  const DataTypes = modelCache.db.Sequelize
+  return modelCache.db.define("refundPayment", {
     paymentResource: DataTypes.STRING,
-    incoming: DataTypes.DECIMAL(10, 2),
+    incoming: DataTypes.DECIMAL(10, 2), // eslint-disable-line new-cap
     /* Store credit/debit in the same column, but in opposite sign */
     outgoing: {
       type: DataTypes.VIRTUAL,
-      set: function (val) {
+      set: function(val) {
         this.setDataValue("incoming", modelCache.neg(val))
       },
-      get: function () {
+      get: function() {
         return modelCache.neg(this.getDataValue("incoming"))
-      }
+      },
     },
-    data: DataTypes.JSON
+    data: DataTypes.JSON,
   })
 }
 
-export function makeAssociation (modelCache) {
-  var RefundPayment = modelCache.require('RefundPayment')
-  var TransactionItem = modelCache.require('TransactionItem')
+export const makeAssociation = function makeAssociation(modelCache) {
+  const RefundPayment = modelCache.require("RefundPayment")
+  const TransactionItem = modelCache.require("TransactionItem")
   RefundPayment.hasOne(TransactionItem, {
     foreignKey: "itemId",
     constraints: false,
     scope: {
-      itemType: "refundPayment"
-    }
+      itemType: "refundPayment",
+    },
   })
 }
