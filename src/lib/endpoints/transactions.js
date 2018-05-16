@@ -1631,12 +1631,21 @@ OFFSET :offset
           searchOptions
         )
 
+        let tripIncludes = [{
+          model: m.Route,
+          attributes: ["id", "transportCompanyId", "label"],
+          include:[{
+            model: m.TransportCompany,
+            attributes: ["id", "name"],
+          }],
+        }]
+
         // Pull in the associated items
         let ticketIncludes = [
           {
             model: m.TripStop,
             as: "boardStop",
-            include: [m.Stop, { model: m.Trip }],
+            include: [m.Stop, { model: m.Trip, include: tripIncludes }],
           },
           { model: m.TripStop, as: "alightStop", include: [m.Stop] },
           { model: m.User, attributes: ["email", "name", "telephone"] },
