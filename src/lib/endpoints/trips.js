@@ -788,7 +788,7 @@ Trip's company ID and driver's company ID must match.
         ) {
           return reply(
             Boom.forbidden(
-              `Driver is disallowed from driving for company ${
+              `Driver is disallowed from driving trip ${trip.id} for company ${
                 trip.route.transportCompanyId
               }, ` +
                 `can only drive for ${JSON.stringify(
