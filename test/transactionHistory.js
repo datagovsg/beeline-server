@@ -414,7 +414,10 @@ lab.experiment("Transactions", function () {
 
     const refundItems = user1History.transactions.find(txn => txn.id === refundTxn.id).itemsByType
     expect(refundItems.routePass).exist()
+    expect(refundItems.routePass[0].routePass.route).exist()
     expect(refundItems.deal).exist()
+    expect(refundItems.refundPayment).exist()
+    expect(refundItems.refundPayment[0].originalChargeData).exist()
 
     for (let txnItem of saleTxn.transactionItems) {
       if (txnItem.itemType.startsWith("routePass")) {

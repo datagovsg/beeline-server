@@ -1363,18 +1363,16 @@ refunded, issued)`,
         let db = getDB(request)
         let m = getModels(request)
 
-        let tripIncludes = [
-          {
-            model: m.Route,
-            attributes: ["id", "transportCompanyId", "label"],
-            include: [
-              {
-                model: m.TransportCompany,
-                attributes: ["id", "name"],
-              },
-            ],
-          },
-        ]
+        const routeIncludes = {
+          attributes: ["id", "transportCompanyId", "label"],
+          include: [
+            {
+              model: m.TransportCompany,
+              attributes: ["id", "name"],
+            },
+          ],
+        }
+        let tripIncludes = [{ ...routeIncludes, model: m.Route }]
 
         // Pull in the associated items
         let ticketIncludes = {
@@ -1466,6 +1464,8 @@ OFFSET :offset
             },
           ],
         })
+
+        // Augment tickets with route/trip information
         await m.TransactionItem.getAssociatedItems(
           _.flatten(_.map(transactions, "transactionItems")),
           {
@@ -1475,6 +1475,52 @@ OFFSET :offset
           }
         )
         const txns = transactions.map(tx => tx.toJSON())
+
+        const allTxnItems = _.flatten(_.map(txns, "transactionItems"))
+
+        const enrichItemsOfType = async (itemTypes, enrich) => {
+          for (const item of allTxnItems.filter(i =>
+            itemTypes.includes(i.itemType)
+          )) {
+            await enrich(item)
+          }
+        }
+
+        const addRouteToRoutePass = async routePassItem => {
+          const r = routePassItem.routePass || routePassItem.routeCredits
+          const { tag } = r
+          const route = await m.Route.find({
+            ...routeIncludes,
+            where: { tags: { $contains: [tag] } },
+          })
+          r.route = route.toJSON()
+        }
+
+        const addChargeDataToRefundPayment = async refundPaymentItem => {
+          const paymentResource = _.get(
+            refundPaymentItem,
+            "refundPayment.data.charge"
+          )
+          if (paymentResource) {
+            const originalPayment = await m.Payment.find({
+              where: { paymentResource },
+              attributes: ["data"],
+            })
+            refundPaymentItem.originalChargeData = _.pick(
+              originalPayment.data,
+              ["statement_descriptor", "description"]
+            )
+            refundPaymentItem.originalChargeData.source = {
+              last4: _.get(originalPayment, "data.source.last4"),
+            }
+          }
+        }
+
+        await Promise.all([
+          enrichItemsOfType(["routePass", "routeCredits"], addRouteToRoutePass),
+          enrichItemsOfType(["refundPayment"], addChargeDataToRefundPayment),
+        ])
+
         if (request.query.groupItemsByType) {
           for (let t of txns) {
             t.itemsByType = _.groupBy(t.transactionItems, ti => ti.itemType)
