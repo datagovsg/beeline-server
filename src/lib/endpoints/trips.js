@@ -633,12 +633,7 @@ Trip's company ID and driver's company ID must match.
 
           // update/add the rest in
           let updatePromises = request.payload.tripStops.map(async ts => {
-            let update = _.pick(ts, [
-              "canBoard",
-              "canAlight",
-              "time",
-              "stopId",
-            ])
+            let update = _.pick(ts, ["canBoard", "canAlight", "time", "stopId"])
             update.tripId = request.params.id
 
             if (update.time) {
@@ -791,7 +786,16 @@ Trip's company ID and driver's company ID must match.
             trip.route.transportCompanyId
           ) === -1
         ) {
-          return reply(Boom.forbidden())
+          return reply(
+            Boom.forbidden(
+              `Driver is disallowed from driving for company ${
+                trip.route.transportCompanyId
+              }, ` +
+                `can only drive for ${JSON.stringify(
+                  request.auth.credentials.transportCompanyIds
+                )}`
+            )
+          )
         }
 
         trip.driverId = request.auth.credentials.driverId
