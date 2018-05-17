@@ -1535,20 +1535,24 @@ OFFSET :offset
             const extractRouteIdFromTag = tag =>
               tag.substring(tag.indexOf("-") + 1)
 
-            if (ticketItems) {
-              const ticketItem =
-                ticketItems[0].ticketSale ||
-                ticketItems[0].ticketRefund ||
-                ticketItems[0].ticketExpense
-              deal.forEach(d => (d.routeId = ticketItem.boardStop.trip.routeId))
-            } else if (routePassItems) {
-              const routePassItem =
-                routePassItems[0].routeCredits || routePassItems[0].routePass
-              deal.forEach(
-                d =>
-                  (d.routeId = Number(extractRouteIdFromTag(routePassItem.tag)))
-              )
-            }
+            deal.forEach(d => {
+              const dealItem =
+                d.ticketSale ||
+                d.ticketRefund ||
+                d.ticketExpense ||
+                d.routeCredits ||
+                d.routePass
+              d.routeId = dealItem.tag
+                ? Number(extractRouteIdFromTag(dealItem.tag))
+                : dealItem.boardStop.trip.routeId
+              d.dealItem = dealItem
+              delete d.ticketSale
+              delete d.ticketRefund
+              delete d.ticketExpense
+              delete d.routeCredits
+              delete d.routePass
+            })
+
             t.itemsByType.deal = deal
             delete t.transactionItems
           }
