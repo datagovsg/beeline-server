@@ -1394,7 +1394,6 @@ refunded, issued)`,
           "conversion",
           "routePassPurchase",
           "routeCreditPurchase",
-          "routeCreditExpiry",
           "ticketPurchase",
           "refundPayment",
         ]
@@ -1550,6 +1549,14 @@ OFFSET :offset
               delete d.routePass
             })
 
+            t.route =
+              deal[0].dealItem.route || deal[0].dealItem.boardStop.trip.route
+            t.dealValue = Math.abs(
+              _.sumBy(
+                t.itemsByType.payment || t.itemsByType.refundPayment,
+                "debitF"
+              )
+            )
             t.itemsByType.deal = deal
             delete t.transactionItems
           }
