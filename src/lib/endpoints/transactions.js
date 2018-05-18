@@ -1478,13 +1478,10 @@ OFFSET :offset
 
         const allTxnItems = _.flatten(_.map(txns, "transactionItems"))
 
-        const enrichItemsOfType = async (itemTypes, enrich) => {
-          for (const item of allTxnItems.filter(i =>
-            itemTypes.includes(i.itemType)
-          )) {
-            await enrich(item)
-          }
-        }
+        const enrichItemsOfType = (itemTypes, enrich) =>
+          Promise.all(
+            allTxnItems.filter(i => itemTypes.includes(i.itemType)).map(enrich)
+          )
 
         const addRouteToRoutePass = async routePassItem => {
           const r = routePassItem.routePass || routePassItem.routeCredits
