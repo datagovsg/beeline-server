@@ -1363,18 +1363,16 @@ refunded, issued)`,
         let db = getDB(request)
         let m = getModels(request)
 
-        let tripIncludes = [
-          {
-            model: m.Route,
-            attributes: ["id", "transportCompanyId", "label"],
-            include: [
-              {
-                model: m.TransportCompany,
-                attributes: ["id", "name"],
-              },
-            ],
-          },
-        ]
+        const routeIncludes = {
+          attributes: ["id", "transportCompanyId", "label"],
+          include: [
+            {
+              model: m.TransportCompany,
+              attributes: ["id", "name"],
+            },
+          ],
+        }
+        let tripIncludes = [{ ...routeIncludes, model: m.Route }]
 
         // Pull in the associated items
         let ticketIncludes = {
@@ -1466,6 +1464,8 @@ OFFSET :offset
             },
           ],
         })
+
+        // Augment tickets with route/trip information
         await m.TransactionItem.getAssociatedItems(
           _.flatten(_.map(transactions, "transactionItems")),
           {
@@ -1475,6 +1475,49 @@ OFFSET :offset
           }
         )
         const txns = transactions.map(tx => tx.toJSON())
+
+        const allTxnItems = _.flatten(_.map(txns, "transactionItems"))
+
+        const enrichItemsOfType = (itemTypes, enrich) =>
+          Promise.all(
+            allTxnItems.filter(i => itemTypes.includes(i.itemType)).map(enrich)
+          )
+
+        const addRouteToRoutePass = async routePassItem => {
+          const r = routePassItem.routePass || routePassItem.routeCredits
+          const { tag } = r
+          const route = await m.Route.find({
+            ...routeIncludes,
+            where: { tags: { $contains: [tag] } },
+          })
+          r.route = route.toJSON()
+        }
+
+        const addChargeDataToRefundPayment = async refundPaymentItem => {
+          const paymentResource = _.get(
+            refundPaymentItem,
+            "refundPayment.data.charge"
+          )
+          if (paymentResource) {
+            const originalPayment = await m.Payment.find({
+              where: { paymentResource },
+              attributes: ["data"],
+            })
+            refundPaymentItem.originalChargeData = _.pick(
+              originalPayment.data,
+              ["statement_descriptor", "description"]
+            )
+            refundPaymentItem.originalChargeData.source = {
+              last4: _.get(originalPayment, "data.source.last4"),
+            }
+          }
+        }
+
+        await Promise.all([
+          enrichItemsOfType(["routePass", "routeCredits"], addRouteToRoutePass),
+          enrichItemsOfType(["refundPayment"], addChargeDataToRefundPayment),
+        ])
+
         if (request.query.groupItemsByType) {
           for (let t of txns) {
             t.itemsByType = _.groupBy(t.transactionItems, ti => ti.itemType)
@@ -1489,20 +1532,24 @@ OFFSET :offset
             const extractRouteIdFromTag = tag =>
               tag.substring(tag.indexOf("-") + 1)
 
-            if (ticketItems) {
-              const ticketItem =
-                ticketItems[0].ticketSale ||
-                ticketItems[0].ticketRefund ||
-                ticketItems[0].ticketExpense
-              deal.forEach(d => (d.routeId = ticketItem.boardStop.trip.routeId))
-            } else if (routePassItems) {
-              const routePassItem =
-                routePassItems[0].routeCredits || routePassItems[0].routePass
-              deal.forEach(
-                d =>
-                  (d.routeId = Number(extractRouteIdFromTag(routePassItem.tag)))
-              )
-            }
+            deal.forEach(d => {
+              const dealItem =
+                d.ticketSale ||
+                d.ticketRefund ||
+                d.ticketExpense ||
+                d.routeCredits ||
+                d.routePass
+              d.routeId = dealItem.tag
+                ? Number(extractRouteIdFromTag(dealItem.tag))
+                : dealItem.boardStop.trip.routeId
+              d.dealItem = dealItem
+              delete d.ticketSale
+              delete d.ticketRefund
+              delete d.ticketExpense
+              delete d.routeCredits
+              delete d.routePass
+            })
+
             t.itemsByType.deal = deal
             delete t.transactionItems
           }
