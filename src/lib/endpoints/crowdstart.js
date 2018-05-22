@@ -138,7 +138,8 @@ export const register = function(server, options, next) {
       route.transportCompanyId
     )
     TransactionError.assert(
-      route.tags.includes("crowdstart"),
+      route.tags.includes("crowdstart") ||
+        route.tags.includes("crowdstart-private"),
       "Selected route is not a crowdstart route"
     )
     TransactionError.assert(
