@@ -731,10 +731,7 @@ function runOrderChecks(tb, checkOptions) {
   const tripOrders = tb.lineItems
 
   _(tripsById).each((trip, tripId) => {
-    TransactionError.assert(
-      trip.isRunning,
-      `Trip ${tripId} has been cancelled`
-    )
+    TransactionError.assert(trip.isRunning, `Trip ${tripId} has been cancelled`)
   })
   _(tripOrders).each(tripOrder => {
     const dbTrip = tripsById[tripOrder.tripId]
@@ -1081,8 +1078,7 @@ export function checkStopsAndBookingWindow(
 
     if (windowType === "firstStop") {
       // check against the first stop
-      cutOff =
-        _.min(dbTrip.tripStops.map(ts => ts.time.getTime())) + windowSize
+      cutOff = _.min(dbTrip.tripStops.map(ts => ts.time.getTime())) + windowSize
     } else {
       /* i.e. if windowType === 'stop' */
       // check against the time of the boarding and alighting stop
