@@ -952,7 +952,8 @@ export async function chargeSale(options) {
     //     `${companyInfo.name}, ${txnGroups.ticketSale.length} ticket(s)`;
 
     // Clean up the statement descriptor according to stripe rules
-    let statementDescriptor = `${companyInfo.name.substr(0, 10)},Ref#${
+    const companyDescriptor = companyInfo.smsOpCode || companyInfo.name
+    let statementDescriptor = `${companyDescriptor.substr(0, 10)},Ref#${
       transaction.id
     }`
       .replace(/[<>"']/g, "") // no <>"'
