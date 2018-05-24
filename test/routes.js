@@ -1416,6 +1416,9 @@ lab.experiment("Route manipulation", function () {
     let user = await m.User.create({
       email: new Date().toISOString() + "@example.com",
     })
+
+    const route1TripDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
     let routes = [
       await m.Route.create({
         path: [],
@@ -1426,7 +1429,7 @@ lab.experiment("Route manipulation", function () {
         trips: [
           {
             transportCompanyId: transportCompany.id,
-            date: "2017-01-01",
+            date: route1TripDate,
           },
         ],
       }, {
@@ -1460,12 +1463,12 @@ lab.experiment("Route manipulation", function () {
     ]
     let tripStops = [
       await m.TripStop.create({
-        time: "2017-01-02T01:00",
+        time: new Date(route1TripDate.getTime() + 60 * 60 * 1000),
         stopId: stops[0].id,
         tripId: routes[0].trips[0].id,
       }),
       await m.TripStop.create({
-        time: "2017-01-02T01:20",
+        time: new Date(route1TripDate.getTime() + 70 * 60 * 1000),
         stopId: stops[1].id,
         tripId: routes[0].trips[0].id,
       }),
@@ -1512,6 +1515,17 @@ lab.experiment("Route manipulation", function () {
       headers: authHeaders,
     })
 
+    expect(resp.result.length).to.equal(1)
+    expect(resp.result[0].id).to.equal(routes[0].id)
+    expect(resp.result[0].boardStopStopId).to.equal(tripStops[0].stopId)
+    expect(resp.result[0].alightStopStopId).to.equal(tripStops[1].stopId)
+
+    resp = await server.inject({
+      method: "GET",
+      url: "/routes/recent?startDateTime=2016-12-31",
+      headers: authHeaders,
+    })
+
     expect(resp.result[0].id).to.equal(routes[1].id)
     expect(resp.result[1].id).to.equal(routes[0].id)
 
@@ -1538,7 +1552,7 @@ WHERE id = :id
 
     resp = await server.inject({
       method: "GET",
-      url: "/routes/recent",
+      url: "/routes/recent?startDateTime=2016-12-31",
       headers: authHeaders,
     })
 

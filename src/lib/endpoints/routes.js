@@ -765,6 +765,7 @@ The difference between the arrival time and what the user requested will be retu
           limit: Joi.number()
             .integer()
             .default(10),
+          startDateTime: Joi.date().default(() => new Date(), "current time"),
         }).unknown(),
       },
     },
@@ -796,8 +797,8 @@ WITH "routeIdLastTicketDate" AS (
         -- extract the alighting stop
         INNER JOIN "tripStops" AS "alightStop"
             ON tickets."alightStopId" = "alightStop".id
-    WHERE
-        "userId" = :userId
+    WHERE "userId" = :userId
+      AND "tripStops"."time" >= :startDateTime
     ORDER BY
         "trips"."routeId", "tickets".id DESC
 )
@@ -815,6 +816,7 @@ LIMIT :limit
             replacements: {
               userId: request.auth.credentials.userId,
               limit: request.query.limit,
+              startDateTime: request.query.startDateTime,
             },
             type: db.QueryTypes.SELECT,
           }
