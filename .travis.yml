@@ -9,10 +9,7 @@ env:
   - CXX=g++-4.8
   - SHUTUP=1
   - TZ=Asia/Singapore
-  # Declare two Babel envs, web and awslambda. The latter transpiles to
-  # node 6.x compatible code, which AWS Lambda understands
   matrix:
-  - BABEL_ENV=awslambda
   - BABEL_ENV=web
 script:
   - npm test
@@ -21,8 +18,8 @@ script:
   - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
   - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
 before_deploy:
-  - if [ "$BABEL_ENV" == "awslambda" ]; then npm install -g babel && npm run build; fi
-  # If building for the web, build out a docker image, push it to Docker Hub,
+  - if [ "$BABEL_ENV" == "web" ]; then npm install -g babel && npm run build; fi
+  # Build out a docker image, push it to Docker Hub,
   # then tell Elastic Beanstalk (later) of the recently pushed image
   - if [ "$BABEL_ENV" == "web" ]; then
       docker login -u $DOCKER_USER -p $DOCKER_PASSWORD;
@@ -42,7 +39,7 @@ deploy:
     function_name: expireStaleRoutePasses-staging
     region: ap-southeast-1
     role: arn:aws:iam::882000534153:role/service-role/batch
-    runtime: nodejs6.10
+    runtime: nodejs8.10
     timeout: 300
     memory_size: 256
     handler_name: handler
@@ -52,12 +49,11 @@ deploy:
       secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
     on:
       branch: master
-      condition: "$BABEL_ENV = awslambda"
   - provider: lambda
     function_name: expireStaleRoutePasses-prod
     region: ap-southeast-1
     role: arn:aws:iam::882000534153:role/service-role/batch
-    runtime: nodejs6.10
+    runtime: nodejs8.10
     timeout: 300
     memory_size: 256
     handler_name: handler
@@ -67,7 +63,6 @@ deploy:
       secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
     on:
       branch: production
-      condition: "$BABEL_ENV = awslambda"
 
   - provider: elasticbeanstalk
     skip_cleanup: true
@@ -79,7 +74,6 @@ deploy:
     bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
     on:
       branch: $DEV_BRANCH
-      condition: "$BABEL_ENV = web"
 
   - provider: elasticbeanstalk
     skip_cleanup: true
@@ -91,7 +85,6 @@ deploy:
     bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
     on:
       branch: $PROD_BRANCH
-      condition: "$BABEL_ENV = web"
 
   - provider: elasticbeanstalk
     skip_cleanup: true
@@ -103,7 +96,6 @@ deploy:
     bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
     on:
       branch: $ADMIN_BRANCH
-      condition: "$BABEL_ENV = web"
 
 addons:
   postgresql: '9.6'
