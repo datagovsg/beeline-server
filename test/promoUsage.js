@@ -1,36 +1,48 @@
-import Lab from 'lab'
-import _ from 'lodash'
-import server from '../src/index.js'
-import {expect} from 'code'
+import Lab from "lab"
+import _ from "lodash"
+import server from "../src/index.js"
+import { expect } from "code"
 
-import {resetTripInstances, loginAs, cleanlyDeletePromotions,
-        randomString, createStripeToken, randomEmail} from './test_common'
-import {createUsersCompaniesRoutesAndTrips} from './test_data'
+import {
+  resetTripInstances,
+  loginAs,
+  cleanlyDeletePromotions,
+  randomString,
+  createStripeToken,
+  randomEmail,
+} from "./test_common"
+import { createUsersCompaniesRoutesAndTrips } from "./test_data"
 
 export const lab = Lab.script()
-const {db, models} = require('../src/lib/core/dbschema')()
+const { db, models } = require("../src/lib/core/dbschema")()
 
-lab.experiment("Promotion usage", function () {
-  var authHeaders = {}, templates = null
-  var userInstance, companyInstance, tripInstances
-  var globalLimit = 50
-  var userLimit = 3
+lab.experiment("Promotion usage", function() {
+  let authHeaders = {}
+  let templates = null
+  let userInstance
+  let companyInstance
+  let tripInstances
+  let globalLimit = 50
+  let userLimit = 3
 
-  lab.before({timeout: 15000}, async () => {
-    ({userInstance, companyInstance, tripInstances} =
-      await createUsersCompaniesRoutesAndTrips(models))
+  lab.before({ timeout: 15000 }, async () => {
+    ;({
+      userInstance,
+      companyInstance,
+      tripInstances,
+    } = await createUsersCompaniesRoutesAndTrips(models))
 
-    var userToken = (await loginAs("user", userInstance.id)).result.sessionToken
-    authHeaders.user = {authorization: "Bearer " + userToken}
+    let userToken = (await loginAs("user", userInstance.id)).result.sessionToken
+    authHeaders.user = { authorization: "Bearer " + userToken }
 
-    var adminToken = (await loginAs("admin", {
+    let adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund']
+      permissions: ["refund"],
     })).result.sessionToken
-    authHeaders.admin = {authorization: "Bearer " + adminToken}
+    authHeaders.admin = { authorization: "Bearer " + adminToken }
 
     templates = {
-      connection: {db, models, dryRun: false, committed: true},
+      connection: { db, models, dryRun: false, committed: true },
       items: [
         {
           tripId: tripInstances[0].id,
@@ -46,45 +58,43 @@ lab.experiment("Promotion usage", function () {
           tripId: tripInstances[2].id,
           boardStopId: tripInstances[2].tripStops[0].id,
           alightStopId: tripInstances[2].tripStops[2].id,
-        }
+        },
       ],
       promoParams: {
-        qualifyingCriteria: [
-          {type: 'noLimit', params: {}},
-        ],
+        qualifyingCriteria: [{ type: "noLimit", params: {} }],
         discountFunction: {
           type: "simpleRate",
-          params: {"rate": 0.5}
+          params: { rate: 0.5 },
         },
         refundFunction: {
-          type: "refundDiscountedAmt"
+          type: "refundDiscountedAmt",
         },
         usageLimit: {
           globalLimit,
-          userLimit
-        }
-      }
+          userLimit,
+        },
+      },
     }
   })
 
   lab.afterEach(async () => resetTripInstances(models, tripInstances))
 
-  lab.test('Hit User Limit', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+  lab.test("Hit User Limit", { timeout: 20000 }, async () => {
+    let promoCode = randomString()
 
     // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
+    await cleanlyDeletePromotions({ code: promoCode })
     let promoInst = await models.Promotion.create({
       code: promoCode,
-      type: 'Promotion',
+      type: "Promotion",
       params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
-    let promoUsageInst = await models.PromoUsage.create({
+    await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: userInstance.id,
-      count: userLimit
+      count: userLimit,
     })
 
     const poItems = templates.items
@@ -103,22 +113,22 @@ lab.experiment("Promotion usage", function () {
     expect(saleResponse.statusCode).to.equal(400)
   })
 
-  lab.test('userLimit is a hard limit', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+  lab.test("userLimit is a hard limit", { timeout: 20000 }, async () => {
+    let promoCode = randomString()
 
     // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
+    await cleanlyDeletePromotions({ code: promoCode })
     let promoInst = await models.Promotion.create({
       code: promoCode,
-      type: 'Promotion',
+      type: "Promotion",
       params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
-    let promoUsageInst = await models.PromoUsage.create({
+    await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: userInstance.id,
-      count: userLimit - 1
+      count: userLimit - 1,
     })
 
     const poItems = templates.items
@@ -136,38 +146,43 @@ lab.experiment("Promotion usage", function () {
 
     expect(saleResponse.statusCode).to.equal(200)
 
-    let saleTIByType = _.groupBy(saleResponse.result.transactionItems, ti => ti.itemType)
+    let saleTIByType = _.groupBy(
+      saleResponse.result.transactionItems,
+      ti => ti.itemType
+    )
 
     // expect only 1 of the 3 tickets to have received the discount due to user limit
     expect(saleTIByType.discount).exists()
     expect(saleTIByType.discount.length).equal(1)
-    expect(_.keys(saleTIByType.discount[0].discount.discountAmounts).length).equal(1)
+    expect(
+      _.keys(saleTIByType.discount[0].discount.discountAmounts).length
+    ).equal(1)
   })
 
-  lab.test('Hit Global Limit', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+  lab.test("Hit Global Limit", { timeout: 20000 }, async () => {
+    let promoCode = randomString()
 
     // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
+    await cleanlyDeletePromotions({ code: promoCode })
     let promoInst = await models.Promotion.create({
       code: promoCode,
-      type: 'Promotion',
+      type: "Promotion",
       params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
-    var randomUser = await models.User.create({telephone: randomEmail()})
+    let randomUser = await models.User.create({ telephone: randomEmail() })
 
-    let userUsageInst = await models.PromoUsage.create({
+    await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: randomUser.id,
-      count: globalLimit
+      count: globalLimit,
     })
 
-    let globalUsageInst = await models.PromoUsage.create({
+    await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: null,
-      count: globalLimit
+      count: globalLimit,
     })
 
     const poItems = templates.items
@@ -186,28 +201,28 @@ lab.experiment("Promotion usage", function () {
     expect(saleResponse.statusCode).to.equal(400)
   })
 
-  lab.test('Track promoUsage', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+  lab.test("Track promoUsage", { timeout: 20000 }, async () => {
+    let promoCode = randomString()
 
     // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
+    await cleanlyDeletePromotions({ code: promoCode })
     let promoInst = await models.Promotion.create({
       code: promoCode,
-      type: 'Promotion',
+      type: "Promotion",
       params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
     let userUsageInst = await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: userInstance.id,
-      count: 0
+      count: 0,
     })
 
     let globalUsageInst = await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: null,
-      count: 0
+      count: 0,
     })
 
     const poItems = templates.items
@@ -234,28 +249,28 @@ lab.experiment("Promotion usage", function () {
     expect(globalUsageInst.count).equal(poItems.length)
   })
 
-  lab.test('Revert on bad purchase', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+  lab.test("Revert on bad purchase", { timeout: 20000 }, async () => {
+    let promoCode = randomString()
 
     // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
+    await cleanlyDeletePromotions({ code: promoCode })
     let promoInst = await models.Promotion.create({
       code: promoCode,
-      type: 'Promotion',
+      type: "Promotion",
       params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
+      description: `Test promo ${Date.now()}`,
     })
 
     let userUsageInst = await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: userInstance.id,
-      count: 0
+      count: 0,
     })
 
     let globalUsageInst = await models.PromoUsage.create({
       promoId: promoInst.id,
       userId: null,
-      count: 0
+      count: 0,
     })
 
     const poItems = templates.items
@@ -265,7 +280,7 @@ lab.experiment("Promotion usage", function () {
       url: "/transactions/tickets/payment",
       payload: {
         trips: poItems,
-        stripeToken: 'BADSTRIPE',
+        stripeToken: "BADSTRIPE",
         promoCode: { code: promoCode, options: {} },
       },
       headers: authHeaders.user,
@@ -282,186 +297,195 @@ lab.experiment("Promotion usage", function () {
     expect(globalUsageInst.count).equal(0)
   })
 
-  lab.test('Does not trigger update on preview', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+  lab.test(
+    "Does not trigger update on preview",
+    { timeout: 20000 },
+    async () => {
+      let promoCode = randomString()
 
-    // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
-    let promoInst = await models.Promotion.create({
-      code: promoCode,
-      type: 'Promotion',
-      params: templates.promoParams,
-      description: `Test promo ${Date.now()}`
-    })
+      // Create the promo
+      await cleanlyDeletePromotions({ code: promoCode })
+      let promoInst = await models.Promotion.create({
+        code: promoCode,
+        type: "Promotion",
+        params: templates.promoParams,
+        description: `Test promo ${Date.now()}`,
+      })
 
-    let userUsageInst = await models.PromoUsage.create({
-      promoId: promoInst.id,
-      userId: userInstance.id,
-      count: 0
-    })
+      let userUsageInst = await models.PromoUsage.create({
+        promoId: promoInst.id,
+        userId: userInstance.id,
+        count: 0,
+      })
 
-    let globalUsageInst = await models.PromoUsage.create({
-      promoId: promoInst.id,
-      userId: null,
-      count: 0
-    })
+      let globalUsageInst = await models.PromoUsage.create({
+        promoId: promoInst.id,
+        userId: null,
+        count: 0,
+      })
 
-    const poItems = templates.items
+      const poItems = templates.items
 
-    const saleResponse = await server.inject({
-      method: "POST",
-      url: "/transactions/tickets/quote",
-      payload: {
-        trips: poItems,
-        promoCode: { code: promoCode, options: {} },
-      },
-      headers: authHeaders.user,
-    })
+      const saleResponse = await server.inject({
+        method: "POST",
+        url: "/transactions/tickets/quote",
+        payload: {
+          trips: poItems,
+          promoCode: { code: promoCode, options: {} },
+        },
+        headers: authHeaders.user,
+      })
 
-    expect(saleResponse.statusCode).to.equal(200)
+      expect(saleResponse.statusCode).to.equal(200)
 
-    await userUsageInst.reload()
-    expect(userUsageInst.count).equal(0)
+      await userUsageInst.reload()
+      expect(userUsageInst.count).equal(0)
 
-    await new Promise(resolve => setTimeout(resolve, 5000))
+      await new Promise(resolve => setTimeout(resolve, 5000))
 
-    await globalUsageInst.reload()
-    expect(globalUsageInst.count).equal(0)
-  })
+      await globalUsageInst.reload()
+      expect(globalUsageInst.count).equal(0)
+    }
+  )
 
+  lab.test(
+    "Disallow usage by setting globalLimit to 0",
+    { timeout: 20000 },
+    async () => {
+      let promoCode = randomString()
 
-  lab.test('Disallow usage by setting globalLimit to 0', {timeout: 20000}, async () => {
-    var promoCode = randomString()
-
-    // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
-    let promoParams = {
-      qualifyingCriteria: [
-        {type: 'noLimit', params: {}},
-      ],
-      discountFunction: {
-        type: "simpleRate",
-        params: {"rate": 0.5}
-      },
-      refundFunction: {
-        type: "refundDiscountedAmt"
-      },
-      usageLimit: {
-        globalLimit: 0,
-        userLimit
+      // Create the promo
+      await cleanlyDeletePromotions({ code: promoCode })
+      let promoParams = {
+        qualifyingCriteria: [{ type: "noLimit", params: {} }],
+        discountFunction: {
+          type: "simpleRate",
+          params: { rate: 0.5 },
+        },
+        refundFunction: {
+          type: "refundDiscountedAmt",
+        },
+        usageLimit: {
+          globalLimit: 0,
+          userLimit,
+        },
       }
+
+      await models.Promotion.create({
+        code: promoCode,
+        type: "Promotion",
+        params: promoParams,
+        description: `Test promo ${Date.now()}`,
+      })
+
+      const poItems = templates.items
+
+      const saleResponse = await server.inject({
+        method: "POST",
+        url: "/transactions/tickets/quote",
+        payload: {
+          trips: poItems,
+          stripeToken: await createStripeToken(),
+          promoCode: { code: promoCode, options: {} },
+        },
+        headers: authHeaders.user,
+      })
+
+      expect(saleResponse.statusCode).to.equal(400)
     }
+  )
 
-    let promoInst = await models.Promotion.create({
-      code: promoCode,
-      type: 'Promotion',
-      params: promoParams,
-      description: `Test promo ${Date.now()}`
-    })
+  lab.test(
+    "Disallow usage by setting userLimit to 0",
+    { timeout: 20000 },
+    async () => {
+      let promoCode = randomString()
 
-    const poItems = templates.items
-
-    const saleResponse = await server.inject({
-      method: "POST",
-      url: "/transactions/tickets/quote",
-      payload: {
-        trips: poItems,
-        stripeToken: await createStripeToken(),
-        promoCode: { code: promoCode, options: {} },
-      },
-      headers: authHeaders.user,
-    })
-
-    expect(saleResponse.statusCode).to.equal(400)
-  })
-
-  lab.test('Disallow usage by setting userLimit to 0', {timeout: 20000}, async () => {
-    var promoCode = randomString()
-
-    // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
-    let promoParams = {
-      qualifyingCriteria: [
-        {type: 'noLimit', params: {}},
-      ],
-      discountFunction: {
-        type: "simpleRate",
-        params: {"rate": 0.5}
-      },
-      refundFunction: {
-        type: "refundDiscountedAmt"
-      },
-      usageLimit: {
-        globalLimit,
-        userLimit: 0
+      // Create the promo
+      await cleanlyDeletePromotions({ code: promoCode })
+      let promoParams = {
+        qualifyingCriteria: [{ type: "noLimit", params: {} }],
+        discountFunction: {
+          type: "simpleRate",
+          params: { rate: 0.5 },
+        },
+        refundFunction: {
+          type: "refundDiscountedAmt",
+        },
+        usageLimit: {
+          globalLimit,
+          userLimit: 0,
+        },
       }
+
+      await models.Promotion.create({
+        code: promoCode,
+        type: "Promotion",
+        params: promoParams,
+        description: `Test promo ${Date.now()}`,
+      })
+
+      const poItems = templates.items
+
+      const saleResponse = await server.inject({
+        method: "POST",
+        url: "/transactions/tickets/quote",
+        payload: {
+          trips: poItems,
+          stripeToken: await createStripeToken(),
+          promoCode: { code: promoCode, options: {} },
+        },
+        headers: authHeaders.user,
+      })
+
+      expect(saleResponse.statusCode).to.equal(400)
     }
+  )
 
-    let promoInst = await models.Promotion.create({
-      code: promoCode,
-      type: 'Promotion',
-      params: promoParams,
-      description: `Test promo ${Date.now()}`
-    })
+  lab.test(
+    "Existing promotions without usageLimit will break",
+    { timeout: 20000 },
+    async () => {
+      let promoCode = randomString()
 
-    const poItems = templates.items
+      // Create the promo
+      await cleanlyDeletePromotions({ code: promoCode })
+      let promoParams = {
+        qualifyingCriteria: [{ type: "noLimit", params: {} }],
+        discountFunction: {
+          type: "simpleRate",
+          params: { rate: 0.5 },
+        },
+        refundFunction: {
+          type: "refundDiscountedAmt",
+        },
+        // usageLimit: {
+        //   globalLimit,
+        //   userLimit: 0
+        // }
+      }
 
-    const saleResponse = await server.inject({
-      method: "POST",
-      url: "/transactions/tickets/quote",
-      payload: {
-        trips: poItems,
-        stripeToken: await createStripeToken(),
-        promoCode: { code: promoCode, options: {} },
-      },
-      headers: authHeaders.user,
-    })
+      await models.Promotion.create({
+        code: promoCode,
+        type: "Promotion",
+        params: promoParams,
+        description: `Test promo ${Date.now()}`,
+      })
 
-    expect(saleResponse.statusCode).to.equal(400)
-  })
+      const poItems = templates.items
 
-  lab.test('Existing promotions without usageLimit will break', {timeout: 20000}, async () => {
-    var promoCode = randomString()
+      const saleResponse = await server.inject({
+        method: "POST",
+        url: "/transactions/tickets/quote",
+        payload: {
+          trips: poItems,
+          stripeToken: await createStripeToken(),
+          promoCode: { code: promoCode, options: {} },
+        },
+        headers: authHeaders.user,
+      })
 
-    // Create the promo
-    await cleanlyDeletePromotions({code: promoCode})
-    let promoParams = {
-      qualifyingCriteria: [
-        {type: 'noLimit', params: {}},
-      ],
-      discountFunction: {
-        type: "simpleRate",
-        params: {"rate": 0.5}
-      },
-      refundFunction: {
-        type: "refundDiscountedAmt"
-      },
-      // usageLimit: {
-      //   globalLimit,
-      //   userLimit: 0
-      // }
+      expect(saleResponse.statusCode).to.equal(400)
     }
-
-    let promoInst = await models.Promotion.create({
-      code: promoCode,
-      type: 'Promotion',
-      params: promoParams,
-      description: `Test promo ${Date.now()}`
-    })
-
-    const poItems = templates.items
-
-    const saleResponse = await server.inject({
-      method: "POST",
-      url: "/transactions/tickets/quote",
-      payload: {
-        trips: poItems,
-        stripeToken: await createStripeToken(),
-        promoCode: { code: promoCode, options: {} },
-      },
-      headers: authHeaders.user,
-    })
-
-    expect(saleResponse.statusCode).to.equal(400)
-  })
+  )
 })
