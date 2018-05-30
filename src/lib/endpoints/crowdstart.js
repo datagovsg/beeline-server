@@ -576,7 +576,7 @@ marking all bids on this route as 'failed'
             userId: bid.userId,
             db,
             models,
-            value: bid.priceF * +route.notes.noPasses,
+            quantity: Number(route.notes.noPasses),
             tag: `crowdstart-${route.notes.activatedRouteId}`,
             companyId: route.transportCompanyId,
             expectedPrice: null,
