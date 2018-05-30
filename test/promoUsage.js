@@ -313,7 +313,6 @@ lab.experiment("Promotion usage", function () {
       url: "/transactions/tickets/quote",
       payload: {
         trips: poItems,
-        stripeToken: await createStripeToken(),
         promoCode: { code: promoCode, options: {} },
       },
       headers: authHeaders.user,

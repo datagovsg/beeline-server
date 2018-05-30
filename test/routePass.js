@@ -418,7 +418,6 @@ lab.experiment("Route Passes", function () {
       payload: {
         trips: purchaseItems,
         applyRoutePass: true,
-        stripeToken: await createStripeToken(),
       },
       headers: authHeaders.user,
     })

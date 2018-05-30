@@ -104,7 +104,6 @@ lab.experiment("Integration with transaction", function () {
           code: 'TEST PROMO',
           options: {}
         },
-        dryRun: true
       },
       headers: authHeaders.user
     })

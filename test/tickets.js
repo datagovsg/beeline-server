@@ -46,7 +46,6 @@ lab.experiment('tickets', function () {
       url: '/transactions/tickets/quote',
       payload: {
         trips: purchaseItems,
-        stripeToken: await createStripeToken()
       },
       headers: userToken
     })
