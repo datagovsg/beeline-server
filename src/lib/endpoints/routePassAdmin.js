@@ -178,6 +178,9 @@ export const register = function register(server, options, next) {
       creator: { type: auth.credentials.scope, id: auth.credentials.userId },
     })
 
+    const admin = await models.Admin.findById(auth.credentials.adminId)
+
+    tb.description = `Expire route pass manually by ${admin.name}`
     tb.transactionItemsByType = {
       routePass: [
         {
