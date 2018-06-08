@@ -28,7 +28,7 @@ export const register = function(server, options, next) {
       auth: {
         access: { scope: ["public", "user", "admin", "superadmin"] },
       },
-      tags: ["api"],
+      tags: ["api", "commuter", "admin"],
       validate: {
         query: {
           transportCompanyId: Joi.number()
@@ -152,7 +152,7 @@ export const register = function(server, options, next) {
   routeRequestsTo(server, mapToRoots("/routes/{routeId}/activate"), {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       description: `
 Activates a crowdstart route with the specified trip price, tagging it with the 'success' tag and
@@ -229,7 +229,7 @@ creating a copy of the route tagged as 'public' and 'crowdstart-{routeId}'
   routeRequestsTo(server, mapToRoots("/routes/{routeId}/expire"), {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       description: `
 Expires a crowdstart route, tagging it with the 'failed' tag and
@@ -260,7 +260,7 @@ marking all bids on this route as 'failed'
   routeRequestsTo(server, mapToRoots("/routes/{routeId}/bids"), {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       description: "Posts a crowdstart bid from the user for a route",
       validate: {
@@ -293,7 +293,7 @@ marking all bids on this route as 'failed'
   routeRequestsTo(server, mapToRoots("/routes/{routeId}/bids/update_price"), {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       description: "update existing crowdstart bid price",
       validate: {
@@ -346,7 +346,7 @@ marking all bids on this route as 'failed'
       auth: {
         access: { scope: ["public", "user", "admin", "superadmin"] },
       },
-      tags: ["api"],
+      tags: ["api", "admin", "commuter"],
       description: `Returns all bids made for a given route`,
     },
     handler: handleRequestWith(
@@ -385,7 +385,7 @@ marking all bids on this route as 'failed'
   routeRequestsTo(server, mapToRoots("/bids"), {
     method: "GET",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       description: `Returns a list of the logged-in user's bids`,
     },
@@ -404,7 +404,7 @@ marking all bids on this route as 'failed'
   routeRequestsTo(server, mapToRoots("/users/{userId}/bids"), {
     method: "GET",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       description: `Returns a list of a user's bids`,
     },
@@ -436,7 +436,7 @@ marking all bids on this route as 'failed'
   routeRequestsTo(server, mapToRoots("/routes/{routeId}/bids"), {
     method: "DELETE",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       description: `Withdraws the logged in user's bid for this route`,
       validate: {
@@ -465,7 +465,7 @@ marking all bids on this route as 'failed'
   routeRequestsTo(server, mapToRoots("/routes/{routeId}/bids/{bidId}"), {
     method: "DELETE",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       description: `Withdraws the logged in user's bid for this route`,
       validate: {
@@ -508,7 +508,7 @@ marking all bids on this route as 'failed'
     {
       method: "POST",
       config: {
-        tags: ["api"],
+        tags: ["api", "admin"],
         auth: { access: { scope: ["admin", "superadmin"] } },
         description: `Converts the user's bid for this route into route passes, voiding the bid in the process`,
         validate: {

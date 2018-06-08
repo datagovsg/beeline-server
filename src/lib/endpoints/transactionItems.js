@@ -36,7 +36,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/transaction_items",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `Get all transaction items, with sort etc.`,
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
@@ -205,7 +205,9 @@ export function register(server, options, next) {
               m.Stop,
               {
                 model: m.Trip,
-                include: [{ model: m.Route, attributes: { exclude: ["path"] } }],
+                include: [
+                  { model: m.Route, attributes: { exclude: ["path"] } },
+                ],
               },
             ],
           },
@@ -524,7 +526,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/transaction_items/route_passes",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description:
         "Get all route pass transaction items, and those related to it",
       auth: { access: { scope: ["admin", "superadmin"] } },
@@ -705,7 +707,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/transaction_items/route_passes/summary",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description:
         "Count the number of route pass transaction items broken down by day",
       auth: { access: { scope: ["admin", "superadmin"] } },

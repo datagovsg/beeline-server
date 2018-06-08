@@ -65,7 +65,8 @@ if (process.env.NO_DAEMON_MONITORING) {
 
 sendMessage("startPolling", [60000])
 
-export function register(server, options, next) { // eslint-disable-line
+export function register(server, options, next) {
+  // eslint-disable-line
   server.route({
     method: "GET",
     path: "/monitoring",
@@ -73,7 +74,7 @@ export function register(server, options, next) { // eslint-disable-line
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
-      tags: ["api"],
+      tags: ["api", "admin"],
     },
     async handler(request, reply) {
       try {

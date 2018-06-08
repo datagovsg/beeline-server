@@ -33,7 +33,7 @@ export function register(server, options, next) {
       },
       auth: { access: { scope: ["user", "public"] } },
       description: "Lists all lite routes, including subscription information",
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
     handler: async function(request, reply) {
       request.query.tags = request.query.tags || []
@@ -118,7 +118,7 @@ export function register(server, options, next) {
     config: {
       auth: { access: { scope: ["user"] } },
       description: "Lists all current subscriptions tied to a user",
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
 
     handler: async function(request, reply) {
@@ -148,7 +148,7 @@ export function register(server, options, next) {
         }),
       },
       description: "Creates a subscription to the route for the user",
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
 
     handler: async function(request, reply) {
@@ -198,7 +198,7 @@ export function register(server, options, next) {
         },
       },
       description: "Removes a subscription to the route for the user",
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
 
     handler: async function(request, reply) {

@@ -78,7 +78,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/auth/credentials",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description:
         "Returns the Auth0 client id that you need to log in to this server",
     },

@@ -20,7 +20,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/trips/{id}/statuses",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: false,
       validate: {
         params: {
@@ -61,7 +61,7 @@ export function register(server, options, next) {
     method: "POST",
     path: "/trips/{id}/statuses",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin", "driver"],
       auth: { access: { scope: ["driver", "admin", "superadmin"] } },
       validate: {
         payload: Joi.object({

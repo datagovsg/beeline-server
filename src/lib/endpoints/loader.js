@@ -1,19 +1,18 @@
-
-export function register (server, options, next) {
+export function register(server, options, next) {
   let token = process.env.LOADER_TOKEN
-
 
   if (/^[a-zA-Z0-9-]{15,}$/.test(token)) {
     server.route({
       method: "GET",
       path: `/${token}/`,
       config: {
+        tags: [],
         description: "LoaderIO verification",
-        validate: {}
+        validate: {},
       },
-      handler: async function (request, reply) {
+      handler: async function(request, reply) {
         reply(token)
-      }
+      },
     })
   }
 
@@ -21,5 +20,5 @@ export function register (server, options, next) {
 }
 
 register.attributes = {
-  name: "endpoint-loader"
+  name: "endpoint-loader",
 }
