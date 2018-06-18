@@ -711,8 +711,8 @@ export const register = function register(server, options, next) {
       .transaction({ readOnly: true }, async t => {
         let offset = 0
         let batchSize = 100
-        while (true) {
-          // eslint-disable-line no-constant-condition
+        let lastFetchedSize = batchSize
+        while (lastFetchedSize >= batchSize) {
           const q = _.clone(query)
           q.transaction = t
           q.offset = offset
@@ -735,11 +735,8 @@ export const register = function register(server, options, next) {
             }
           }
 
-          if (tickets.length < batchSize) {
-            break
-          } else {
-            offset += batchSize
-          }
+          lastFetchedSize = tickets.length
+          offset += batchSize
         }
       })
       .catch(err => {

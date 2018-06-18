@@ -18,6 +18,7 @@ const DEFAULT_CROWDSTART_VALIDITY = 15 // 15 days from now
 /**
  * For the preview function we need a way of mocking the create process, without
  * actually creating the object.
+ * @return {Function} a function that creates a Promise to build a Sequelize mock
  */
 function _createMockCreate() {
   let id = -1000000
@@ -26,7 +27,7 @@ function _createMockCreate() {
     return id
   }
 
-  function mockCreate(model, data, options) {
+  const mockCreate = function mockCreate(model, data, options) {
     return Promise.resolve(
       model.build(
         {
@@ -44,6 +45,8 @@ function _createMockCreate() {
 /**
  * Same scheme as the above, except this one actually creates the model in question
  * and returns the resulting instance
+ * @param {Object} defaultOptions - Sequelize options for object creation
+ * @return {Function} a function that creates a Promise to build a Sequelize object
  */
 function _createModelCreate(defaultOptions) {
   const modelCreate = (model, data, options) =>
@@ -51,7 +54,7 @@ function _createModelCreate(defaultOptions) {
   return modelCreate
 }
 
-async function fetchRoutingData(stops) {
+const fetchRoutingData = async function fetchRoutingData(stops) {
   const path = stops.join("/")
   const [
     { data: busStops },
@@ -73,7 +76,7 @@ async function fetchRoutingData(stops) {
   return { busStops, relatedRequests, travelTimes, paths }
 }
 
-export async function createCrowdstartRouteDetails(
+export const createCrowdstartRouteDetails = async function createCrowdstartRouteDetails(
   { stops, arrivalTime },
   { busStops, relatedRequests, travelTimes, paths },
   { createFunc, transaction }
@@ -224,7 +227,7 @@ the campaign.
   return { route, trip, stops: bestMatch.map(s => s.stop) }
 }
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "POST",
     path: "/crowdstart/instant",
@@ -250,14 +253,16 @@ The user must have a telephone number and a credit card saved.
       // 2. Fetch the stop data from routing.beeline.sg
       // 3. Find matching stops in `Stops` table
       // 4. Create the crowdstart route!
-      async function ensureUserHasCreditCard(user) {
+      const ensureUserHasCreditCard = async function ensureUserHasCreditCard(
+        user
+      ) {
         TransactionError.assert(
           _.get(user, "savedPaymentInfo.sources.data.length", 0) >= 1,
           "You need to have at least one saved payment method to create a crowdstart route"
         )
       }
 
-      async function createCrowdstartRouteAndBid({
+      const createCrowdstartRouteAndBid = async function createCrowdstartRouteAndBid({
         user,
         busStops,
         relatedRequests,
