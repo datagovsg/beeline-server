@@ -77,7 +77,7 @@ export const register = function register(server, options, next) {
     method: "POST",
     path: "/companies",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: "superadmin" } },
       validate: {
         payload: {
@@ -169,7 +169,7 @@ export const register = function register(server, options, next) {
     method: "DELETE",
     path: "/companies/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: "superadmin" } },
       validate: {
         params: {

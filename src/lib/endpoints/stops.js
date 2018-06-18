@@ -48,7 +48,7 @@ export const register = function register(server, options, next) {
     method: "POST",
     path: "/stops",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: {
           scope: ["superadmin"],
@@ -66,7 +66,7 @@ export const register = function register(server, options, next) {
     method: "PUT",
     path: "/stops/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: {
           scope: ["superadmin"],
@@ -96,7 +96,7 @@ export const register = function register(server, options, next) {
     method: "DELETE",
     path: "/stops/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["superadmin"] },
       },

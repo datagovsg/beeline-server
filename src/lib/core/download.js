@@ -57,7 +57,7 @@ module.exports = (server, options, next) => {
     method: "GET",
     path: "/downloads/{token}",
     config: {
-      tags: ["api", "all"],
+      tags: ["api", "admin"],
       validate: {
         params: {
           token: Joi.string(),

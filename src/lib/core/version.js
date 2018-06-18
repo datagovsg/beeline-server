@@ -8,7 +8,7 @@ module.exports = (server, options, next) => {
     config: {
       description: `Returns the minimum version requirements for known apps.
 Apps are responsible for prompting the user to upgrade`,
-      tags: ["api", "service"],
+      tags: ["api", "commuter"],
     },
     async handler(request, reply) {
       try {

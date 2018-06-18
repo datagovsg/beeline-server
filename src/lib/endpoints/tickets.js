@@ -137,7 +137,7 @@ export const register = function register(server, options, next) {
     method: "PUT",
     path: "/tickets/{id}/status",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       description: `Update the state of a ticket.
         Currently limited to changing its status between void and valid for now`,

@@ -337,7 +337,7 @@ The user must have a telephone number and a credit card saved.
     method: "GET",
     path: "/crowdstart/preview_instant",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       validate: {
         query: {
           stops: Joi.array().items(Joi.number().integer()),

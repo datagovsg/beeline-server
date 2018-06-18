@@ -71,7 +71,7 @@ export const register = function register(server, options, next) {
     method: "PUT",
     path: "/assets/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["superadmin"] } },
       validate: {
         params: {
@@ -99,7 +99,7 @@ export const register = function register(server, options, next) {
     method: "DELETE",
     path: "/assets/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["superadmin"] } },
       validate: {
         params: {
