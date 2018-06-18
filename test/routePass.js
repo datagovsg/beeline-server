@@ -418,7 +418,6 @@ lab.experiment("Route Passes", function () {
       payload: {
         trips: purchaseItems,
         applyRoutePass: true,
-        stripeToken: await createStripeToken(),
       },
       headers: authHeaders.user,
     })
@@ -639,12 +638,12 @@ lab.experiment("Route Passes", function () {
 
     // Purchase some credits for this route
     // Returns [paid amount, discounted amount]
-    const submitPurchase = async function submitPurchase (amount) {
+    const submitPurchase = async function submitPurchase (quantity) {
       return server.inject({
         method: 'POST',
         url: `/transactions/route_passes/payment`,
         payload: {
-          value: amount,
+          quantity,
           promoCode: {
             code,
           },
@@ -670,22 +669,22 @@ lab.experiment("Route Passes", function () {
       ]
     }
 
-    const [p1, d1] = await purchase(15.00)
+    const [p1, d1] = await purchase(3)
     expect(p1).equal('15.00')
     expect(d1).equal('0.00')
 
     // 10 percent
-    const [p2, d2] = await purchase(20.00)
+    const [p2, d2] = await purchase(4)
     expect(p2).equal('18.00')
     expect(d2).equal('2.00')
 
     // 10 percent
-    const [p3, d3] = await purchase(35.00)
+    const [p3, d3] = await purchase(7)
     expect(p3).equal('31.50')
     expect(d3).equal('3.50')
 
     // 20 percent
-    const [p4, d4] = await purchase(40.00)
+    const [p4, d4] = await purchase(8)
     expect(p4).equal('32.00')
     expect(d4).equal('8.00')
 
@@ -701,7 +700,7 @@ lab.experiment("Route Passes", function () {
         userLimit: 4,
       },
     })
-    let lateResponse = await submitPurchase(40.00)
+    let lateResponse = await submitPurchase(8)
     expect(lateResponse.statusCode).equal(400)
     expect(lateResponse.result.message).include('You')
 
@@ -711,7 +710,7 @@ lab.experiment("Route Passes", function () {
         userLimit: 5,
       },
     })
-    lateResponse = await submitPurchase(40.00)
+    lateResponse = await submitPurchase(8)
     expect(lateResponse.statusCode).equal(400)
     expect(lateResponse.result.message).include('fully')
   })

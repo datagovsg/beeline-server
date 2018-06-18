@@ -9,23 +9,23 @@ import {roundToNearestCent} from '../src/lib/util/common'
 import server from '../src/index.js'
 import {
   resetTripInstances, loginAs, createStripeToken,
-  cleanlyDeleteUsers, randomEmail, cleanlyDeletePromotions
+  cleanlyDeleteUsers, randomEmail, cleanlyDeletePromotions,
 } from './test_common'
 import * as testData from './test_data'
 
 const {models} = require("../src/lib/core/dbschema")()
 
 lab.experiment("Integration with transaction", function () {
-  var userInstance
-  var authHeaders = {}
+  let userInstance
+  let authHeaders = {}
 
   // var testName = "Name for Testing";
   // var updatedTestName = "Updated name for Testing";
 
-  var companyInstance
-  var routeInstance
-  var stopInstances = []
-  var tripInstances = []
+  let companyInstance
+  let routeInstance
+  let stopInstances = []
+  let tripInstances = []
 
   lab.afterEach(async () => resetTripInstances(models, tripInstances))
 
@@ -33,12 +33,12 @@ lab.experiment("Integration with transaction", function () {
     ({userInstance, companyInstance, tripInstances, stopInstances, routeInstance} =
         await testData.createUsersCompaniesRoutesAndTrips(models))
 
-    var userToken = userInstance.makeToken()
+    const userToken = userInstance.makeToken()
     authHeaders.user = {authorization: "Bearer " + userToken}
 
-    var adminToken = (await loginAs("admin", {
+    const adminToken = (await loginAs("admin", {
       transportCompanyId: companyInstance.id,
-      permissions: ['refund', 'issue-tickets']
+      permissions: ['refund', 'issue-tickets'],
     })).result.sessionToken
     authHeaders.admin = {authorization: "Bearer " + adminToken}
 
@@ -49,20 +49,20 @@ lab.experiment("Integration with transaction", function () {
       params: {
         "description": "For test",
         "qualifyingCriteria": [{
-          "type": "noLimit"
+          "type": "noLimit",
         }],
         "discountFunction": {
           "type": "tieredRateByQty",
-          "params": {"schedule": [[5, 0.2]]}
+          "params": {"schedule": [[5, 0.2]]},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
   })
 
@@ -102,11 +102,10 @@ lab.experiment("Integration with transaction", function () {
         }],
         promoCode: {
           code: 'TEST PROMO',
-          options: {}
+          options: {},
         },
-        dryRun: true
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -146,34 +145,34 @@ lab.experiment("Integration with transaction", function () {
         }],
         promoCode: {
           code: 'TEST PROMO',
-          options: {}
+          options: {},
         },
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
-      headers: authHeaders.user
+      headers: authHeaders.user,
     })
     expect(saleResponse.statusCode).to.equal(200)
 
-    var tickets = await Promise.all(saleResponse.result.transactionItems
+    const tickets = await Promise.all(saleResponse.result.transactionItems
       .filter(txnItem => txnItem.itemType.startsWith("ticket"))
       .map(async (txnItem) => {
         return await models.Ticket.findById(txnItem.itemId)
       })
     )
 
-    var ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
+    const ticket = tickets.find(t => t.boardStopId === tripInstances[0].tripStops[0].id)
 
     const ticketPrice = +tripInstances[0].price
     const discount = ticket.notes.discountValue
 
     // Refund a ticket...
-    var refundResponse = await server.inject({
+    const refundResponse = await server.inject({
       method: "POST",
       url: `/transactions/tickets/${ticket.id}/refund/payment`,
       payload: {
-        targetAmt: ticketPrice - discount
+        targetAmt: ticketPrice - discount,
       },
-      headers: authHeaders.admin
+      headers: authHeaders.admin,
     })
     expect(refundResponse.statusCode).to.equal(200)
 
@@ -202,7 +201,7 @@ lab.experiment("Integration with transaction", function () {
       transportCompanyId: companyInstance.id,
       description: 'Blah',
       telephones: randomTelephoneNumbersInList,
-      emails: []
+      emails: [],
     })
 
     // Create a promotion
@@ -214,33 +213,33 @@ lab.experiment("Integration with transaction", function () {
         "qualifyingCriteria": [{
           type: "limitByContactList",
           params: {
-            contactListId: contactList.id
-          }
+            contactListId: contactList.id,
+          },
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.4}
+          "params": {"rate": 0.4},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     // User 1 -- in the list
     await cleanlyDeleteUsers({
-      telephone: {$in: randomTelephoneNumbersInList.concat(randomTelephoneNumbersNotInList)}
+      telephone: {$in: randomTelephoneNumbersInList.concat(randomTelephoneNumbersNotInList)},
     })
 
     const userInList = await models.User.create({
-      telephone: randomTelephoneNumbersInList[1]
+      telephone: randomTelephoneNumbersInList[1],
     })
     const userNotInList = await models.User.create({
-      telephone: randomTelephoneNumbersNotInList[1]
+      telephone: randomTelephoneNumbersNotInList[1],
     })
 
     const samplePayload = {
@@ -255,7 +254,7 @@ lab.experiment("Integration with transaction", function () {
       }],
       promoCode: {
         code: 'TEST TELEPHONE LIST PROMO',
-        options: {}
+        options: {},
       },
     }
 
@@ -264,11 +263,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userNotInList.makeToken()}`
-      }
+        authorization: `Bearer ${userNotInList.makeToken()}`,
+      },
     })
     expect(failResponse.statusCode).equal(400)
 
@@ -277,11 +276,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userInList.makeToken()}`
-      }
+        authorization: `Bearer ${userInList.makeToken()}`,
+      },
     })
     expect(successResponse.result.transactionItems.find(ti =>
       ti.itemType === 'discount' && ti.discount.code === promotion.code))
@@ -309,26 +308,26 @@ lab.experiment("Integration with transaction", function () {
         "qualifyingCriteria": [{
           type: "limitByContactList",
           params: {
-            contactListId: contactList.id
-          }
+            contactListId: contactList.id,
+          },
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.4}
+          "params": {"rate": 0.4},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     // User 1 -- in the list
     await cleanlyDeleteUsers({
-      telephone: {$in: randomEmailInList.concat(randomEmailNotInList)}
+      telephone: {$in: randomEmailInList.concat(randomEmailNotInList)},
     })
 
     const userInList = await models.User.create({
@@ -356,7 +355,7 @@ lab.experiment("Integration with transaction", function () {
       }],
       promoCode: {
         code: promotion.code,
-        options: {}
+        options: {},
       },
     }
 
@@ -365,11 +364,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userNotInList.makeToken()}`
-      }
+        authorization: `Bearer ${userNotInList.makeToken()}`,
+      },
     })
     expect(failResponse.statusCode).equal(400)
 
@@ -378,11 +377,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${unverifiedUserInList.makeToken()}`
-      }
+        authorization: `Bearer ${unverifiedUserInList.makeToken()}`,
+      },
     })
     expect(failResponse2.statusCode).equal(400)
 
@@ -391,11 +390,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userInList.makeToken()}`
-      }
+        authorization: `Bearer ${userInList.makeToken()}`,
+      },
     })
     expect(successResponse.statusCode).equal(200)
     expect(successResponse.result.transactionItems.find(ti =>
@@ -414,20 +413,20 @@ lab.experiment("Integration with transaction", function () {
           "description": "Bulk discount promo",
           "qualifyingCriteria": [{
             type: 'limitByCompany',
-            params: {companyId: companyInstance.id}
+            params: {companyId: companyInstance.id},
           }],
           "discountFunction": {
             "type": "simpleRate",
-            "params": {"rate": 0.4}
+            "params": {"rate": 0.4},
           },
           "refundFunction": {
-            "type": "refundDiscountedAmt"
+            "type": "refundDiscountedAmt",
           },
           "usageLimit": {
             "userLimit": null,
-            "globalLimit": null
-          }
-        }
+            "globalLimit": null,
+          },
+        },
       })
 
       const samplePayload = {
@@ -442,7 +441,7 @@ lab.experiment("Integration with transaction", function () {
         }],
         promoCode: {
           code: '',
-          options: {}
+          options: {},
         },
       }
 
@@ -451,11 +450,11 @@ lab.experiment("Integration with transaction", function () {
         url: "/transactions/tickets/payment",
         payload: {
           ...samplePayload,
-          stripeToken: await createStripeToken()
+          stripeToken: await createStripeToken(),
         },
         headers: {
-          authorization: `Bearer ${userInstance.makeToken()}`
-        }
+          authorization: `Bearer ${userInstance.makeToken()}`,
+        },
       })
 
       expect(saleResponse.statusCode).equal(200)
@@ -481,8 +480,8 @@ lab.experiment("Integration with transaction", function () {
     try {
       await models.Promotion.destroy({
         where: {
-          code: ''
-        }
+          code: '',
+        },
       })
 
       const samplePayload = {
@@ -497,7 +496,7 @@ lab.experiment("Integration with transaction", function () {
         }],
         promoCode: {
           code: '',
-          options: {}
+          options: {},
         },
       }
 
@@ -506,11 +505,11 @@ lab.experiment("Integration with transaction", function () {
         url: "/transactions/tickets/payment",
         payload: {
           ...samplePayload,
-          stripeToken: await createStripeToken()
+          stripeToken: await createStripeToken(),
         },
         headers: {
-          authorization: `Bearer ${userInstance.makeToken()}`
-        }
+          authorization: `Bearer ${userInstance.makeToken()}`,
+        },
       })
 
       expect(saleResponse.statusCode).equal(200)
@@ -537,20 +536,20 @@ lab.experiment("Integration with transaction", function () {
         "description": "Bad promo",
         "qualifyingCriteria": [{
           type: 'limitByCompany',
-          params: {companyId: companyInstance.id}
+          params: {companyId: companyInstance.id},
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.4}
+          "params": {"rate": 0.4},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     await models.Promotion.create({
@@ -560,20 +559,20 @@ lab.experiment("Integration with transaction", function () {
         "description": "Better promo",
         "qualifyingCriteria": [{
           type: 'limitByCompany',
-          params: {companyId: companyInstance.id}
+          params: {companyId: companyInstance.id},
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.5}
+          "params": {"rate": 0.5},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const samplePayload = {
@@ -588,7 +587,7 @@ lab.experiment("Integration with transaction", function () {
       }],
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -597,11 +596,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -625,20 +624,20 @@ lab.experiment("Integration with transaction", function () {
         "description": "Bad promo",
         "qualifyingCriteria": [{
           type: 'limitByCompany',
-          params: {companyId: companyInstance.id}
+          params: {companyId: companyInstance.id},
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.4}
+          "params": {"rate": 0.4},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
 
@@ -647,7 +646,7 @@ lab.experiment("Integration with transaction", function () {
       transportCompanyId: companyInstance.id,
       description: 'Blah',
       telephones: [userInstance.telephone],
-      emails: []
+      emails: [],
     })
 
     await models.Promotion.create({
@@ -658,27 +657,27 @@ lab.experiment("Integration with transaction", function () {
         "qualifyingCriteria": [{
           type: "limitByContactList",
           params: {
-            contactListId: contactList.id
-          }
+            contactListId: contactList.id,
+          },
         }, {
           type: 'limitByMinTicketCount',
-          params: {n: 2}
+          params: {n: 2},
         }, {
           type: 'limitByCompany',
-          params: {companyId: companyInstance.id}
+          params: {companyId: companyInstance.id},
         }],
         "discountFunction": {
           type: 'fixedTransactionPrice',
-          params: {price: 1}
+          params: {price: 1},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
 
     const samplePayload = {
@@ -693,7 +692,7 @@ lab.experiment("Integration with transaction", function () {
       }],
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
 
@@ -702,11 +701,11 @@ lab.experiment("Integration with transaction", function () {
       url: "/transactions/tickets/payment",
       payload: {
         ...samplePayload,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).to.equal(200)
 
@@ -733,20 +732,20 @@ lab.experiment("Integration with transaction", function () {
           "description": "Bulk discount promo",
           "qualifyingCriteria": [{
             type: 'limitByCompany',
-            params: {companyId: companyInstance.id}
+            params: {companyId: companyInstance.id},
           }],
           "discountFunction": {
             "type": "simpleRate",
-            "params": {"rate": 0.67}
+            "params": {"rate": 0.67},
           },
           "refundFunction": {
-            "type": "refundDiscountedAmt"
+            "type": "refundDiscountedAmt",
           },
           "usageLimit": {
             "userLimit": null,
-            "globalLimit": null
-          }
-        }
+            "globalLimit": null,
+          },
+        },
       })
 
       const samplePayload = {
@@ -761,7 +760,7 @@ lab.experiment("Integration with transaction", function () {
         }],
         promoCode: {
           code: '',
-          options: {}
+          options: {},
         },
       }
 
@@ -771,8 +770,8 @@ lab.experiment("Integration with transaction", function () {
         url: "/transactions/tickets/quote",
         payload: samplePayload,
         headers: {
-          authorization: `Bearer ${userInstance.makeToken()}`
-        }
+          authorization: `Bearer ${userInstance.makeToken()}`,
+        },
       })
 
       const expectedPrice = (
@@ -790,11 +789,11 @@ lab.experiment("Integration with transaction", function () {
         payload: {
           ...samplePayload,
           expectedPrice: nonExpectedPrice,
-          stripeToken: await createStripeToken()
+          stripeToken: await createStripeToken(),
         },
         headers: {
-          authorization: `Bearer ${userInstance.makeToken()}`
-        }
+          authorization: `Bearer ${userInstance.makeToken()}`,
+        },
       })
       expect(failResponse.statusCode).equal(400)
 
@@ -804,11 +803,11 @@ lab.experiment("Integration with transaction", function () {
         payload: {
           ...samplePayload,
           expectedPrice: expectedPrice,
-          stripeToken: await createStripeToken()
+          stripeToken: await createStripeToken(),
         },
         headers: {
-          authorization: `Bearer ${userInstance.makeToken()}`
-        }
+          authorization: `Bearer ${userInstance.makeToken()}`,
+        },
       })
       expect(saleResponse.statusCode).equal(200)
     } finally {
@@ -825,20 +824,20 @@ lab.experiment("Integration with transaction", function () {
         "description": "Bulk discount promo",
         "qualifyingCriteria": [{
           type: 'limitByMinTicketCount',
-          params: {n: 2}
+          params: {n: 2},
         }],
         "discountFunction": {
           "type": "simpleRate",
-          "params": {"rate": 0.50}
+          "params": {"rate": 0.50},
         },
         "refundFunction": {
-          "type": "refundDiscountedAmt"
+          "type": "refundDiscountedAmt",
         },
         "usageLimit": {
           "userLimit": null,
-          "globalLimit": null
-        }
-      }
+          "globalLimit": null,
+        },
+      },
     })
     await routeInstance.update({ tags: ['rp-1337'] })
     await server.inject({
@@ -848,7 +847,7 @@ lab.experiment("Integration with transaction", function () {
         description: 'Issue 1 Free Pass',
         userId: userInstance.id,
         routeId: routeInstance.id,
-        tag: 'rp-1337'
+        tag: 'rp-1337',
       },
       headers: authHeaders.admin,
     })
@@ -865,7 +864,7 @@ lab.experiment("Integration with transaction", function () {
       }],
       promoCode: {
         code: '',
-        options: {}
+        options: {},
       },
     }
     const saleResponse = await server.inject({
@@ -874,11 +873,11 @@ lab.experiment("Integration with transaction", function () {
       payload: {
         ...samplePayload,
         applyRoutePass: true,
-        stripeToken: await createStripeToken()
+        stripeToken: await createStripeToken(),
       },
       headers: {
-        authorization: `Bearer ${userInstance.makeToken()}`
-      }
+        authorization: `Bearer ${userInstance.makeToken()}`,
+      },
     })
     expect(saleResponse.statusCode).equal(200)
     expect(saleResponse.result.transactionItems.filter(i => i.itemType === 'discount')).length(0)

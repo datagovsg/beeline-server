@@ -238,6 +238,7 @@ export async function purchaseRoutePass(options) {
     userId,
     dryRun,
     tag,
+    quantity,
     promoCode,
     companyId,
     transactionType,
@@ -289,13 +290,8 @@ export async function purchaseRoutePass(options) {
 
       const { price } = trip
       assert(price, "Unable to find price of indicative trip for route " + tag)
-      assert(
-        (options.quantity && !options.value) ||
-          (!options.quantity && options.value),
-        "Only quantity or value should be specified, not both"
-      )
-      const quantity = Math.round(options.quantity || options.value / price)
-      const value = roundToNearestCent(options.value || price * quantity)
+      assert(quantity, "Quantity must be specified")
+      const value = roundToNearestCent(price * quantity)
 
       tb.transactionItemsByType = { routePass: [] }
       if (!options.dryRun) {

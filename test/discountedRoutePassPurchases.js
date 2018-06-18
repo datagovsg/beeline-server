@@ -88,7 +88,7 @@ lab.experiment("Integration with route pass transaction", function () {
       method: "POST",
       url: "/transactions/route_passes/payment",
       payload: {
-        value: 50,
+        quantity: 10,
         tag: 'TESTTAG',
         companyId: companyInstance.id,
 
@@ -139,7 +139,7 @@ lab.experiment("Integration with route pass transaction", function () {
       method: "POST",
       url: "/transactions/route_passes/payment",
       payload: {
-        value: 50,
+        quantity: 10,
         tag: 'TESTTAG',
         companyId: companyInstance.id,
         expectedPrice: 46,
@@ -160,7 +160,7 @@ lab.experiment("Integration with route pass transaction", function () {
     await cleanlyDeletePromotions({code: ''})
 
     const payload = {
-      value: 50,
+      quantity: 10,
       tag: 'TESTTAG',
       companyId: companyInstance.id,
 
@@ -242,7 +242,7 @@ lab.experiment("Integration with route pass transaction", function () {
     })
 
     const payload = {
-      value: 50,
+      quantity: 10,
       tag: 'TESTTAG',
       companyId: companyInstance.id,
 
@@ -301,7 +301,7 @@ lab.experiment("Integration with route pass transaction", function () {
     await routeInstance.update({ tags: ['TESTTAG', tag] })
 
     const payload = {
-      value: 50,
+      quantity: 10,
       tag,
       companyId: companyInstance.id,
 
@@ -370,7 +370,7 @@ lab.experiment("Integration with route pass transaction", function () {
     await routeInstance.update({ tags: [tag] })
 
     const payload = {
-      value: 50,
+      quantity: 10,
       tag,
       companyId: companyInstance.id,
 
@@ -398,7 +398,7 @@ lab.experiment("Integration with route pass transaction", function () {
 
     expect(saleResponse.result.description).include(items.discount[0].debit)
 
-    payload.value = 100
+    payload.quantity = 20
 
     const saleResponse2 = await server.inject({
       method: 'POST',
@@ -464,7 +464,7 @@ lab.experiment("Integration with route pass transaction", function () {
     await routeInstance.update({ tags: [tag] })
 
     const payload = {
-      value: 50,
+      quantity: 10,
       tag,
       companyId: companyInstance.id,
 
@@ -492,7 +492,7 @@ lab.experiment("Integration with route pass transaction", function () {
 
     expect(saleResponse.result.description).include(items.discount[0].debit)
 
-    payload.value = 100
+    payload.quantity = 20
 
     const saleResponse2 = await server.inject({
       method: 'POST',

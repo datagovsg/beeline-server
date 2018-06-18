@@ -209,27 +209,21 @@ lab.experiment("Route pass administration", function () {
 
     const noAuthResponse = await server.inject({
       method: "GET",
-      url: "/route_passes",
+      url: "/route_passes/expiries",
     })
 
     const wrongAuthResponse = await server.inject({
       method: "GET",
-      url: "/route_passes",
+      url: "/route_passes/expiries",
       headers: {authorization: _.get(authHeaders, 'user.authorization') + "xy21"},
     })
 
     const successNoCreditsResponse = await server.inject({
       method: "GET",
-      url: "/route_passes",
+      url: "/route_passes/expiries",
       headers: {
         authorization: `Bearer ${userInst.makeToken()}`,
       },
-    })
-
-    const successResponse = await server.inject({
-      method: "GET",
-      url: "/route_passes",
-      headers: authHeaders.user,
     })
 
     const successExpiriesResponse = await server.inject({
@@ -242,15 +236,7 @@ lab.experiment("Route pass administration", function () {
     expect(wrongAuthResponse.statusCode).to.equal(403)
 
     expect(successNoCreditsResponse.statusCode).to.equal(200)
-    expect(successResponse.statusCode).to.equal(200)
-
-    expect(successNoCreditsResponse.result).to.be.empty()
-    expect(successResponse.result).to.not.be.empty()
-
-    expect(successResponse.result).to.only.include(tags)
-    expect(successResponse.result[tags[0]]).to.equal(1)
-    expect(successResponse.result[tags[1]]).to.equal(1)
-    expect(successResponse.result[tags[2]]).to.equal(1)
+    expect(Object.keys(successNoCreditsResponse.result)).to.be.empty()
 
     expect(successExpiriesResponse.result).to.only.include(tags)
     expect(Object.values(successExpiriesResponse.result[tags[0]])[0]).to.equal(1)

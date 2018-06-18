@@ -386,7 +386,7 @@ lab.experiment("Crowdstart", function () {
         status: 'failed',
       },
     })
-    expect(+routePasses2.length).equal(9)
+    expect(Number(routePasses2.length)).equal(Number(routeInstance.notes.noPasses))
 
     const newRoute = await models.Route.findById(activateResponse.result.id, {include: [{ model: models.Trip, include: [models.TripStop]}]})
     const tripAttributesOf = trip => _.omit(trip.toJSON(), 'id', 'createdAt', 'updatedAt', 'tripStops', 'routeId', 'price')

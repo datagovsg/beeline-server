@@ -188,7 +188,7 @@ lab.experiment("TransactionItems", function () {
       method: 'POST',
       url: `/transactions/route_passes/payment`,
       payload: {
-        value: '5.00',
+        quantity: 1,
         tag: testTag,
         stripeToken: await createStripeToken(),
         companyId,

@@ -105,7 +105,7 @@ export const register = (server, options, next) => {
           customerId: Joi.string(),
           sourceId: Joi.string(),
           expectedPrice: Joi.number().allow(null),
-        }).unknown(), // FIXME: remove after app store builds drop applyCredits
+        }),
       },
     },
     async handler(request, reply) {
@@ -269,12 +269,9 @@ export const register = (server, options, next) => {
       auth: { access: { scope: ["user"] } },
       validate: {
         payload: {
-          value: Joi.number().description(
-            "The total cash value of the route pass transaction. Use this or quantity, but not both"
-          ),
-          quantity: Joi.number().description(
-            "The number of route passes to purchase. Use this or value, but not both"
-          ),
+          quantity: Joi.number()
+            .integer()
+            .description("The number of route passes to purchase"),
           promoCode: Joi.object()
             .keys({
               code: Joi.string()
@@ -332,7 +329,6 @@ export const register = (server, options, next) => {
           db,
           models: m,
           promoCode: request.payload.promoCode,
-          value: request.payload.value,
           quantity: request.payload.quantity,
           tag: request.payload.tag,
           companyId: request.payload.companyId,
@@ -429,7 +425,7 @@ export const register = (server, options, next) => {
             .allow(null)
             .default(null),
           groupItemsByType: Joi.boolean().default(false),
-        }).unknown(), // FIXME: remove after app store builds drop applyCredits
+        }),
       },
     },
 
