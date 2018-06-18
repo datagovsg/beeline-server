@@ -15,7 +15,7 @@ import {
 
 import { qualifiers } from "../promotions"
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   if (!server.plugins["sequelize"]) {
     throw new Error("Sequelize has to be initialized first!")
   }

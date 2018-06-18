@@ -24,17 +24,25 @@ import { emit } from "../events/events"
 import * as email from "../util/email"
 import { STATUSES as TICKET_STATUSES } from "../models/Ticket"
 
+const formatBookingId = function formatBookingId(id) {
+  return "BEE-" + leftPad(id, 4, "0")
+}
+
+const formatStop = function formatStop(stop) {
+  return `${stop.description}`
+}
+
 Handlebars.registerHelper("formatTime", formatTime)
 Handlebars.registerHelper("formatDate", formatDate)
 Handlebars.registerHelper("formatDateLong", formatDateLong)
 Handlebars.registerHelper("formatStop", formatStop)
 Handlebars.registerHelper("formatBookingId", formatBookingId)
 
-function escapeLike(s) {
+const escapeLike = function escapeLike(s) {
   return s.replace(/[_%\\]/g, s => "\\" + s)
 }
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/custom/wrs/tickets/{id}/{sessionToken}",
@@ -52,8 +60,10 @@ export function register(server, options, next) {
         let m = getModels(request)
         let db = getDB(request)
 
+        let session
+
         try {
-          var session = auth.verifySession(request.params.sessionToken)
+          session = auth.verifySession(request.params.sessionToken)
         } catch (err) {
           throw new SecurityError(err)
         }
@@ -77,7 +87,6 @@ export function register(server, options, next) {
           "utf8"
         )
         let htmlTemplate = Handlebars.compile(htmlTemplateText)
-
         ;[
           context.logo,
           context.iconPax,
@@ -172,11 +181,12 @@ export function register(server, options, next) {
         )
       }
 
+      let userInstances
       try {
         // Create temporary users
         // To avoid violating the non-unique constraint, we
         // do not set the email or telephone here.
-        var userInstances = await Promise.all(
+        userInstances = await Promise.all(
           _.range(request.payload.qty).map(i =>
             m.User.create({
               name: JSON.stringify({
@@ -258,9 +268,9 @@ export function register(server, options, next) {
           sessionToken: userInstances[0].makeToken(),
         })
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         emit("transactionFailure", {
-          userId: userInstances[0].id || 0,
+          userId: _.get(userInstances, "[0].id") || 0,
           message: `WRS ${request.payload.email} ${err.message}`,
         })
         defaultErrorHandler(reply)(err)
@@ -268,7 +278,7 @@ export function register(server, options, next) {
     },
   })
 
-  async function buildReportQuery(request) {
+  const buildReportQuery = async function buildReportQuery(request) {
     const db = getDB(request)
     const m = getModels(request)
     const query = {
@@ -395,7 +405,7 @@ export function register(server, options, next) {
     }
 
     let limitByIds = null
-    function restrictTicketIds(ids) {
+    const restrictTicketIds = function restrictTicketIds(ids) {
       limitByIds = limitByIds ? _.intersection(ids, limitByIds) : ids
     }
 
@@ -589,7 +599,7 @@ export function register(server, options, next) {
   }
 
   // Don't load related transaction items yet
-  function removeAttributes(includes) {
+  const removeAttributes = function removeAttributes(includes) {
     return includes.map(includeDefinition => {
       // Use the model-as-attributes
       if (!includeDefinition.model) {
@@ -609,7 +619,7 @@ export function register(server, options, next) {
     })
   }
 
-  async function writeCSVReport(request, reply, query) {
+  const writeCSVReport = async function writeCSVReport(request, reply, query) {
     const db = getDB(request)
     const m = getModels(request)
     const fields = [
@@ -702,6 +712,7 @@ export function register(server, options, next) {
         let offset = 0
         let batchSize = 100
         while (true) {
+          // eslint-disable-line no-constant-condition
           const q = _.clone(query)
           q.transaction = t
           q.offset = offset
@@ -739,9 +750,7 @@ export function register(server, options, next) {
         writer.end()
       })
 
-    writer.on("error", err => {
-      console.log(err) // There's not much we can do here
-    })
+    writer.on("error", console.error) // There's not much we can do here
 
     reply(io)
       .header("Content-type", "text/csv")
@@ -754,7 +763,7 @@ export function register(server, options, next) {
   // Given tickets, augment with
   // - ticketSale / ticketRefund / ticketExpense transactions
   // - Further augment with discount transactions
-  async function augmentTicketsWithTransactionItems(
+  const augmentTicketsWithTransactionItems = async function augmentTicketsWithTransactionItems(
     { m, db },
     rows,
     options = {}
@@ -854,7 +863,11 @@ export function register(server, options, next) {
     }
   }
 
-  async function writeJSONReport(request, reply, query) {
+  const writeJSONReport = async function writeJSONReport(
+    request,
+    reply,
+    query
+  ) {
     const db = getDB(request)
     const m = getModels(request)
     const countQuery = _.assign({}, query, {
@@ -976,6 +989,12 @@ register.attributes = {
   name: "custom-wrs",
 }
 
+/**
+ * Read the contents of a file as a base64 string, usually a png
+ * @param {String} filename - the path to the target file
+ * @param {Boolean} linebreak - if true, inserts a line break once every 80 chars
+ * @return {String} the contents of the file as a base64 string
+ */
 async function readFileAsBase64(filename, linebreak) {
   let filedata = await BlueBird.promisify(fs.readFile)(
     path.join(path.dirname(module.filename), filename)
@@ -994,6 +1013,11 @@ async function readFileAsBase64(filename, linebreak) {
   return parts
 }
 
+/**
+ * @param {Array} db - [db, m] - containing database connection objects
+ * @param {Object} payload - the object containing the recipient's email
+ * @param {Number} id - the transaction id
+ */
 async function sendTicketAsEmail([db, m], payload, id) {
   let transaction = await getTransaction([db, m], id)
   let context = await contextFromTransaction([db, m], transaction)
@@ -1053,8 +1077,6 @@ async function sendTicketAsEmail([db, m], payload, id) {
     ],
   })
 
-  console.log(emailData.substr(0, 1000))
-
   await email.send(
     {
       from: `admin@beeline.sg`,
@@ -1065,6 +1087,13 @@ async function sendTicketAsEmail([db, m], payload, id) {
   )
 }
 
+/**
+ * Generate the context for use in email ticket templates
+ * @param {Array} connection - contains the Sequelize object
+ * @param {Object} transaction - the sales transaction
+ * @return {Object} a context object containing information relevant to
+ * the sales transaction, for use in Handlebars
+ */
 async function contextFromTransaction(connection, transaction) {
   let [, m] = connection
   let context = {}
@@ -1155,6 +1184,11 @@ async function contextFromTransaction(connection, transaction) {
   return context
 }
 
+/**
+ * @param {Array} connection - an array containing the Sequelize models object
+ * @param {Number} id - the transaction id
+ * @return {Object} the enriched transaction corresponding to id
+ */
 async function getTransaction(connection, id) {
   let [, m] = connection
   let transaction = await m.Transaction.findById(id, {
@@ -1192,18 +1226,4 @@ async function getTransaction(connection, id) {
   })
 
   return transaction
-}
-
-function formatBookingId(id) {
-  return "BEE-" + leftPad(id, 4, "0")
-}
-
-function formatStop(stop) {
-  return `${stop.description}`
-  //  if (stop.type == 'Bus Stop') {
-  //    return `${stop.description} (${stop.label})`
-  //  }
-  //  else {
-  //    return `${stop.description}`
-  //  }
 }

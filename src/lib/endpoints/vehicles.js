@@ -6,10 +6,12 @@ import assert from "assert"
 import { Buffer } from "buffer"
 import BlueBird from "bluebird"
 
+let Identicon
+
 try {
-  var Identicon = require("identicon")
+  Identicon = require("identicon")
 } catch (err) {
-  console.log(`Error while loading identicon: ${err}`)
+  console.error("Error while loading identicon:", err)
 }
 
 let getModels = common.getModels
@@ -19,6 +21,9 @@ let defaultErrorHandler = common.defaultErrorHandler
  * Returns a Sequelize WHERE clause suited
  * for determining whether the user credentials
  * is authorized to make changes to the vehicle
+ * @param {Number} id - the driver id
+ * @param {Object} request - the HAPI request containing user credentials
+ * @return {Object} the Sequelize query
  */
 function authenticateAgent(id, request) {
   let m = getModels(request)
@@ -58,7 +63,7 @@ function authenticateAgent(id, request) {
   return query
 }
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/vehicles/{id}/photo",
@@ -105,7 +110,7 @@ vehicle if the photo is not available.
           }
         }
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.badImplementation(err.message))
       }
     },
@@ -160,7 +165,7 @@ Instead, pass the session token in the form data.
       try {
         request.auth.credentials = auth.checkToken(request.payload.sessionToken)
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.forbidden())
       }
 
@@ -190,7 +195,7 @@ Instead, pass the session token in the form data.
         await vehicle.save()
         reply("")
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.badImplementation(err.message))
       }
     },
@@ -289,7 +294,7 @@ Instead, pass the session token in the form data.
         let vehicle = await m.Vehicle.create(request.payload)
         reply(vehicle.toJSON())
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.badRequest(err.message))
       }
     },
@@ -363,7 +368,7 @@ Instead, pass the session token in the form data.
           reply("")
         }
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.badImplementation(err.message))
       }
     },

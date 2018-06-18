@@ -4,9 +4,7 @@ import { getModels, defaultErrorHandler } from "../util/common"
 import { SecurityError, TransactionError } from "../util/errors"
 import { stripe } from "../transactions/payment"
 
-/**
- **/
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "POST",
     path: "/users/{userId}/creditCards",

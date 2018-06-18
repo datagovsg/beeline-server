@@ -13,7 +13,7 @@ import sharp from "sharp"
 let getModels = common.getModels
 let defaultErrorHandler = common.defaultErrorHandler
 
-function cleanCompanyInfo(company) {
+const cleanCompanyInfo = function cleanCompanyInfo(company) {
   if (company.clientSecret) delete company.clientSecret
   if (company.sandboxSecret) delete company.sandboxSecret
   return company
@@ -22,10 +22,10 @@ function cleanCompanyInfo(company) {
 try {
   Identicon = require("identicon")
 } catch (err) {
-  console.log(`Ignoring the following error while loading identicon: ${err}`)
+  console.error(`Ignoring the following error while loading identicon:`, err)
 }
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/companies",
@@ -269,7 +269,7 @@ company if the logo is not available
           }
         }
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.badImplementation(err.message))
       }
     },
@@ -306,7 +306,7 @@ company if the logo is not available
         let parsed = reader.parse(company[request.params.content])
         return reply(writer.render(parsed))
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.badImplementation(err.message))
       }
     },
@@ -368,7 +368,7 @@ action="/companies/10/logo"
           request.params.id
         )
       } catch (err) {
-        console.log(err.stack)
+        console.error(err)
         reply(Boom.forbidden())
       }
 

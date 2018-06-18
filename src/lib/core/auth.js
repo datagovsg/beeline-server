@@ -135,7 +135,7 @@ export function register(server, options, next) {
           reply(data)
         })
       } catch (error) {
-        console.log(error.stack); // eslint-disable-line
+        console.error(error)
       }
     },
   })
@@ -242,11 +242,7 @@ async function superadminCredentials(token) {
  * @return {object} The `credentials` object
  */
 async function driverCredentials(token) {
-  let driverId = _.get(
-    token,
-    "app_metadata.driverId",
-    _.get(token, "driverId")
-  )
+  let driverId = _.get(token, "app_metadata.driverId", _.get(token, "driverId"))
   assert(driverId)
   assert.strictEqual(typeof driverId, "number")
 
@@ -308,11 +304,7 @@ async function userCredentials(token) {
  */
 export async function credentialsFromToken(tokenData) {
   let creds = {}
-  let role = _.get(
-    tokenData,
-    "app_metadata.roles[0]",
-    _.get(tokenData, "role")
-  )
+  let role = _.get(tokenData, "app_metadata.roles[0]", _.get(tokenData, "role"))
 
   if (role === "admin") return adminCredentials(tokenData)
   if (role === "user") return userCredentials(tokenData)
@@ -477,9 +469,7 @@ export function randomNDigits(n) {
 export function ensureRateLimit(objInstance) {
   assert("lastComms" in objInstance)
   let now = new Date().getTime()
-  let lastComms = objInstance.lastComms
-    ? objInstance.lastComms.getTime()
-    : null
+  let lastComms = objInstance.lastComms ? objInstance.lastComms.getTime() : null
 
   if (!lastComms || now - lastComms > 10000) {
     objInstance.lastComms = now

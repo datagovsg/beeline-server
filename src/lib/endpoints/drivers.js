@@ -7,7 +7,7 @@ import assert from "assert"
 import leftPad from "left-pad"
 import * as auth from "../core/auth"
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/companies/{companyId}/drivers/{id}",
@@ -196,7 +196,7 @@ export function register(server, options, next) {
 
         reply(driverInstance.toJSON())
       } catch (err) {
-        console.log(err)
+        console.error(err)
         defaultErrorHandler(reply)(err)
       }
     },
@@ -249,7 +249,7 @@ export function register(server, options, next) {
 
         reply(driverInstance.toJSON())
       } catch (err) {
-        console.log(err)
+        console.error(err)
         defaultErrorHandler(reply)(err)
       }
     },
@@ -358,7 +358,7 @@ export function register(server, options, next) {
 
         reply(driverInstance.toJSON())
       } catch (err) {
-        console.log(err)
+        console.error(err)
         defaultErrorHandler(reply)(err)
       }
     },

@@ -8,7 +8,7 @@ import {
 import { getModels } from "../util/common"
 const Joi = require("../util/joi")
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   const authorize = authorizeByRole("manage-customers")
 
   const findContactListById = async request => {

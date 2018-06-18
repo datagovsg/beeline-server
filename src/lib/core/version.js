@@ -1,5 +1,5 @@
 const _ = require("lodash")
-const { getModels, defaultErrorHandler, getDB } = require("../util/common")
+const { getModels, defaultErrorHandler } = require("../util/common")
 
 module.exports = (server, options, next) => {
   server.route({

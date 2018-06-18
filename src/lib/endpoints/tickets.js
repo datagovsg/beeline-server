@@ -10,7 +10,7 @@ const {
   authorizeByRole,
 } = require("../util/endpoints")
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   const addTripCodeToTicket = ticket => {
     if (ticket) {
       const tripCode = ticket.boardStop.trip.getCode(true)

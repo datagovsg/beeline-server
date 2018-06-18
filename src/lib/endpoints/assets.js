@@ -10,7 +10,7 @@ const {
   deleteInst,
 } = require("../util/endpoints")
 
-export function register(server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/assets",
