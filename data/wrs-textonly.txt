@@ -70,9 +70,14 @@ Drop-off at:  {{{formatTime fromZoo.alightStop.time}}}
 
 {{/if}}
 
-Booking Policy
---------------
+Important Notes
+---------------
+For enquiry, please contact :
+Tel: (+65) 6269 3411
+Email: enquiry@wrs.com.sg
 
+Booking Policy
+---------------
 * Buses are operated by Wildlife Reserves Singapore Group
 * Please be at your pick-up stop 5 mins before stipulated time.
 * Children below 3 years old ride for free and can board with an accompanying passenger with a valid booking receipt.
@@ -86,4 +91,3 @@ This booking service is powered by Beeline.sg
 
 Terms of Use: https://mandaiexpress.beeline.sg/terms_of_use.html
 Privacy Policy: https://mandaiexpress.beeline.sg/privacy_policy.html
-Feedback: feedback@beeline.sg
