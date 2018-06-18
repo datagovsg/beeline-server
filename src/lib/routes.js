@@ -27,7 +27,6 @@ module.exports = (server, options, next) => {
       require("./endpoints/admins"),
       require("./endpoints/vehicles"),
       require("./endpoints/routePassAdmin"),
-      require("./endpoints/loader"),
       require("./endpoints/crowdstart"),
       require("./endpoints/instantCrowdstart"),
       require("./custom/wrs"),

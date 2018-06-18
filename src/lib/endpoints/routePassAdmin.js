@@ -29,7 +29,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/route_passes",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: "Get current user's route passes in JSON, keyed by tag",
       auth: { access: { scope: ["user"] } },
     },
@@ -42,7 +42,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/route_passes/expiries",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description:
         "Get current user's route passes in JSON, keyed by tag and expiry date",
       auth: { access: { scope: ["user"] } },
@@ -73,7 +73,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/route_passes/{tag}/users/{userId}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Get valid route passes for a specified user and tag",
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
@@ -204,7 +204,7 @@ export const register = function register(server, options, next) {
     method: "POST",
     path: "/companies/{companyId}/route_passes/{tag}/users/{userId}/expire",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description:
         "Expire a number of route passes, choosing the oldest ones first",
       auth: { access: { scope: ["admin", "superadmin"] } },
@@ -252,7 +252,7 @@ export const register = function register(server, options, next) {
     path:
       "/companies/{companyId}/route_passes/{tag}/users/{userId}/{routePassId}/expire",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Expire a route pass",
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
@@ -289,7 +289,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/route_passes/{tag}/users/{userId}/history",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `Returns a list of the user's past route pass transactions.
         There is a limit of 20 transactions. To query more, pass the last (i.e. smallest) id of
         the previous set of transaction items to the subsequent query.
@@ -344,7 +344,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/route_passes/{tag}/users",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `
       Returns a list of entries bearing user ids and number of
       valid route passes for a given company's tag
@@ -380,7 +380,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/route_passes",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `
       Returns for a given company a list of tags where there is
       at least one valid route pass

@@ -1,14 +1,19 @@
 const Joi = require("joi")
 
-const {handleRequestWith, authorizeByRole, instToJSONOrNotFound, deleteInst} = require("../util/endpoints")
+const {
+  handleRequestWith,
+  authorizeByRole,
+  instToJSONOrNotFound,
+  deleteInst,
+} = require("../util/endpoints")
 
-export function register (server, options, next) {
+export const register = function register(server, options, next) {
   if (!server.plugins["sequelize"]) {
-    throw new Error('Sequelize has to be initialized first!')
+    throw new Error("Sequelize has to be initialized first!")
   }
-  const {models: m} = server.plugins["sequelize"]
+  const { models: m } = server.plugins["sequelize"]
 
-  const authorize = authorizeByRole('manage-routes', () => undefined)
+  const authorize = authorizeByRole("manage-routes", () => undefined)
   const findById = request => m.Stop.findById(request.params.id)
 
   server.route({
@@ -16,63 +21,62 @@ export function register (server, options, next) {
     path: "/stops",
     config: {
       auth: false,
-      tags: ["api"]
+      tags: ["api", "admin", "commuter"],
     },
     handler: handleRequestWith(
       () => m.Stop.findAll(),
       stops => stops.map(s => s.toJSON())
-    )
+    ),
   })
 
   server.route({
     method: "GET",
     path: "/stops/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin", "commuter"],
       auth: false,
       validate: {
         params: {
-          id: Joi.number()
-        }
-      }
+          id: Joi.number(),
+        },
+      },
     },
-    handler: handleRequestWith(findById, instToJSONOrNotFound)
+    handler: handleRequestWith(findById, instToJSONOrNotFound),
   })
 
   server.route({
     method: "POST",
     path: "/stops",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: {
-          scope: ["superadmin"]
-        }
+          scope: ["superadmin"],
+        },
       },
-      validate: {
-      }
+      validate: {},
     },
     handler: handleRequestWith(authorize, request => {
       delete request.payload.id
       return m.Stop.create(request.payload).then(s => s.toJSON())
-    })
+    }),
   })
 
   server.route({
     method: "PUT",
     path: "/stops/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: {
-          scope: ["superadmin"]
-        }
+          scope: ["superadmin"],
+        },
       },
       validate: {
         params: {
-          id: Joi.number().integer()
-        }
-      }
+          id: Joi.number().integer(),
+        },
+      },
     },
     handler: handleRequestWith(
       authorize,
@@ -85,27 +89,27 @@ export function register (server, options, next) {
         return stopInst
       },
       instToJSONOrNotFound
-    )
+    ),
   })
 
   server.route({
     method: "DELETE",
     path: "/stops/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
-        access: { scope: ["superadmin"] }
+        access: { scope: ["superadmin"] },
       },
       validate: {
         params: {
-          id: Joi.number()
-        }
-      }
+          id: Joi.number(),
+        },
+      },
     },
-    handler: handleRequestWith(authorize, findById, deleteInst)
+    handler: handleRequestWith(authorize, findById, deleteInst),
   })
   next()
 }
 register.attributes = {
-  name: "endpoint-stops"
+  name: "endpoint-stops",
 }

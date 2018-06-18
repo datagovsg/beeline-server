@@ -17,7 +17,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/user",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
     },
     handler: async function(request, reply) {
@@ -32,7 +32,7 @@ export const register = function register(server, options, next) {
     method: "GET",
     path: "/user/{userId}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -64,7 +64,7 @@ export const register = function register(server, options, next) {
     method: "POST",
     path: "/users/sendTelephoneVerification",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: false,
       validate: {
         payload: {
@@ -95,7 +95,7 @@ export const register = function register(server, options, next) {
 
         // Backdoor for iOS testers
         if (request.payload.telephone === "+65########") {
-          [userInst] = await m.User.findCreateFind({
+          ;[userInst] = await m.User.findCreateFind({
             defaults: { telephone: "+65########", status: "unverified" },
             where: { telephone: "+65########" },
           })
@@ -105,7 +105,7 @@ export const register = function register(server, options, next) {
           return reply("")
         }
 
-        [userInst] = await m.User.findCreateFind({
+        ;[userInst] = await m.User.findCreateFind({
           defaults: {
             telephone: request.payload.telephone,
             status: "unverified",
@@ -148,7 +148,7 @@ export const register = function register(server, options, next) {
     method: "POST",
     path: "/users/sendEmailVerification",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: "user" } },
     },
     async handler(request, reply) {
@@ -218,7 +218,7 @@ Beeline Team
     method: "GET",
     path: "/users/verifyEmail",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: false,
       validate: {
         query: Joi.object({
@@ -271,7 +271,7 @@ Beeline Team
     method: "POST",
     path: "/users/verifyTelephone",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: false,
       validate: {
         payload: Joi.object({
@@ -327,7 +327,7 @@ Beeline Team
     method: "POST",
     path: "/users/resetPassword",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: false,
       validate: {
         payload: {
@@ -372,7 +372,7 @@ Beeline Team
     method: "PUT",
     path: "/user",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       validate: {
         payload: Joi.object({
@@ -399,7 +399,7 @@ Beeline Team
     method: "POST",
     path: "/user/requestUpdateTelephone",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       validate: {
         payload: Joi.object({
@@ -475,7 +475,7 @@ To update (pseudo-code)
     method: "POST",
     path: "/user/updateTelephone",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `Updates a user's telephone number to the one
             given in the update token. If the new telephone number already
             exists in the database, the other user's telephone number is set
@@ -490,9 +490,7 @@ To update (pseudo-code)
     },
     handler: async function(request, reply) {
       try {
-        let updateRequest = auth.verifyVerification(
-          request.payload.updateToken
-        )
+        let updateRequest = auth.verifyVerification(request.payload.updateToken)
 
         if (
           updateRequest.action !== "updateTelephone" ||
@@ -542,7 +540,7 @@ To update (pseudo-code)
     method: "POST",
     path: "/users/auth/renew",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       description: `Renew a previously issued user token`,
     },
@@ -564,7 +562,7 @@ To update (pseudo-code)
     method: "GET",
     path: "/users/search",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `Search for users. Mainly for admin view support`,
       validate: {
         query: Joi.object({
@@ -700,7 +698,7 @@ To update (pseudo-code)
     method: "POST",
     path: "/user/push_notification_tag",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: "user" } },
       description: `Generates a new push notification tag for this user.
         Devices that were previously subscribed to push notifications will

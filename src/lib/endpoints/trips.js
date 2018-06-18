@@ -21,7 +21,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/trips/{id}/code",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin", "commuter", "driver"],
       description: "Update a route (for admin and superadmin only)",
       auth: { access: { scope: ["user", "admin", "superadmin", "driver"] } },
       validate: {
@@ -70,7 +70,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/trips",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin", "commuter"],
       auth: false,
       validate: {
         query: {
@@ -139,7 +139,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/trips/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin", "commuter"],
       auth: false,
       validate: {
         params: {
@@ -187,7 +187,7 @@ export function register(server, options, next) {
     method: "POST",
     path: "/trips",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         payload: {
@@ -279,7 +279,7 @@ export function register(server, options, next) {
     method: "DELETE",
     path: "/trips/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -319,7 +319,7 @@ export function register(server, options, next) {
     method: "POST",
     path: "/trips/{id}/setVehicle",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `Set the driver of a trip. If you are logged on as a driver
 your driver ID is used automatically. Otherwise you must pass
 a driver ID in the payload.
@@ -385,7 +385,7 @@ Trip's company ID and driver's company ID must match.
     method: "GET",
     path: "/trips/{id}/passengers",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin", "driver"],
       auth: { access: { scope: ["admin", "superadmin", "driver"] } },
       validate: {
         params: {
@@ -450,7 +450,7 @@ Trip's company ID and driver's company ID must match.
     method: "GET",
     path: "/trips/{id}/latest_info",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: false,
       description: "Returns the current vehicle, driver, latest statuses",
       validate: {
@@ -495,7 +495,7 @@ Trip's company ID and driver's company ID must match.
     method: "PUT",
     path: "/trips/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         // FIXME: Use PATCH semantics for tripStops, capacity
@@ -692,7 +692,7 @@ Trip's company ID and driver's company ID must match.
     method: "POST",
     path: "/trips/{id}/messagePassengers",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -740,7 +740,7 @@ Trip's company ID and driver's company ID must match.
     method: "PUT",
     path: "/trips/{id}/setDriver",
     config: {
-      tags: ["api"],
+      tags: ["api", "driver"],
       description: `Set the driver of a trip.
 `,
       auth: { access: { scope: ["driver"] } },

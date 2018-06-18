@@ -16,7 +16,7 @@ export const register = (server, options, next) => {
     method: "GET",
     path: "/companies/{companyId}/eventSubscriptions",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -51,7 +51,7 @@ export const register = (server, options, next) => {
     method: "GET",
     path: "/companies/{companyId}/eventSubscriptions/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -103,7 +103,7 @@ export const register = (server, options, next) => {
     method: "PUT",
     path: "/companies/{companyId}/eventSubscriptions/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -170,7 +170,7 @@ export const register = (server, options, next) => {
     method: "POST",
     path: "/companies/{companyId}/eventSubscriptions",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
@@ -226,7 +226,7 @@ export const register = (server, options, next) => {
     method: "DELETE",
     path: "/companies/{companyId}/eventSubscriptions/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {

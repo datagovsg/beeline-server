@@ -1,12 +1,17 @@
-import {InvalidArgumentError} from "../util/errors"
-import {authorizeByRole, handleRequestWith, instToJSONOrNotFound, deleteInst} from "../util/endpoints"
-import {getModels} from "../util/common"
+import { InvalidArgumentError } from "../util/errors"
+import {
+  authorizeByRole,
+  handleRequestWith,
+  instToJSONOrNotFound,
+  deleteInst,
+} from "../util/endpoints"
+import { getModels } from "../util/common"
 const Joi = require("../util/joi")
 
-export function register (server, options, next) {
-  const authorize = authorizeByRole('manage-customers')
+export const register = function register(server, options, next) {
+  const authorize = authorizeByRole("manage-customers")
 
-  const findContactListById = async (request) => {
+  const findContactListById = async request => {
     const m = getModels(request)
     const id = request.params.id
     const listId = request.params.listId
@@ -16,7 +21,7 @@ export function register (server, options, next) {
     if (contactListInst) {
       InvalidArgumentError.assert(
         id === +contactListInst.transportCompanyId,
-        'Telephone list ' + listId + ' does not belong to company ' + id
+        "Telephone list " + listId + " does not belong to company " + id
       )
     }
 
@@ -27,7 +32,7 @@ export function register (server, options, next) {
     const m = getModels(request)
     return m.ContactList.findAll({
       where: { transportCompanyId: request.params.id },
-      attributes: { exclude: ['telephones', 'emails'] },
+      attributes: { exclude: ["telephones", "emails"] },
     })
   }
 
@@ -35,39 +40,45 @@ export function register (server, options, next) {
     method: "GET",
     path: "/companies/{id}/contactLists",
     config: {
-      tags: ["api"],
-      auth: {access: {scope: ['admin', 'superadmin']}},
+      tags: ["api", "admin"],
+      auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
-          id: Joi.number().integer()
-        }
+          id: Joi.number().integer(),
+        },
       },
     },
-    handler: handleRequestWith(authorize, findAllLists, contactLists => contactLists.map(l => l.toJSON()))
+    handler: handleRequestWith(authorize, findAllLists, contactLists =>
+      contactLists.map(l => l.toJSON())
+    ),
   })
 
   server.route({
     method: "GET",
     path: "/companies/{id}/contactLists/{listId}",
     config: {
-      tags: ["api"],
-      auth: {access: {scope: ['admin', 'superadmin']}},
+      tags: ["api", "admin"],
+      auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
           id: Joi.number().integer(),
           listId: Joi.number().integer(),
-        }
+        },
       },
     },
-    handler: handleRequestWith(authorize, findContactListById, instToJSONOrNotFound)
+    handler: handleRequestWith(
+      authorize,
+      findContactListById,
+      instToJSONOrNotFound
+    ),
   })
 
   server.route({
     method: "PUT",
     path: "/companies/{id}/contactLists/{listId}",
     config: {
-      tags: ["api"],
-      auth: {access: {scope: ['admin', 'superadmin']}},
+      tags: ["api", "admin"],
+      auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
           id: Joi.number().integer(),
@@ -77,7 +88,7 @@ export function register (server, options, next) {
           description: Joi.string(),
           telephones: Joi.array().items(Joi.string().telephone()),
           emails: Joi.array().items(Joi.string().email()),
-        }
+        },
       },
     },
     handler: handleRequestWith(
@@ -86,31 +97,31 @@ export function register (server, options, next) {
       (list, request) => {
         return list.update(request.payload).then(list => list.toJSON())
       }
-    )
+    ),
   })
 
   server.route({
     method: "DELETE",
     path: "/companies/{id}/contactLists/{listId}",
     config: {
-      tags: ["api"],
-      auth: {access: {scope: ['admin', 'superadmin']}},
+      tags: ["api", "admin"],
+      auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
           id: Joi.number().integer(),
           listId: Joi.number().integer(),
-        }
+        },
       },
     },
-    handler: handleRequestWith(authorize, findContactListById, deleteInst)
+    handler: handleRequestWith(authorize, findContactListById, deleteInst),
   })
 
   server.route({
     method: "POST",
     path: "/companies/{id}/contactLists",
     config: {
-      tags: ["api"],
-      auth: {access: {scope: ['admin', 'superadmin']}},
+      tags: ["api", "admin"],
+      auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         params: {
           id: Joi.number().integer(),
@@ -119,21 +130,19 @@ export function register (server, options, next) {
         payload: {
           description: Joi.string(),
           telephones: Joi.array().items(Joi.string().telephone()),
-          emails: Joi.array().items(Joi.string().email())
-        }
+          emails: Joi.array().items(Joi.string().email()),
+        },
       },
     },
-    handler:
-      handleRequestWith(authorize, request => {
-        const m = getModels(request)
-        request.payload.transportCompanyId = request.params.id
-        return m.ContactList.create(request.payload)
-                              .then(list => list.toJSON())
-      }),
+    handler: handleRequestWith(authorize, request => {
+      const m = getModels(request)
+      request.payload.transportCompanyId = request.params.id
+      return m.ContactList.create(request.payload).then(list => list.toJSON())
+    }),
   })
 
   next()
 }
 register.attributes = {
-  name: "endpoint-company-telephone-lists"
+  name: "endpoint-company-telephone-lists",
 }

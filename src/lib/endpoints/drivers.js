@@ -1,140 +1,152 @@
 const _ = require("lodash")
-const Joi = require('../util/joi')
-const {getModels, defaultErrorHandler} = require("../util/common")
+const Joi = require("../util/joi")
+const { getModels, defaultErrorHandler } = require("../util/common")
 const Boom = require("boom")
 const sms = require("../util/sms")
 import assert from "assert"
 import leftPad from "left-pad"
 import * as auth from "../core/auth"
 
-export function register (server, options, next) {
+export const register = function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/companies/{companyId}/drivers/{id}",
     config: {
-      auth: { access: { scope: ["driver", "superadmin", "admin"]} },
+      auth: { access: { scope: ["driver", "superadmin", "admin"] } },
       validate: {
         params: {
           id: Joi.number().integer(),
-          companyId: Joi.number().integer()
-        }
+          companyId: Joi.number().integer(),
+        },
       },
-      tags: ["api"]
+      tags: ["api", "admin", "driver"],
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        await auth.assertAdminRole(request.auth.credentials, 'view-drivers', request.payload.transportCompanyId)
+        await auth.assertAdminRole(
+          request.auth.credentials,
+          "view-drivers",
+          request.payload.transportCompanyId
+        )
 
-        var driverInstance = await m.Driver.find({
-          where: {id: request.params.id},
+        let driverInstance = await m.Driver.find({
+          where: { id: request.params.id },
           include: [
             {
               model: m.TransportCompany,
-              where: {id: request.params.companyId}
+              where: { id: request.params.companyId },
             },
             {
               model: m.Vehicle,
-              attributes: { exclude: ['photo'] }
-            }
-          ]
+              attributes: { exclude: ["photo"] },
+            },
+          ],
         })
 
         reply(driverInstance.toJSON())
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   server.route({
     method: "GET",
     path: "/companies/{companyId}/drivers",
     config: {
-      auth: { access: { scope: ["superadmin", "admin"]} },
+      auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
         params: {
           id: Joi.number().integer(),
-          companyId: Joi.number().integer()
-        }
+          companyId: Joi.number().integer(),
+        },
       },
-      tags: ["api"]
+      tags: ["api", "admin"],
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        await auth.assertAdminRole(request.auth.credentials, 'view-drivers', request.params.companyId)
+        await auth.assertAdminRole(
+          request.auth.credentials,
+          "view-drivers",
+          request.params.companyId
+        )
 
-        var drivers = await m.Driver.findAll({
+        let drivers = await m.Driver.findAll({
           include: [
             {
               model: m.TransportCompany,
-              where: {id: request.params.companyId},
-              attributes: {exclude: ['terms', 'features', 'logo']}
+              where: { id: request.params.companyId },
+              attributes: { exclude: ["terms", "features", "logo"] },
             },
             {
               model: m.Vehicle,
-              attributes: { exclude: ['photo'] }
-            }
-          ]
+              attributes: { exclude: ["photo"] },
+            },
+          ],
         })
 
         reply(drivers.map(d => d.toJSON()))
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   server.route({
     method: "GET",
     path: "/drivers",
     config: {
-      auth: { access: { scope: ["superadmin", "admin"]} },
+      auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
         params: {
-          id: Joi.number().integer()
+          id: Joi.number().integer(),
         },
         query: {
           driverIds: Joi.array().items(Joi.number().integer()),
           telephones: Joi.array().items(Joi.string()),
-        }
+        },
       },
-      description: 'Allow admin to search/query drivers by telephone/ids. To facilitate adminview',
+      description:
+        "Allow admin to search/query drivers by telephone/ids. To facilitate adminview",
     },
-    handler: async function (request, reply) {
+    handler: async function(request, reply) {
       try {
-        var m = getModels(request)
-        var companyIds = await auth.getCompaniesByRole(request.auth.credentials, 'view-drivers')
+        let m = getModels(request)
+        let companyIds = await auth.getCompaniesByRole(
+          request.auth.credentials,
+          "view-drivers"
+        )
 
-        var query = {
+        let query = {
           include: [
             {
               model: m.TransportCompany,
-              where: {id: {$in: companyIds}}
+              where: { id: { $in: companyIds } },
             },
             {
               model: m.Vehicle,
-              attributes: { exclude: ['photo'] }
-            }
-          ]
+              attributes: { exclude: ["photo"] },
+            },
+          ],
         }
         if (request.query.telephones && request.query.telephones.length > 0) {
-          _.set(query, 'where.telephone', {$in: request.query.telephones})
+          _.set(query, "where.telephone", { $in: request.query.telephones })
         }
         if (request.query.driverIds && request.query.driverIds.length > 0) {
-          _.set(query, 'where.id', {$in: request.query.driverIds})
+          _.set(query, "where.id", { $in: request.query.driverIds })
         }
-        var drivers = await m.Driver.findAll()
+        let drivers = await m.Driver.findAll()
 
         return reply(drivers.map(d => d.toJSON()))
       } catch (err) {
         console.error(err.stack)
         return reply(Boom.badImplementation())
       }
-    }
+    },
   })
 
   /** Create a new driver **/
@@ -142,24 +154,30 @@ export function register (server, options, next) {
     method: "POST",
     path: "/drivers",
     config: {
-      auth: { access: { scope: ["superadmin", "admin"]} },
+      auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
         payload: Joi.object({
           name: Joi.string(),
           telephone: Joi.string().telephone(),
-          transportCompanyId: Joi.number().integer().optional()
-        })
+          transportCompanyId: Joi.number()
+            .integer()
+            .optional(),
+        }),
       },
-      tags: ["api", "deprecated"]
+      tags: ["api", "deprecated"],
     },
-    handler: async function (request, reply) {
+    handler: async function(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        await auth.assertAdminRole(request.auth.credentials, 'manage-drivers', request.payload.transportCompanyId)
+        await auth.assertAdminRole(
+          request.auth.credentials,
+          "manage-drivers",
+          request.payload.transportCompanyId
+        )
 
         // add the company to the driver
-        var [driverInstance] = await m.Driver.findCreateFind({
+        let [driverInstance] = await m.Driver.findCreateFind({
           where: {
             telephone: request.payload.telephone,
           },
@@ -170,43 +188,51 @@ export function register (server, options, next) {
         })
 
         await driverInstance.addTransportCompany(
-          request.payload.transportCompanyId, {
+          request.payload.transportCompanyId,
+          {
             name: request.payload.name,
-          })
+          }
+        )
 
         reply(driverInstance.toJSON())
       } catch (err) {
-        console.log(err)
+        console.error(err)
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   server.route({
     method: "POST",
     path: "/companies/{companyId}/drivers",
     config: {
-      auth: { access: { scope: ["superadmin", "admin"]} },
+      auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
         payload: Joi.object({
           name: Joi.string(),
           telephone: Joi.string().telephone(),
-          remarks: Joi.string().default('').allow(''),
+          remarks: Joi.string()
+            .default("")
+            .allow(""),
         }),
         params: {
-          companyId: Joi.number().integer()
-        }
+          companyId: Joi.number().integer(),
+        },
       },
-      tags: ["api"]
+      tags: ["api", "admin"],
     },
-    handler: async function (request, reply) {
+    handler: async function(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        await auth.assertAdminRole(request.auth.credentials, 'manage-drivers', request.params.companyId)
+        await auth.assertAdminRole(
+          request.auth.credentials,
+          "manage-drivers",
+          request.params.companyId
+        )
 
         // add the company to the driver
-        var [driverInstance] = await m.Driver.findCreateFind({
+        let [driverInstance] = await m.Driver.findCreateFind({
           where: {
             telephone: request.payload.telephone,
           },
@@ -216,18 +242,17 @@ export function register (server, options, next) {
           },
         })
 
-        await driverInstance.addTransportCompany(
-          request.params.companyId, {
-            name: request.payload.name,
-            remarks: request.payload.remarks,
-          })
+        await driverInstance.addTransportCompany(request.params.companyId, {
+          name: request.payload.name,
+          remarks: request.payload.remarks,
+        })
 
         reply(driverInstance.toJSON())
       } catch (err) {
-        console.log(err)
+        console.error(err)
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   /* Update the driver name */
@@ -235,41 +260,49 @@ export function register (server, options, next) {
     method: "PUT",
     path: "/drivers/{id}",
     config: {
-      tags: ["api"],
-      auth: { access: { scope: ["driver", "superadmin"]} },
+      tags: ["api", "driver"],
+      auth: { access: { scope: ["driver", "superadmin"] } },
       validate: {
         payload: Joi.object({
           name: Joi.string(),
-          transportCompanyId: Joi.number().integer().optional()
+          transportCompanyId: Joi.number()
+            .integer()
+            .optional(),
         }),
         params: {
           id: Joi.number().integer(),
-        }
-      }
+        },
+      },
     },
-    handler: async function (request, reply) {
+    handler: async function(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        if (request.auth.credentials.scope === 'driver') {
-          assert.strictEqual(request.params.id, request.auth.credentials.driverId)
+        if (request.auth.credentials.scope === "driver") {
+          assert.strictEqual(
+            request.params.id,
+            request.auth.credentials.driverId
+          )
         }
-        await m.Driver.update({
-          name: request.payload.name,
-        }, {
-          where: {
-            id: request.params.id
+        await m.Driver.update(
+          {
+            name: request.payload.name,
+          },
+          {
+            where: {
+              id: request.params.id,
+            },
           }
-        })
+        )
 
-        var driverInstance = await m.Driver.findById(request.params.id, {
-          include: [m.TransportCompany]
+        let driverInstance = await m.Driver.findById(request.params.id, {
+          include: [m.TransportCompany],
         })
         reply(driverInstance.toJSON())
       } catch (error) {
         defaultErrorHandler(reply)(error)
       }
-    }
+    },
   })
 
   /* Update driver name on the **association** */
@@ -277,50 +310,58 @@ export function register (server, options, next) {
     method: "PUT",
     path: "/companies/{companyId}/drivers/{driverId}",
     config: {
-      auth: { access: { scope: ["superadmin", "admin"]} },
+      auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
         payload: Joi.object({
           name: Joi.string(),
-          remarks: Joi.string().default('').allow(''),
+          remarks: Joi.string()
+            .default("")
+            .allow(""),
         }),
         params: {
           companyId: Joi.number().integer(),
-          driverId: Joi.number().integer()
-        }
+          driverId: Joi.number().integer(),
+        },
       },
-      tags: ["api"]
+      tags: ["api", "admin"],
     },
-    handler: async function (request, reply) {
+    handler: async function(request, reply) {
       try {
-        var m = getModels(request)
-        await auth.assertAdminRole(request.auth.credentials, 'manage-drivers', request.params.companyId)
+        let m = getModels(request)
+        await auth.assertAdminRole(
+          request.auth.credentials,
+          "manage-drivers",
+          request.params.companyId
+        )
 
         // validate telephone numberes
         // request.payload.telephone = Valid.telephone(request.payload.telephone);
 
-        var driverInstance = await m.Driver.findOne({
-          where: {id: request.params.driverId},
+        let driverInstance = await m.Driver.findOne({
+          where: { id: request.params.driverId },
           include: [
             {
               model: m.TransportCompany,
-              where: {id: request.params.companyId}
-            }
-          ]
+              where: { id: request.params.companyId },
+            },
+          ],
         })
 
-        var updatedInfo = {name: request.payload.name}
+        let updatedInfo = { name: request.payload.name }
         if (request.payload.remarks) {
           updatedInfo.remarks = request.payload.remarks
         }
 
-        await driverInstance.transportCompanies[0].driverCompany.update(updatedInfo)
+        await driverInstance.transportCompanies[0].driverCompany.update(
+          updatedInfo
+        )
 
         reply(driverInstance.toJSON())
       } catch (err) {
-        console.log(err)
+        console.error(err)
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   /* Delete */
@@ -328,74 +369,84 @@ export function register (server, options, next) {
     method: "DELETE",
     path: "/companies/{companyId}/drivers/{driverId}",
     config: {
-      tags: ["api"],
-      auth: { access: { scope: ["superadmin", "admin"]} },
+      tags: ["api", "admin"],
+      auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
         params: {
           driverId: Joi.number().integer(),
           companyId: Joi.number().integer(),
         },
-      }
+      },
     },
-    handler: async function (request, reply) {
+    handler: async function(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
-        await auth.assertAdminRole(request.auth.credentials, 'manage-drivers', request.params.companyId)
+        await auth.assertAdminRole(
+          request.auth.credentials,
+          "manage-drivers",
+          request.params.companyId
+        )
 
-        var driverInst = await m.Driver.findById(request.params.driverId)
+        let driverInst = await m.Driver.findById(request.params.driverId)
         await driverInst.removeTransportCompany(request.params.companyId)
 
         reply(driverInst)
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   /** Send telephone verification.
-  **/
+   **/
   server.route({
     method: "POST",
     path: "/drivers/sendTelephoneVerification",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: false,
       validate: {
         payload: {
-          telephone: Joi.string().telephone().allow('+65########').required(),
+          telephone: Joi.string()
+            .telephone()
+            .allow("+65########")
+            .required(),
         },
         query: {
-          dryRun: Joi.boolean().default(false)
-        }
-      }
+          dryRun: Joi.boolean().default(false),
+        },
+      },
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
+        let m = getModels(request)
 
         // Backdoor for iOS testers
-        if (request.payload.telephone === '+65########') {
-          await m.Driver.update({
-            pairingCode: '000000',
-          }, {
-            where: {
-              telephone: '+65########'
+        if (request.payload.telephone === "+65########") {
+          await m.Driver.update(
+            {
+              pairingCode: "000000",
+            },
+            {
+              where: {
+                telephone: "+65########",
+              },
             }
-          })
-          return reply('')
+          )
+          return reply("")
         }
 
-        var findDriverWhere = {
-          telephone: request.payload.telephone
+        let findDriverWhere = {
+          telephone: request.payload.telephone,
         }
-        var driverInst = await m.Driver.find({
+        let driverInst = await m.Driver.find({
           where: findDriverWhere,
           include: [
             /* Required: true ensures that the driver belongs
              to at least one company */
-            {model: m.TransportCompany, required: true}
-          ]
+            { model: m.TransportCompany, required: true },
+          ],
         })
 
         if (!driverInst) {
@@ -406,15 +457,15 @@ export function register (server, options, next) {
           return reply(Boom.tooManyRequests())
         }
 
-        var randomCode = leftPad(Math.floor(Math.random() * 1000000), 6, 0)
+        let randomCode = leftPad(Math.floor(Math.random() * 1000000), 6, 0)
         driverInst.pairingCode = randomCode
         await driverInst.save()
 
         if (!request.query.dryRun) {
           await sms.sendSMS({
             to: request.payload.telephone,
-            from: 'BeelinDrvr',
-            body: `DRIVER: ${randomCode} is your Beeline verification code`
+            from: "BeelinDrvr",
+            body: `DRIVER: ${randomCode} is your Beeline verification code`,
           })
         }
 
@@ -422,33 +473,35 @@ export function register (server, options, next) {
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
 
   server.route({
     method: "POST",
     path: "/drivers/verifyTelephone",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: false,
       validate: {
         payload: Joi.object({
           telephone: Joi.string(),
-          code: Joi.string()
-        })
-      }
+          code: Joi.string(),
+        }),
+      },
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
-        var driverInst = await m.Driver.find({
+        let m = getModels(request)
+        let driverInst = await m.Driver.find({
           where: {
             telephone: request.payload.telephone,
-            pairingCode: request.payload.code
+            pairingCode: request.payload.code,
           },
-          include: [{
-            model: m.TransportCompany,
-          }]
+          include: [
+            {
+              model: m.TransportCompany,
+            },
+          ],
         })
 
         if (!driverInst) {
@@ -456,7 +509,7 @@ export function register (server, options, next) {
         }
 
         await driverInst.update({
-          pairingCode: null
+          pairingCode: null,
         })
 
         reply({
@@ -467,33 +520,34 @@ export function register (server, options, next) {
         console.error(err)
         reply(Boom.badImplementation())
       }
-    }
+    },
   })
-
 
   server.route({
     method: "POST",
     path: "/drivers/auth/renew",
     config: {
-      tags: ['api'],
-      auth: { access: { scope: ["driver"]} },
-      description: `Renew a previously issued driver token`
+      tags: ["api", "driver"],
+      auth: { access: { scope: ["driver"] } },
+      description: `Renew a previously issued driver token`,
     },
-    async handler (request, reply) {
+    async handler(request, reply) {
       try {
-        var m = getModels(request)
-        var driverInst = await m.Driver.findById(request.auth.credentials.driverId)
+        let m = getModels(request)
+        let driverInst = await m.Driver.findById(
+          request.auth.credentials.driverId
+        )
 
         return reply({
-          sessionToken: driverInst.makeToken()
+          sessionToken: driverInst.makeToken(),
         })
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
-    }
+    },
   })
   next()
 }
 register.attributes = {
-  name: "endpoint-drivers"
+  name: "endpoint-drivers",
 }

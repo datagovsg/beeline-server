@@ -23,7 +23,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/admins",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
@@ -64,7 +64,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/companies/{companyId}/admins/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
@@ -108,7 +108,7 @@ export function register(server, options, next) {
     method: "POST",
     path: "/companies/{companyId}/admins",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
@@ -166,7 +166,7 @@ export function register(server, options, next) {
     method: "PUT",
     path: "/companies/{companyId}/admins/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
@@ -221,7 +221,7 @@ export function register(server, options, next) {
     method: "PUT",
     path: "/admins/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
@@ -247,9 +247,7 @@ export function register(server, options, next) {
     async handler(request, reply) {
       try {
         let m = getModels(request)
-        let adminInst = await m.Admin.findById(
-          request.auth.credentials.adminId
-        )
+        let adminInst = await m.Admin.findById(request.auth.credentials.adminId)
 
         assert.strictEqual(adminInst.id, request.params.id)
 
@@ -272,6 +270,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/admins/whoami",
     config: {
+      tags: ["api", "admin"],
       auth: { access: { scope: ["superadmin", "admin"] } },
       description: "Checks if the login is valid/invalid",
     },
@@ -331,7 +330,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/admins/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },
@@ -370,7 +369,7 @@ export function register(server, options, next) {
     method: "DELETE",
     path: "/companies/{companyId}/admins/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: {
         access: { scope: ["admin", "superadmin"] },
       },

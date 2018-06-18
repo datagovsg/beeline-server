@@ -16,7 +16,7 @@ module.exports = (server, options, next) => {
     config: {
       description:
         "Creates a download link that is valid for a short time (10mins)",
-      tags: ["api"],
+      tags: ["api", "admin"],
       validate: {
         payload: {
           uri: Joi.string().required(),
@@ -57,7 +57,7 @@ module.exports = (server, options, next) => {
     method: "GET",
     path: "/downloads/{token}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       validate: {
         params: {
           token: Joi.string(),

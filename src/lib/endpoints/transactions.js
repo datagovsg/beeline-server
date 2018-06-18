@@ -80,7 +80,7 @@ export const register = (server, options, next) => {
   routeRequestsTo(server, ["/transactions/tickets/payment"], {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `Prepare a transaction with tickets, charge Stripe, and then mark the
   transaction as committed and the tickets as valid if Stripe has been
   successfully charged.`,
@@ -262,7 +262,7 @@ export const register = (server, options, next) => {
   routeRequestsTo(server, ["/transactions/route_passes/payment"], {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `Prepare a transaction with tickets, charge Stripe, and then mark the
     transaction as committed and the tickets as valid if Stripe has been
     successfully charged.`,
@@ -406,7 +406,7 @@ export const register = (server, options, next) => {
   routeRequestsTo(server, ["/transactions/tickets/quote"], {
     method: "POST",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `Used to preview the result of a ticket payment
   `,
       notes: `Payload must have an array \`trips\`, each an object with a \`tripId\`, \`boardStopId\` and \`alightStopId\`.
@@ -568,7 +568,7 @@ export const register = (server, options, next) => {
     path: "/transactions/route_passes/{routePassId}/refund/payment",
     config: {
       auth: { access: { scope: ["admin", "superadmin"] } },
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: `Perform a stripe refund on unused route passes. Application fees
 will not be refunded here, so we will make a net profit.`,
       validate: {
@@ -651,7 +651,7 @@ will not be refunded here, so we will make a net profit.`,
       method: "POST",
       config: {
         auth: { access: { scope: ["admin", "superadmin", "test"] } },
-        tags: ["api"],
+        tags: ["api", "admin"],
         description: `Perform a stripe refund on a ticket. Application fees
   will not be refunded here, so we will make a net profit.`,
       },
@@ -718,7 +718,7 @@ will not be refunded here, so we will make a net profit.`,
       method: "POST",
       config: {
         auth: { access: { scope: ["admin", "superadmin", "test"] } },
-        tags: ["api"],
+        tags: ["api", "admin"],
         description: `Refund a ticket to routePass`,
         validate: {},
       },
@@ -919,7 +919,7 @@ will not be refunded here, so we will make a net profit.`,
     method: "POST",
     config: {
       auth: { access: { scope: ["admin", "superadmin"] } },
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Issue free route passes to User",
       validate: {
         payload: Joi.object({
@@ -1057,7 +1057,7 @@ will not be refunded here, so we will make a net profit.`,
     method: "POST",
     config: {
       auth: { access: { scope: ["admin", "superadmin"] } },
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Issue a free ticket",
       validate: {
         payload: Joi.object({
@@ -1335,7 +1335,7 @@ it as fsck for transactions)`,
     method: "GET",
     path: "/transactions/user_history",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `Returns a users transaction history (all tickets bought,
 refunded, issued)`,
       auth: { access: { scope: ["user"] } },
@@ -1576,7 +1576,7 @@ OFFSET :offset
     method: "GET",
     path: "/transactions",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Returns all transactions",
       auth: { access: { scope: ["superadmin", "admin"] } },
       validate: {
@@ -1741,7 +1741,7 @@ OFFSET :offset
     method: "GET",
     path: "/stripe-key",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: "The stripe token for transactions",
     },
     handler(request, reply) {

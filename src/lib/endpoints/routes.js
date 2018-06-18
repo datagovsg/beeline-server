@@ -43,7 +43,7 @@ export function register(server, options, next) {
     method: "GET",
     path: "/routes",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `List of all routes. Authentication not required.
 If \`includeTrips\` is \`true\`, and \`startDate\` is not specified,
 the \`startDate\` defaults to the time of request.
@@ -97,7 +97,7 @@ the \`startDate\` defaults to the time of request.
     path: "/routes/{id}",
     config: {
       auth: false,
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: "List route details",
       validate: {
         params: {
@@ -217,7 +217,7 @@ the \`startDate\` defaults to the time of request.
     method: "GET",
     path: "/routes/{id}/price_schedule",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `
         Looks up the pricing of tickets for a given route,
         factoring in prevailing discounts at query time.
@@ -326,7 +326,7 @@ the \`startDate\` defaults to the time of request.
     method: "POST",
     path: "/routes",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Create a new route",
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
@@ -388,7 +388,7 @@ the \`startDate\` defaults to the time of request.
     method: "PUT",
     path: "/routes/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Update a route (for admin and superadmin only)",
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
@@ -463,7 +463,7 @@ the \`startDate\` defaults to the time of request.
     method: "DELETE",
     path: "/routes/{id}",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       description: "Delete a route (for admin and superadmin only)",
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
@@ -505,7 +505,7 @@ the \`startDate\` defaults to the time of request.
     method: "GET",
     path: "/routes/search_by_latlon",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `
 Search by latitude and longitude, and arrival time.
 This handler will return routes in sorted order of ascending (walking) distance.
@@ -758,7 +758,7 @@ The difference between the arrival time and what the user requested will be retu
     method: "GET",
     path: "/routes/recent",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       validate: {
         query: Joi.object({
@@ -835,7 +835,7 @@ LIMIT :limit
     method: "GET",
     path: "/routes/similarToRecent",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       auth: { access: { scope: ["user"] } },
       validate: {
         query: Joi.object({
@@ -1026,7 +1026,7 @@ LIMIT :limit
     method: "GET",
     path: "/routes/report",
     config: {
-      tags: ["api"],
+      tags: ["api", "admin"],
       auth: { access: { scope: ["admin", "superadmin"] } },
       validate: {
         query: Joi.object({
@@ -1166,7 +1166,7 @@ LIMIT :limit
     method: "GET",
     path: "/routes/{id}/features",
     config: {
-      tags: ["api"],
+      tags: ["api", "commuter"],
       description: `Renders the important notes as HTML from Markdown`,
       validate: {
         params: {
@@ -1209,7 +1209,7 @@ LIMIT :limit
           routeLabel: Joi.string().required(),
         }),
       },
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
 
     handler: async function(request, reply) {
@@ -1253,7 +1253,7 @@ LIMIT :limit
     path: "/liteRoutes/subscriptions",
     config: {
       auth: { access: { scope: ["user"] } },
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
 
     handler: async function(request, reply) {
@@ -1282,7 +1282,7 @@ LIMIT :limit
           routeLabel: Joi.string().required(),
         },
       },
-      tags: ["api"],
+      tags: ["api", "commuter"],
     },
 
     handler: async function(request, reply) {
