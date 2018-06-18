@@ -147,11 +147,12 @@ export function register(server, options, next) {
         },
         query: Joi.object({
           includeCompany: Joi.boolean().default(false),
+          includeVehicle: Joi.boolean().default(false),
+          includeDriver: Joi.boolean().default(false),
         }).unknown(),
       },
     },
-    handler: handleRequestWith(request => {
-      let m = getModels(request)
+    handler: handleRequestWith((ignored, request, { models: m }) => {
       let query = {
         include: [
           {
@@ -165,10 +166,19 @@ export function register(server, options, next) {
 
       if (request.query.includeCompany) {
         query.include.push({
-          model: m.transportCompanyId,
+          model: m.TransportCompany,
           attributes: { exclude: ["logo"] },
         })
       }
+
+      if (request.query.includeDriver) {
+        query.include.push(m.Driver)
+      }
+
+      if (request.query.includeVehicle) {
+        query.include.push(m.Vehicle)
+      }
+
       return m.Trip.findById(request.params.id, query)
     }, instToJSONOrNotFound),
   })
