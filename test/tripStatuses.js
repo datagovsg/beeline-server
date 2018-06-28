@@ -9,7 +9,10 @@ const {models: m} = require("../src/lib/core/dbschema")()
 
 lab.experiment("TripStatus manipulation", function () {
   const destroyList = []
-  let driver, vehicle, trip, company
+  let driver
+  let vehicle
+  let trip
+  let company
 
   lab.before({timeout: 10000}, async function () {
     company = await m.TransportCompany.create({
@@ -56,7 +59,7 @@ lab.experiment("TripStatus manipulation", function () {
       authorization: `Bearer ${driver.makeToken()}`,
     }
 
-    const statuses = ["OK", "+5min", "+15min", "+30min"]
+    const messages = ["OK", "+5min", "+15min", "+30min"]
 
     // Trip status can be updated by the driver,
     // provided he is the driver for the trip
@@ -64,18 +67,18 @@ lab.experiment("TripStatus manipulation", function () {
     await trip.save()
 
     // create some tripStatuses...
-    for (let status of statuses) {
+    for (let message of messages) {
       const response = await server.inject({
         method: "POST",
-        url: "/trips/" + trip.id + "/statuses",
+        url: `/trips/${trip.id}/messages`,
         payload: {
-          status: status,
+          message,
         },
         headers: authHeaders,
       })
       const tripStatus = response.result
       expect(response.statusCode).to.equal(200)
-      expect(tripStatus).to.contain("id")
+      expect(tripStatus.message).to.exist()
       expect(tripStatus.time).to.exist()
       expect(tripStatus.creator).to.exist()
     }
@@ -83,11 +86,31 @@ lab.experiment("TripStatus manipulation", function () {
     // GET tripStatuses?
     const response = await server.inject({
       method: "GET",
-      url: "/trips/" + trip.id + "/statuses",
+      url: `/trips/${trip.id}/statuses`,
     })
-    for (let status of statuses) {
-      expect(response.result.map(x => x.status)).to.include(status)
+    for (let message of messages) {
+      expect(response.result.map(x => x.message)).to.include(message)
     }
-    expect(response.result.length).to.equal(statuses.length)
+    expect(response.result.length).to.equal(messages.length)
+
+    await server.inject({
+      method: "POST",
+      url: `/trips/${trip.id}/messages`,
+      payload: {
+        message: "cancel",
+        status: "cancelled",
+      },
+      headers: authHeaders,
+    })
+
+    const { result } = await server.inject({
+      method: "GET",
+      url: `/trips/${trip.id}`,
+    })
+    expect(result.status).to.equal("cancelled")
+    for (let message of messages) {
+      expect(result.messages.map(x => x.message)).to.include(message)
+    }
+
   })
 })

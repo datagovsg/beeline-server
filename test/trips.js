@@ -243,7 +243,7 @@ lab.experiment("Trip manipulation", function () {
         tripInst.get({ plain: true })
       ),
       [
-        'routeId', 'date', 'availability', 'priceF', 'isRunning',
+        'routeId', 'date', 'availability', 'priceF', 'isRunning', 'messages',
         'id', 'createdAt', 'updatedAt', 'seatsAvailable', 'transportCompanyId'
       ]
     )

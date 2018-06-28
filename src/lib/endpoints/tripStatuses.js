@@ -5,6 +5,11 @@ import leftPad from "left-pad"
 import assert from "assert"
 
 import { getModels } from "../util/common"
+import {
+  routeRequestsTo,
+  handleRequestWith,
+  assertFound,
+} from "../util/endpoints"
 import * as events from "../events/events"
 
 const auth = require("../core/auth")
@@ -35,41 +40,29 @@ export function register(server, options, next) {
         },
       },
     },
-    handler: async function(request, reply) {
-      try {
-        let m = getModels(request)
-        let whereClause = {
-          tripId: request.params.id,
-        }
-
-        let tripStatuses = await m.TripStatus.findAll({
-          where: whereClause,
-          order: [["time", "DESC"]],
-          limit: request.query.limit,
-        })
-
-        reply(tripStatuses.map(tripStatus => tripStatus.toJSON()))
-      } catch (err) {
-        console.error(err.stack)
-        reply(Boom.badImplementation(err.message))
-      }
-    },
+    handler: handleRequestWith(
+      (ignored, { params }, { models }) =>
+        models.Trip.findById(params.id, { attributes: ["messages"] }),
+      assertFound,
+      ({ messages }, { query }) =>
+        query.limit ? messages.slice(0, query.limit) : messages
+    ),
   })
 
-  /** Create a new tripStatus. TODO: Use UDP tripStatuses? **/
-  server.route({
+  routeRequestsTo(server, ["/trips/{id}/statuses", "/trips/{id}/messages"], {
     method: "POST",
-    path: "/trips/{id}/statuses",
     config: {
       tags: ["api", "admin", "driver"],
       auth: { access: { scope: ["driver", "admin", "superadmin"] } },
+      description: "Posts messages to users interested in this trip",
+      notes: `
+        This endpoint also allows callers to set trip status, and
+        send a message to passengers, if the trip is cancelled
+      `,
       validate: {
         payload: Joi.object({
           message: Joi.string().allow(""),
-          // vehicleId: Joi.number().integer(),
-          adminId: Joi.string(),
           status: Joi.string(),
-          transportCompanyId: Joi.number().integer(),
         }),
         query: {
           messagePassengers: Joi.boolean().optional(),
@@ -112,18 +105,18 @@ export function register(server, options, next) {
         }
 
         // Add a trip status
-        let data = _.extend({}, request.payload, {
+        const { message, status } = request.payload
+        let data = {
           creator,
-          tripId: request.params.id,
-        })
-        let [, tripStatusInst] = await Promise.all([
-          // update the trip object
-          tripInst.update({
-            status: request.payload.status,
-          }),
-          // add an entry to its status update
-          m.TripStatus.create(data),
-        ])
+          time: new Date(),
+          message,
+        }
+
+        let changes = message
+          ? { status, messages: [data].concat(tripInst.messages) }
+          : { status }
+
+        await tripInst.update(changes)
 
         if (request.payload.status === "cancelled") {
           // Get the number of passengers -- mandatory for event
@@ -169,7 +162,7 @@ export function register(server, options, next) {
           })
         }
 
-        reply(tripStatusInst.toJSON())
+        reply(data)
       } catch (err) {
         console.error(err.stack)
         reply(Boom.badImplementation(err.message))
