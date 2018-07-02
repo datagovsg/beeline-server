@@ -18,7 +18,7 @@ lab.experiment("Trip manipulation", function () {
 
   lab.before({timeout: 10000}, async () => {
     company = await m.TransportCompany.create({
-      name: "XYZ Company"
+      name: "XYZ Company",
     })
 
     route = await m.Route.create({
@@ -26,17 +26,17 @@ lab.experiment("Trip manipulation", function () {
       transportCompanyId: company.id,
     })
 
-    var response = await loginAs(
+    let response = await loginAs(
       "admin",
       {
         transportCompanyId: company.id,
-        permissions: ['manage-routes']
+        permissions: ['manage-routes'],
       }
     )
 
     expect(response.statusCode).to.equal(200)
     authHeaders = {
-      authorization: "Bearer " + response.result.sessionToken
+      authorization: "Bearer " + response.result.sessionToken,
     }
   })
 
@@ -52,22 +52,22 @@ lab.experiment("Trip manipulation", function () {
   })
 
   const createStopsTripsUsersTickets = async function (companyId) {
-    var stopInstances = await Promise.all(
+    let stopInstances = await Promise.all(
       _.range(0, 2).map((i) => m.Stop.create({
         description: `Test Stop ${i}`,
         coordinates: {
           type: "Point",
-          coordinates: randomSingaporeLngLat()
-        }
+          coordinates: randomSingaporeLngLat(),
+        },
       }))
     )
 
-    var routeInst = await m.Route.create({
+    let routeInst = await m.Route.create({
       description: "Some route",
       transportCompanyId: companyId,
     })
 
-    var tripInst = await m.Trip.create({
+    let tripInst = await m.Trip.create({
       date: `2018-03-01`,
       capacity: 10,
       routeId: routeInst.id,
@@ -79,17 +79,17 @@ lab.experiment("Trip manipulation", function () {
       bookingInfo: {
         windowType: 'stop',
         windowSize: 0,
-      }
+      },
     }, {
-      include: [m.TripStop]
+      include: [m.TripStop],
     })
 
     // add passengers here
-    var userInst = await m.User.create({
+    let userInst = await m.User.create({
       name: 'XXXXXX',
-      telephone: `+0000${Date.now()}`
+      telephone: `+0000${Date.now()}`,
     })
-    var ticketInst = await m.Ticket.create({
+    let ticketInst = await m.Ticket.create({
       boardStopId: tripInst.tripStops[0].id,
       alightStopId: tripInst.tripStops[1].id,
       userId: userInst.id,
@@ -100,7 +100,7 @@ lab.experiment("Trip manipulation", function () {
   }
 
   lab.test("Dates in postgres are coerced to UTC timezone", async function () {
-    var result = await db.query(`SELECT '2016-01-01'::date AS a`, {type: db.QueryTypes.SELECT})
+    let result = await db.query(`SELECT '2016-01-01'::date AS a`, {type: db.QueryTypes.SELECT})
     expect(result[0].a.valueOf()).equal(new Date('2016-01-01T00:00:00Z').valueOf())
   })
 
@@ -108,21 +108,21 @@ lab.experiment("Trip manipulation", function () {
     return server.inject({
       method: "GET",
       url: "/trips",
-      headers: authHeaders
+      headers: authHeaders,
     }).then((resp) => {
       expect(resp.statusCode).to.equal(200)
     })
   })
 
   lab.test("Add trip", async function () {
-    var stops = await Promise.all([
+    let stops = await Promise.all([
       m.Stop.create({ coordinates: {type: "Point", coordinates: [103.41, 1.38]}, description: "Some stop 1"}),
       m.Stop.create({ coordinates: {type: "Point", coordinates: [103.42, 1.38]}, description: "Some stop 2"}),
       m.Stop.create({ coordinates: {type: "Point", coordinates: [103.42, 1.39]}, description: "Some stop 3"}),
       m.Stop.create({ coordinates: {type: "Point", coordinates: [103.50, 1.40]}, description: "Some stop 4"}),
     ])
 
-    var trip = {
+    let trip = {
       capacity: 10,
       status: "ACTIVE",
       driverId: null,
@@ -135,23 +135,23 @@ lab.experiment("Trip manipulation", function () {
         { stopId: stops[0].id, canBoard: true, canAlight: false, time: "2016-02-01T08:00:00+0800"},
         { stopId: stops[1].id, canBoard: true, canAlight: false, time: "2016-02-01T08:06:00+0800"},
         { stopId: stops[2].id, canBoard: true, canAlight: false, time: "2016-02-01T08:03:00+0800"},
-        { stopId: stops[3].id, canBoard: false, canAlight: true, time: "2016-02-01T08:09:00+0800"}
+        { stopId: stops[3].id, canBoard: false, canAlight: true, time: "2016-02-01T08:09:00+0800"},
       ],
       bookingInfo: {
         windowType: 'stop',
         windowSize: 10000,
         childTicketPrice: '1.00',
-      }
+      },
     }
 
-    var options = {
+    let options = {
       method: "POST",
       url: "/trips",
       payload: trip,
-      headers: authHeaders
+      headers: authHeaders,
     }
 
-    var compareResponses = function (a, b) {
+    let compareResponses = function (a, b) {
       // check object equality...
       expect(a.capacity).to.equal(b.capacity)
       // expect(a.transportCompanyId).to.equal(b.transportCompanyId)
@@ -164,30 +164,30 @@ lab.experiment("Trip manipulation", function () {
 
       expect(a.seatsAvailable).to.equal(b.capacity)
 
-      for (var i = 0; i < 4; i++) {
+      for (let i = 0; i < 4; i++) {
         expect(a.tripStops.filter((ts) => {
           return ts.stopId === b.tripStops[i].stopId
         }).length).to.equal(1)
       }
     }
 
-    var postResponse = await server.inject(options)
+    let postResponse = await server.inject(options)
 
     expect(postResponse.statusCode).to.equal(200)
     // check object equality...
     expect(postResponse.result).to.include("id")
     compareResponses(postResponse.result, trip)
 
-    var getResponse = await server.inject({
+    let getResponse = await server.inject({
       method: "GET",
       url: "/trips/" + postResponse.result.id,
-      headers: authHeaders
+      headers: authHeaders,
     })
 
     // ensure that with the GET, the stops are returned in sorted order
     for (let i = 0; i < getResponse.result.tripStops.length - 1; i++) {
-      var thisStop = getResponse.result.tripStops[i]
-      var nextStop = getResponse.result.tripStops[i + 1]
+      let thisStop = getResponse.result.tripStops[i]
+      let nextStop = getResponse.result.tripStops[i + 1]
 
       expect(new Date(thisStop.time).getTime())
         .to.be.lessThan(new Date(nextStop.time).getTime())
@@ -199,7 +199,7 @@ lab.experiment("Trip manipulation", function () {
     compareResponses(getResponse.result, trip)
 
     // Check trip PUT
-    var putResponse = await server.inject({
+    let putResponse = await server.inject({
       method: 'PUT',
       url: `/trips/${getResponse.result.id}`,
       headers: authHeaders,
@@ -209,17 +209,17 @@ lab.experiment("Trip manipulation", function () {
           windowType: 'firstStop',
           windowSize: 30000,
         },
-        tripStops: getResponse.result.tripStops
-      }, trip), ['routeId', 'date'])
+        tripStops: getResponse.result.tripStops,
+      }, trip), ['routeId', 'date']),
     })
     expect(putResponse.result.bookingInfo.childTicketPrice).equal(2)
     expect(putResponse.result.bookingInfo.windowType).equal('firstStop')
     expect(putResponse.result.bookingInfo.windowSize).equal(30000)
 
-    var deleteResponse = await server.inject({
+    let deleteResponse = await server.inject({
       method: "DELETE",
       url: "/trips/" + getResponse.result.id,
-      headers: authHeaders
+      headers: authHeaders,
     })
 
     expect(deleteResponse.statusCode).to.equal(200)
@@ -237,17 +237,17 @@ lab.experiment("Trip manipulation", function () {
       { where: { id: tripInst.id } }
     )
 
-    var payload = _.omit(
+    let payload = _.omit(
       _.defaults(
         { capacity: initialCapacity + capacityChange },
         tripInst.get({ plain: true })
       ),
       [
-        'routeId', 'date', 'availability', 'priceF', 'isRunning',
-        'id', 'createdAt', 'updatedAt', 'seatsAvailable', 'transportCompanyId'
+        'routeId', 'date', 'availability', 'priceF', 'isRunning', 'messages',
+        'id', 'createdAt', 'updatedAt', 'seatsAvailable', 'transportCompanyId',
       ]
     )
-    var putResponse = await server.inject({
+    let putResponse = await server.inject({
       method: 'PUT',
       url: `/trips/${tripInst.id}`,
       headers: authHeaders,
@@ -269,7 +269,7 @@ lab.experiment("Trip manipulation", function () {
     'Capacity increase should increase seatsAvailable',
     testCapacityChange({
       initialSeatsAvailable: 8, capacityChange: 5,
-      statusCode: 200, expectedSeatsAvailable: 13
+      statusCode: 200, expectedSeatsAvailable: 13,
     })
   )
 
@@ -277,7 +277,7 @@ lab.experiment("Trip manipulation", function () {
     'Capacity decrease < seatsAvailable -> seatsAvailable > 0',
     testCapacityChange({
       initialSeatsAvailable: 8, capacityChange: -3,
-      statusCode: 200, expectedSeatsAvailable: 5
+      statusCode: 200, expectedSeatsAvailable: 5,
     })
   )
 
@@ -285,7 +285,7 @@ lab.experiment("Trip manipulation", function () {
     'Capacity decrease > seatsAvailable -> Error',
     testCapacityChange({
       initialSeatsAvailable: 1, capacityChange: -2,
-      statusCode: 400, expectedSeatsAvailable: 0
+      statusCode: 400, expectedSeatsAvailable: 0,
     })
   )
 
@@ -305,8 +305,8 @@ lab.experiment("Trip manipulation", function () {
         tripStops: (await tripInst.getTripStops({raw: true}))
           .map(ts => ({
             ...ts,
-            time: new Date(ts.time.getTime() + diff)
-          }))
+            time: new Date(ts.time.getTime() + diff),
+          })),
       }
 
       const putResponse = await server.inject({
@@ -339,18 +339,18 @@ lab.experiment("Trip manipulation", function () {
     // Try sending as admin...
     const adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
-      permissions: ['message-passengers']
+      permissions: ['message-passengers'],
     })
     const ev = expectEvent('passengersMessaged', {routeIds: [tripInst.routeId]})
     const adminSendResponse = await server.inject({
       method: 'POST',
       url: `/trips/${tripInst.id}/messagePassengers`,
       headers: {
-        Authorization: `Bearer ${adminCreds.result.sessionToken}`
+        Authorization: `Bearer ${adminCreds.result.sessionToken}`,
       },
       payload: {
-        message: 'This is a test run'
-      }
+        message: 'This is a test run',
+      },
     })
     expect(sendSMSStub.called).true()
     expect(adminSendResponse.statusCode).equal(200)
@@ -363,11 +363,11 @@ lab.experiment("Trip manipulation", function () {
       method: 'POST',
       url: `/trips/${tripInst.id}/messagePassengers`,
       headers: {
-        Authorization: `Bearer ${superadminCreds.result.sessionToken}`
+        Authorization: `Bearer ${superadminCreds.result.sessionToken}`,
       },
       payload: {
-        message: 'This is a test run'
-      }
+        message: 'This is a test run',
+      },
     })
     expect(sendSMSStub.called).true()
     expect(superadminSendResponse.statusCode).equal(200)
@@ -386,7 +386,7 @@ lab.experiment("Trip manipulation", function () {
 
   lab.test('Messages should be from operator code if available', async function () {
     const smsOpCode = 'XYZCO'
-    var smsCompany = await m.TransportCompany.create({
+    let smsCompany = await m.TransportCompany.create({
       name: "XYZ Company",
       smsOpCode: smsOpCode,
     })
@@ -402,7 +402,7 @@ lab.experiment("Trip manipulation", function () {
 
   lab.test('Messages should be sent to OneSignal', async function () {
     const smsOpCode = 'XYZCO'
-    var smsCompany = await m.TransportCompany.create({
+    let smsCompany = await m.TransportCompany.create({
       name: "XYZ Company",
       smsOpCode: smsOpCode,
     })
@@ -413,7 +413,7 @@ lab.experiment("Trip manipulation", function () {
 
     userInst.notes = {
       ...userInst.notes,
-      pushNotificationTag: '1234-5678-9012-3456'
+      pushNotificationTag: '1234-5678-9012-3456',
     }
     await userInst.save()
 
@@ -441,35 +441,35 @@ lab.experiment("Trip manipulation", function () {
     await m.Transaction.create({
       committed: true,
       transactionItems: [
-        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0}
-      ]
+        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0},
+      ],
     }, {
-      include: [m.TransactionItem]
+      include: [m.TransactionItem],
     })
 
-    var adminCreds = await loginAs('admin', {
+    let adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
-      permissions: ['view-transactions']
+      permissions: ['view-transactions'],
     })
-    var headers = {
-      authorization: `Bearer ${adminCreds.result.sessionToken}`
+    let headers = {
+      authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
 
     // Get the ticket reports
     // Dates OK
-    var defaultQuery = {
+    let defaultQuery = {
       perPage: 100,
       page: 1,
       orderBy: 'createdAt',
       order: 'desc',
       tripStartDate: new Date('2018-03-01').getTime(),
       tripEndDate: new Date('2018-03-02').getTime(),
-      statuses: JSON.stringify(['valid'])
+      statuses: JSON.stringify(['valid']),
     }
-    var ticketReport = await server.inject({
+    let ticketReport = await server.inject({
       method: 'GET',
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
-      headers
+      headers,
     })
     expect(ticketReport.statusCode).equal(200)
     expect(ticketReport.result.rows[0].id).equal(ticketInst.id)
@@ -479,9 +479,9 @@ lab.experiment("Trip manipulation", function () {
       method: 'GET',
       url: '/custom/wrs/report?' + querystring.stringify(
         _.defaults({
-          tripStartDate: new Date('2018-03-01T00:00:00+0800').getTime()
+          tripStartDate: new Date('2018-03-01T00:00:00+0800').getTime(),
         }, defaultQuery)),
-      headers
+      headers,
     })
     expect(ticketReport.statusCode).equal(400)
   })
@@ -492,29 +492,29 @@ lab.experiment("Trip manipulation", function () {
     await m.Transaction.create({
       committed: true,
       transactionItems: [
-        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0}
-      ]
+        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0},
+      ],
     }, {
-      include: [m.TransactionItem]
+      include: [m.TransactionItem],
     })
 
-    var adminCreds = await loginAs('admin', {
+    let adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
-      permissions: ['view-transactions']
+      permissions: ['view-transactions'],
     })
-    var headers = {
-      authorization: `Bearer ${adminCreds.result.sessionToken}`
+    let headers = {
+      authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
 
     // Get the ticket reports
     // Dates OK
-    var defaultQuery = {
-      ticketId: ticketInst.id
+    let defaultQuery = {
+      ticketId: ticketInst.id,
     }
-    var ticketReport = await server.inject({
+    let ticketReport = await server.inject({
       method: 'GET',
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
-      headers
+      headers,
     })
     expect(ticketReport.statusCode).equal(200)
     expect(ticketReport.result.rows.length).equal(1)
@@ -529,11 +529,11 @@ lab.experiment("Trip manipulation", function () {
 
     const adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
-      permissions: ['view-transactions', 'issue-tickets']
+      permissions: ['view-transactions', 'issue-tickets'],
     })
 
     const headers = {
-      authorization: `Bearer ${adminCreds.result.sessionToken}`
+      authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
 
     const response = await server.inject({
@@ -558,19 +558,19 @@ lab.experiment("Trip manipulation", function () {
       committed: true,
       transactionItems: [
         {itemType: 'ticketSale', itemId: ticketInst.id, credit: 5},
-        {itemType: 'routePass', itemId: routePassItemId, debit: 5}
-      ]
+        {itemType: 'routePass', itemId: routePassItemId, debit: 5},
+      ],
     }, {
-      include: [m.TransactionItem]
+      include: [m.TransactionItem],
     })
 
-    var defaultQuery = {
-      ticketId: ticketInst.id
+    let defaultQuery = {
+      ticketId: ticketInst.id,
     }
-    var ticketReport = await server.inject({
+    let ticketReport = await server.inject({
       method: 'GET',
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
-      headers
+      headers,
     })
     expect(ticketReport.statusCode).equal(200)
     expect(ticketReport.result.rows.length).equal(1)
@@ -584,23 +584,23 @@ lab.experiment("Trip manipulation", function () {
     await m.Transaction.create({
       committed: true,
       transactionItems: [
-        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0}
-      ]
+        {itemType: 'ticketSale', itemId: ticketInst.id, credit: 0},
+      ],
     }, {
-      include: [m.TransactionItem]
+      include: [m.TransactionItem],
     })
 
-    var adminCreds = await loginAs('admin', {
+    let adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
-      permissions: ['view-transactions']
+      permissions: ['view-transactions'],
     })
-    var headers = {
-      authorization: `Bearer ${adminCreds.result.sessionToken}`
+    let headers = {
+      authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
 
     // Get the ticket reports
     // Dates OK
-    var defaultQuery = {
+    let defaultQuery = {
       perPage: 100,
       page: 1,
       orderBy: 'createdAt',
@@ -610,10 +610,10 @@ lab.experiment("Trip manipulation", function () {
       statuses: JSON.stringify(['valid']),
       format: 'csv',
     }
-    var ticketReport = await server.inject({
+    let ticketReport = await server.inject({
       method: 'GET',
       url: '/custom/wrs/report?' + querystring.stringify(defaultQuery),
-      headers
+      headers,
     })
     expect(ticketReport.headers['content-type']).startsWith('text/csv')
     expect(ticketReport.statusCode).equal(200)
@@ -627,7 +627,7 @@ lab.experiment("Trip manipulation", function () {
       .then(() => {
         fail("Trip instance should not have been successfully destroyed")
       }, () => {
-        console.log('Test passed: ticket prevented trip destruction')
+        // 'Test passed: ticket prevented trip destruction'
       })
   })
 
@@ -641,12 +641,12 @@ lab.experiment("Trip manipulation", function () {
   })
 
   lab.test("Invalid trip DELETE request -> 404", async function () {
-    var adminCreds = await loginAs('admin', {
+    let adminCreds = await loginAs('admin', {
       transportCompanyId: company.id,
-      permissions: ['manage-routes']
+      permissions: ['manage-routes'],
     })
-    var headers = {
-      authorization: `Bearer ${adminCreds.result.sessionToken}`
+    let headers = {
+      authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
     const response = await server.inject({
       method: 'DELETE',

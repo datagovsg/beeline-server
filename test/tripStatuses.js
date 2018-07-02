@@ -1,19 +1,22 @@
 /* eslint no-await-in-loop: 0 */
-var Lab = require("lab")
-export var lab = Lab.script()
+const Lab = require("lab")
+export const lab = Lab.script()
 
 const {expect} = require("code")
-var server = require("../src/index.js")
+const server = require("../src/index.js")
 
 const {models: m} = require("../src/lib/core/dbschema")()
 
 lab.experiment("TripStatus manipulation", function () {
-  var destroyList = []
-  var driver, vehicle, trip, company
+  const destroyList = []
+  let driver
+  let vehicle
+  let trip
+  let company
 
   lab.before({timeout: 10000}, async function () {
     company = await m.TransportCompany.create({
-      name: "Test Transport Company"
+      name: "Test Transport Company",
     })
     destroyList.push(company)
 
@@ -21,14 +24,14 @@ lab.experiment("TripStatus manipulation", function () {
       name: "Tan Ah Test",
       telephone: "12345678",
       authKey: "---",
-      transportCompanyId: company.id
+      transportCompanyId: company.id,
     })
     await driver.addTransportCompany(company)
     destroyList.push(driver)
 
     vehicle = await m.Vehicle.create({
       vehicleNumber: "SXX0000Y",
-      driverId: driver.id
+      driverId: driver.id,
     })
     destroyList.push(vehicle)
 
@@ -40,7 +43,7 @@ lab.experiment("TripStatus manipulation", function () {
       transportCompanyId: company.id,
       vehicleId: vehicle.id,
       driverId: driver.id,
-      routeId: null
+      routeId: null,
     })
     destroyList.push(trip)
   })
@@ -49,15 +52,14 @@ lab.experiment("TripStatus manipulation", function () {
     for (let it of destroyList.reverse()) {
       await it.destroy()
     }
-    destroyList = []
   })
 
   lab.test("Create tripStatuses", async function () {
-    var authHeaders = {
-      authorization: `Bearer ${driver.makeToken()}`
+    const authHeaders = {
+      authorization: `Bearer ${driver.makeToken()}`,
     }
 
-    var statuses = ["OK", "+5min", "+15min", "+30min"]
+    const messages = ["OK", "+5min", "+15min", "+30min"]
 
     // Trip status can be updated by the driver,
     // provided he is the driver for the trip
@@ -65,30 +67,50 @@ lab.experiment("TripStatus manipulation", function () {
     await trip.save()
 
     // create some tripStatuses...
-    for (let status of statuses) {
-      var response = await server.inject({
+    for (let message of messages) {
+      const response = await server.inject({
         method: "POST",
-        url: "/trips/" + trip.id + "/statuses",
+        url: `/trips/${trip.id}/messages`,
         payload: {
-          status: status
+          message,
         },
-        headers: authHeaders
+        headers: authHeaders,
       })
-      var tripStatus = response.result
+      const tripStatus = response.result
       expect(response.statusCode).to.equal(200)
-      expect(tripStatus).to.contain("id")
+      expect(tripStatus.message).to.exist()
       expect(tripStatus.time).to.exist()
       expect(tripStatus.creator).to.exist()
     }
 
     // GET tripStatuses?
-    response = await server.inject({
+    const response = await server.inject({
       method: "GET",
-      url: "/trips/" + trip.id + "/statuses"
+      url: `/trips/${trip.id}/statuses`,
     })
-    for (let status of statuses) {
-      expect(response.result.map(x => x.status)).to.include(status)
+    for (let message of messages) {
+      expect(response.result.map(x => x.message)).to.include(message)
     }
-    expect(response.result.length).to.equal(statuses.length)
+    expect(response.result.length).to.equal(messages.length)
+
+    await server.inject({
+      method: "POST",
+      url: `/trips/${trip.id}/messages`,
+      payload: {
+        message: "cancel",
+        status: "cancelled",
+      },
+      headers: authHeaders,
+    })
+
+    const { result } = await server.inject({
+      method: "GET",
+      url: `/trips/${trip.id}`,
+    })
+    expect(result.status).to.equal("cancelled")
+    for (let message of messages) {
+      expect(result.messages.map(x => x.message)).to.include(message)
+    }
+
   })
 })

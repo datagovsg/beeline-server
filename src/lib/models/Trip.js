@@ -52,6 +52,10 @@ export default modelCache => {
       },
 
       status: DataTypes.STRING(20),
+      messages: {
+        type: DataTypes.ARRAY(DataTypes.JSONB),
+        defaultValue: [],
+      },
       isRunning: {
         type: DataTypes.VIRTUAL,
         get(val) {

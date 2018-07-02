@@ -471,17 +471,10 @@ Trip's company ID and driver's company ID must match.
         if (!trip) {
           return reply(Boom.notFound())
         }
-        let statuses = await m.TripStatus.findAll({
-          where: {
-            tripId: request.params.id,
-          },
-          order: [["time", "DESC"]],
-          limit: 20,
-        })
 
         reply({
           trip: trip.toJSON(),
-          statuses: statuses.map(s => s.toJSON()),
+          statuses: trip.toJSON().messages,
           code: trip.getCode(true),
         })
       } catch (err) {
