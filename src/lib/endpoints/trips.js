@@ -464,7 +464,7 @@ Trip's company ID and driver's company ID must match.
         let m = getModels(request)
 
         let trip = await m.Trip.findById(request.params.id, {
-          attributes: ["id", "status", "date", "driverId"],
+          attributes: ["id", "status", "date", "driverId", "messages"],
           include: [{ model: m.Vehicle }, { model: m.Driver }],
         })
 
