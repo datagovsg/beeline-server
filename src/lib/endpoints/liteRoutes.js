@@ -45,11 +45,11 @@ export function register(server, options, next) {
       }
       const routes = request.query.label
         ? await uncachedFetchRoutes(request).then(routes =>
-            routes.map(route => _.omit(route, ["tags", "id"]))
+            routes.map(route => _.omit(route, ["tags"]))
           )
         : await cachedFetchRoutes(request)
             .then(routes => filterCached(routes, request))
-            .then(routes => routes.map(route => _.omit(route, ["tags", "id"])))
+            .then(routes => routes.map(route => _.omit(route, ["tags"])))
 
       const subLabels = []
       const { userId } = request.auth.credentials
@@ -66,6 +66,7 @@ export function register(server, options, next) {
       const routesByLabel = _(routes)
         .groupBy("label")
         .mapValues(routes => {
+          const routeIds = routes.map(r => r.id)
           const [route] = routes
           if (routes.length > 1) {
             route.trips = _(routes)
@@ -95,6 +96,8 @@ export function register(server, options, next) {
             })
             .values()
             .value()
+          delete route.id
+          route.routeIds = routeIds
           route.tripIds = tripsAtMinTripDate
             .filter(trip => trip.isRunning)
             .map(({ id }) => id)
