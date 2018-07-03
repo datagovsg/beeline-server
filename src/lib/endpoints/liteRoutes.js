@@ -104,6 +104,7 @@ export function register(server, options, next) {
           route.startTime = _.min(tripStopTimes)
           route.endTime = _.max(tripStopTimes)
 
+          route.tags = ["lite"]
           route.isSubscribed = subLabels.includes(route.label)
           return route
         })
