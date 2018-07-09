@@ -128,15 +128,15 @@ export function register(server, options, next) {
           ? `
           ("tickets"."userId" IN
             (SELECT "id" FROM "users" WHERE
-              ("email"     ILIKE ("%" || ${db.escape(
+              ("email"     ILIKE ('%' || ${db.escape(
                 request.query.userQuery
-              )} || "%")) OR
-              ("name"      ILIKE ("%" || ${db.escape(
+              )} || '%')) OR
+              ("name"      ILIKE ('%' || ${db.escape(
                 request.query.userQuery
-              )} || "%")) OR
-              ("telephone" ILIKE ("%" || ${db.escape(
+              )} || '%')) OR
+              ("telephone" ILIKE ('%' || ${db.escape(
                 request.query.userQuery
-              )} || "%"))
+              )} || '%'))
             ))
         `
           : " 1=1 "
