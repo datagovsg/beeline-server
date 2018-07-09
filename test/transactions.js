@@ -251,6 +251,41 @@ lab.experiment("Transactions", function () {
     await cleanUpTransaction(saleResponse.result)
   })
 
+  lab.test("Prepare transaction - rejects non-ticketing route", async function () {
+    const oldTags = routeInstance.tags
+    await routeInstance.update({ tags: ["crowdstart", ...oldTags] })
+
+    // CREATE
+    let saleResponse = await server.inject({
+      method: "POST",
+      url: "/transactions/tickets/quote",
+      payload: {
+        trips: [{
+          tripId: tripInstances[0].id,
+          boardStopId: tripInstances[0].tripStops[0].id,
+          alightStopId: tripInstances[0].tripStops[0].id,
+          // qty: 1
+        }, {
+          tripId: tripInstances[1].id,
+          boardStopId: tripInstances[1].tripStops[0].id,
+          alightStopId: tripInstances[1].tripStops[0].id,
+          // qty: 1
+        }, {
+          tripId: tripInstances[2].id,
+          boardStopId: tripInstances[2].tripStops[0].id,
+          alightStopId: tripInstances[2].tripStops[0].id,
+          // qty: 1
+        }],
+      },
+      headers: authHeaders.user,
+    })
+    try {
+      expect(saleResponse.statusCode).to.equal(400)
+    } finally {
+      await routeInstance.update({ tags: oldTags })
+    }
+  })
+
   lab.test("Prepare transaction - group by type", async function () {
     // CREATE
     let saleResponse = await server.inject({
@@ -429,6 +464,32 @@ lab.experiment("Transactions", function () {
     await cleanUpTransaction(saleResponse.result)
   })
 
+  lab.test("Cannot book non-ticketing trip", async function () {
+    const oldTags = routeInstance.tags
+    await routeInstance.update({ tags: ["lite", ...oldTags] })
+
+    // CREATE
+    let saleResponse = await server.inject({
+      method: "POST",
+      url: "/transactions/tickets/payment",
+      payload: {
+        trips: [{
+          tripId: tripInstances[1].id,
+          boardStopId: tripInstances[1].tripStops[0].id,
+          alightStopId: tripInstances[1].tripStops[0].id,
+          // qty: 1
+        }],
+        stripeToken: await createStripeToken(),
+      },
+      headers: authHeaders.user,
+    })
+
+    try {
+      expect(saleResponse.statusCode).to.equal(400)
+    } finally {
+      await routeInstance.update({ tags: oldTags })
+    }
+  })
 
   // Stripe takes a while to respond, so we set a longer timeout
   lab.test("Cannot book cancelled trip", {timeout: 15000}, async function () {
