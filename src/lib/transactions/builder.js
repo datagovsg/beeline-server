@@ -676,6 +676,16 @@ export async function initBuilderWithTicketSale(connection, lineItems) {
     ],
   })
 
+  const nonTicketingTags = _(trips)
+    .flatMap(trip => trip.route.tags)
+    .filter(tag => tag === "crowdstart" || tag === "lite")
+    .value()
+
+  TransactionError.assert(
+    nonTicketingTags.length === 0,
+    `Ticket purchase includes non-ticketing routes of the following types: ${nonTicketingTags}`
+  )
+
   const tripsById = _.keyBy(trips, "id")
 
   _.assign(transactionBuilder, { tripsById, trips })
