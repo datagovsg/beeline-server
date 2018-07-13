@@ -1,7 +1,7 @@
 /* eslint no-await-in-loop: 0 */
 
-var Lab = require("lab")
-export var lab = Lab.script()
+let Lab = require("lab")
+export const lab = Lab.script()
 
 const {expect} = require("code")
 const server = require("../src/index.js")
@@ -11,17 +11,17 @@ import _ from 'lodash'
 import uuid from "uuid"
 
 lab.experiment("Suggestion manipulation", function () {
-  var authHeaders
-  var destroyList = []
-  var user
+  let authHeaders
+  let destroyList = []
+  let user
 
   lab.before({timeout: 10000}, async function () {
     user = await m.User.create({
       name: "My Test User",
-      password: "TestingPassword"
+      password: "TestingPassword",
     })
     authHeaders = {
-      authorization: `Bearer ${user.makeToken()}`
+      authorization: `Bearer ${user.makeToken()}`,
     }
     destroyList.push(user)
   })
@@ -35,7 +35,7 @@ lab.experiment("Suggestion manipulation", function () {
 
   lab.test("CRUD suggestions", async function () {
     // create some suggestions...
-    var suggestions = [
+    let suggestions = [
       await server.inject({
         url: "/suggestions",
         headers: authHeaders,
@@ -45,8 +45,8 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.1,
           alightLat: 1.4,
           alightLon: 104.0,
-          time: 7 * 3600 + 30 * 60
-        }
+          time: 7 * 3600 + 30 * 60,
+        },
       }),
       await server.inject({
         url: "/suggestions",
@@ -57,8 +57,8 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.2,
           alightLat: 1.39,
           alightLon: 103.9,
-          time: 8 * 3600 + 0 * 60
-        }
+          time: 8 * 3600 + 0 * 60,
+        },
       }),
       await server.inject({
         url: "/suggestions",
@@ -69,9 +69,9 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.3,
           alightLat: 1.38,
           alightLon: 103.8,
-          time: 8 * 3600 + 30 * 60
-        }
-      })
+          time: 8 * 3600 + 30 * 60,
+        },
+      }),
     ]
 
     for (let sugg of suggestions) {
@@ -79,10 +79,10 @@ lab.experiment("Suggestion manipulation", function () {
     }
 
     // Get all suggestions
-    var getSuggestions = await server.inject({
+    let getSuggestions = await server.inject({
       url: "/suggestions",
       method: "GET",
-      headers: authHeaders
+      headers: authHeaders,
     })
     expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
@@ -90,25 +90,25 @@ lab.experiment("Suggestion manipulation", function () {
     }
 
     // Ensure PUT works
-    var sid = suggestions[0].result.id
-    var putData = {
+    let sid = suggestions[0].result.id
+    let putData = {
       boardLat: 1.38,
       boardLon: 103.8,
       alightLat: 1.39,
       alightLon: 103.71,
-      time: 6 * 3600
+      time: 6 * 3600,
     }
-    var putResult = await server.inject({
+    let putResult = await server.inject({
       method: "PUT",
       url: "/suggestions/" + sid,
       headers: authHeaders,
-      payload: putData
+      payload: putData,
     })
     expect(putResult.statusCode).to.equal(200)
-    var afterPut = await server.inject({
+    let afterPut = await server.inject({
       method: "GET",
       url: "/suggestions/" + sid,
-      headers: authHeaders
+      headers: authHeaders,
     })
     expect(afterPut.statusCode).to.equal(200)
     expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
@@ -119,10 +119,10 @@ lab.experiment("Suggestion manipulation", function () {
 
     // Ensure delete works
     for (let sugg of suggestions) {
-      var delResult = await server.inject({
+      let delResult = await server.inject({
         method: "DELETE",
         url: "/suggestions/" + sugg.result.id,
-        headers: authHeaders
+        headers: authHeaders,
       })
       expect(delResult.statusCode).to.equal(200)
     }
@@ -131,7 +131,7 @@ lab.experiment("Suggestion manipulation", function () {
     getSuggestions = await server.inject({
       url: "/suggestions",
       method: "GET",
-      headers: authHeaders
+      headers: authHeaders,
     })
     expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
@@ -140,12 +140,12 @@ lab.experiment("Suggestion manipulation", function () {
   })
 
   lab.test("CRUD anonymous suggestions", async function () {
-    var anonHeaders = {
-      "Beeline-Device-UUID": uuid.v4()
+    let anonHeaders = {
+      "Beeline-Device-UUID": uuid.v4(),
     }
 
     // create some suggestions...
-    var suggestions = [
+    let suggestions = [
       await server.inject({
         url: "/suggestions",
         headers: anonHeaders,
@@ -155,8 +155,8 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.1,
           alightLat: 1.4,
           alightLon: 104.0,
-          time: 7 * 3600 + 30 * 60
-        }
+          time: 7 * 3600 + 30 * 60,
+        },
       }),
       await server.inject({
         url: "/suggestions",
@@ -168,8 +168,8 @@ lab.experiment("Suggestion manipulation", function () {
           alightLat: 1.39,
           alightLon: 103.9,
           time: 8 * 3600 + 0 * 60,
-          referrer: 'ABC'
-        }
+          referrer: 'ABC',
+        },
       }),
       await server.inject({
         url: "/suggestions",
@@ -181,9 +181,9 @@ lab.experiment("Suggestion manipulation", function () {
           alightLat: 1.38,
           alightLon: 103.8,
           time: 8 * 3600 + 30 * 60,
-          referrer: 'XYZ'
-        }
-      })
+          referrer: 'XYZ',
+        },
+      }),
     ]
 
     for (let sugg of suggestions) {
@@ -195,10 +195,10 @@ lab.experiment("Suggestion manipulation", function () {
 
 
     // Get all suggestions
-    var getSuggestions = await server.inject({
+    let getSuggestions = await server.inject({
       url: "/suggestions",
       method: "GET",
-      headers: anonHeaders
+      headers: anonHeaders,
     })
     expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
@@ -206,25 +206,25 @@ lab.experiment("Suggestion manipulation", function () {
     }
 
     // Ensure PUT works
-    var sid = suggestions[0].result.id
-    var putData = {
+    let sid = suggestions[0].result.id
+    let putData = {
       boardLat: 1.38,
       boardLon: 103.8,
       alightLat: 1.39,
       alightLon: 103.71,
-      time: 6 * 3600
+      time: 6 * 3600,
     }
-    var putResult = await server.inject({
+    let putResult = await server.inject({
       method: "PUT",
       url: "/suggestions/" + sid,
       headers: anonHeaders,
-      payload: putData
+      payload: putData,
     })
     expect(putResult.statusCode).to.equal(200)
-    var afterPut = await server.inject({
+    let afterPut = await server.inject({
       method: "GET",
       url: "/suggestions/" + sid,
-      headers: anonHeaders
+      headers: anonHeaders,
     })
     expect(afterPut.statusCode).to.equal(200)
     expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
@@ -235,10 +235,10 @@ lab.experiment("Suggestion manipulation", function () {
 
     // Ensure delete works
     for (let sugg of suggestions) {
-      var delResult = await server.inject({
+      let delResult = await server.inject({
         method: "DELETE",
         url: "/suggestions/" + sugg.result.id,
-        headers: anonHeaders
+        headers: anonHeaders,
       })
       expect(delResult.statusCode).to.equal(200)
     }
@@ -247,7 +247,7 @@ lab.experiment("Suggestion manipulation", function () {
     getSuggestions = await server.inject({
       url: "/suggestions",
       method: "GET",
-      headers: anonHeaders
+      headers: anonHeaders,
     })
     expect(getSuggestions.statusCode).to.equal(200)
     for (let sugg of suggestions) {
@@ -256,10 +256,10 @@ lab.experiment("Suggestion manipulation", function () {
   })
 
   lab.test("No suggestions when anonymous", async function () {
-    var anonHeaders = {
-      "Beeline-Device-UUID": uuid.v4()
+    let anonHeaders = {
+      "Beeline-Device-UUID": uuid.v4(),
     }
-    var response1 = await server.inject({
+    let response1 = await server.inject({
       url: "/suggestions",
       headers: anonHeaders,
       method: "POST",
@@ -268,15 +268,15 @@ lab.experiment("Suggestion manipulation", function () {
         boardLon: 103.1,
         alightLat: 1.4,
         alightLon: 104.0,
-        time: 7 * 3600 + 30 * 60
-      }
+        time: 7 * 3600 + 30 * 60,
+      },
     })
     expect(response1.statusCode).to.equal(200)
 
-    var response2 = await server.inject({
+    let response2 = await server.inject({
       url: "/suggestions",
       headers: {},
-      method: "GET"
+      method: "GET",
     })
     expect(response2.statusCode).to.equal(200)
     expect(response2.result.length).to.equal(0)
@@ -284,12 +284,12 @@ lab.experiment("Suggestion manipulation", function () {
 
 
   lab.test("Deanonymize suggestions", async function () {
-    var anonHeaders = {
-      "Beeline-Device-UUID": uuid.v4()
+    let anonHeaders = {
+      "Beeline-Device-UUID": uuid.v4(),
     }
 
     // create some suggestions...
-    var suggestionsResp = [
+    let suggestionsResp = [
       await server.inject({
         url: "/suggestions",
         headers: anonHeaders,
@@ -299,8 +299,8 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.1,
           alightLat: 1.4,
           alightLon: 104.0,
-          time: 7 * 3600 + 30 * 60
-        }
+          time: 7 * 3600 + 30 * 60,
+        },
       }),
       await server.inject({
         url: "/suggestions",
@@ -311,8 +311,8 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.2,
           alightLat: 1.39,
           alightLon: 103.9,
-          time: 8 * 3600 + 0 * 60
-        }
+          time: 8 * 3600 + 0 * 60,
+        },
       }),
       await server.inject({
         url: "/suggestions",
@@ -323,9 +323,9 @@ lab.experiment("Suggestion manipulation", function () {
           boardLon: 103.3,
           alightLat: 1.38,
           alightLon: 103.8,
-          time: 8 * 3600 + 30 * 60
-        }
-      })
+          time: 8 * 3600 + 30 * 60,
+        },
+      }),
     ]
 
     for (let sugg of suggestionsResp) {
@@ -333,24 +333,24 @@ lab.experiment("Suggestion manipulation", function () {
     }
 
     // Convert anonymous to non-anonymous
-    var userHeaders = _.assign({}, authHeaders, anonHeaders)
+    let userHeaders = _.assign({}, authHeaders, anonHeaders)
 
     await server.inject({
       url: "/suggestions/deanonymize",
       method: "POST",
-      headers: userHeaders
+      headers: userHeaders,
     })
 
     // get the suggestions belonging to this user
-    var userSuggestions = await m.Suggestion.findAll({
+    let userSuggestions = await m.Suggestion.findAll({
       where: {
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
     destroyList = destroyList.concat(userSuggestions)
 
     // ensure that the anonymous suggestions have been converted
-    var userSuggestionIds = userSuggestions.map(sugg => sugg.id)
+    let userSuggestionIds = userSuggestions.map(sugg => sugg.id)
     for (let sugg of suggestionsResp) {
       expect(userSuggestionIds).to.include(sugg.result.id)
     }
