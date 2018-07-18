@@ -58,6 +58,10 @@ lab.experiment("Company manipulation", function () {
       url: "/companies",
     })
     expect(resp.result.find(c => c.id === companyId)).exist()
+    // ensure heavy attributes are not included
+    expect(resp.result.find(c => 'terms' in c)).undefined()
+    expect(resp.result.find(c => 'features' in c)).undefined()
+    expect(resp.result.find(c => 'logo' in c)).undefined()
 
     // READ
     resp = await server.inject({
