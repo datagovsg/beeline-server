@@ -11,30 +11,30 @@ const querystring = require('querystring')
 const {loginAs, randomEmail} = require("./test_common")
 const {models: m} = require("../src/lib/core/dbschema")()
 
-var testData = require("./test_data")
+let testData = require("./test_data")
 
 lab.experiment("Company manipulation", function () {
-  var companyId = null
+  let companyId = null
   /* test data */
-  var companyInfo = testData.companies[0]
-  var updatedCompanyInfo = testData.companies[1]
+  let companyInfo = testData.companies[0]
+  let updatedCompanyInfo = testData.companies[1]
 
   lab.before({timeout: 5000}, async function () {
   })
 
   lab.test("CRUD Companies", async function () {
     // LOGIN as superadmin
-    var loginResponse = await loginAs('superadmin')
-    var superAuthHeaders = {
-      authorization: "Bearer " + loginResponse.result.sessionToken
+    let loginResponse = await loginAs('superadmin')
+    let superAuthHeaders = {
+      authorization: "Bearer " + loginResponse.result.sessionToken,
     }
 
-    var resp = await server.inject({
+    let resp = await server.inject({
       method: "POST",
       url: "/companies",
       // Omit because these should be done via Stripe connect
       payload: _.omit(companyInfo, ['clientId', 'clientSecret', 'sandboxSecret', 'sandboxId']),
-      headers: superAuthHeaders
+      headers: superAuthHeaders,
     })
     expect(resp.statusCode).to.equal(200)
     expect(resp.result).to.include("id")
@@ -48,21 +48,21 @@ lab.experiment("Company manipulation", function () {
       transportCompanyId: companyId,
       permissions: ['manage-company'],
     })
-    var authHeaders = {
-      authorization: "Bearer " + loginResponse.result.sessionToken
+    let authHeaders = {
+      authorization: "Bearer " + loginResponse.result.sessionToken,
     }
 
     // LIST
     resp = await server.inject({
       method: "GET",
-      url: "/companies"
+      url: "/companies",
     })
     expect(resp.result.find(c => c.id === companyId)).exist()
 
     // READ
     resp = await server.inject({
       method: "GET",
-      url: "/companies/" + companyId
+      url: "/companies/" + companyId,
     })
 
     expect(resp.statusCode).to.equal(200)
@@ -84,7 +84,7 @@ lab.experiment("Company manipulation", function () {
 
     resp = await server.inject({
       method: "GET",
-      url: "/companies/" + companyId
+      url: "/companies/" + companyId,
     })
     delete updatedCompanyInfo.clientSecret
     delete updatedCompanyInfo.sandboxSecret
@@ -95,23 +95,23 @@ lab.experiment("Company manipulation", function () {
     resp = await server.inject({
       method: "DELETE",
       url: "/companies/" + companyId,
-      headers: superAuthHeaders
+      headers: superAuthHeaders,
     })
     expect(resp.statusCode).to.equal(200)
 
     resp = await server.inject({
       method: "GET",
-      url: "/companies/" + companyId
+      url: "/companies/" + companyId,
     })
     expect(resp.statusCode).to.equal(404)
   })
 
   lab.test('Stripe Connect (partial test)', async function () {
-    var adminEmail = randomEmail()
-    var adminInst = await m.Admin.create({
-      email: adminEmail
+    let adminEmail = randomEmail()
+    let adminInst = await m.Admin.create({
+      email: adminEmail,
     })
-    var companyInst = await m.TransportCompany.create({})
+    let companyInst = await m.TransportCompany.create({})
 
     await adminInst.addTransportCompany(companyInst.id, {permissions: ['manage-company']})
 
@@ -120,11 +120,11 @@ lab.experiment("Company manipulation", function () {
       method: 'POST',
       url: `/companies/${companyInst.id}/stripeConnect`,
       headers: {
-        authorization: `Bearer ${adminInst.makeToken()}`
+        authorization: `Bearer ${adminInst.makeToken()}`,
       },
       payload: {
-        redirect: 'https://redirect.example.com/'
-      }
+        redirect: 'https://redirect.example.com/',
+      },
     })
 
     let urlResult = URL.parse(response.result, true)
@@ -142,7 +142,7 @@ lab.experiment("Company manipulation", function () {
 
     // The actual connecting part
     // Monkey-patch the connectAccount method, since we can't test that
-    var originalConnectMethod = require('../src/lib/transactions/payment').connectAccount
+    let originalConnectMethod = require('../src/lib/transactions/payment').connectAccount
 
     require('../src/lib/transactions/payment').connectAccount = async function (code) {
       expect(code).equal('TEST_TEST_OAUTH_CODE')
@@ -159,10 +159,10 @@ lab.experiment("Company manipulation", function () {
         url: `/companies/stripeConnect?` + querystring.stringify({
           code: 'TEST_TEST_FAKE_CODE',
           state: urlResult.query.state,
-          scope: 'read_write'
+          scope: 'read_write',
         }),
         headers: {
-          authorization: `Bearer ${adminInst.makeToken()}`
+          authorization: `Bearer ${adminInst.makeToken()}`,
         },
       })
       expect(invalidResponse1.statusCode).equal(500)
@@ -174,10 +174,10 @@ lab.experiment("Company manipulation", function () {
         url: `/companies/stripeConnect?` + querystring.stringify({
           code: 'TEST_TEST_OAUTH_CODE',
           state: urlResult.query.state.substr(0, urlResult.query.state.length - 10),
-          scope: 'read_write'
+          scope: 'read_write',
         }),
         headers: {
-          authorization: `Bearer ${adminInst.makeToken()}`
+          authorization: `Bearer ${adminInst.makeToken()}`,
         },
       })
       expect(invalidResponse2.statusCode).equal(403)
@@ -189,10 +189,10 @@ lab.experiment("Company manipulation", function () {
         url: `/companies/stripeConnect?` + querystring.stringify({
           code: 'TEST_TEST_OAUTH_CODE',
           state: urlResult.query.state,
-          scope: 'read_write'
+          scope: 'read_write',
         }),
         headers: {
-          authorization: `Bearer ${adminInst.makeToken()}`
+          authorization: `Bearer ${adminInst.makeToken()}`,
         },
       })
       expect(connectResponse.statusCode).equal(302)
