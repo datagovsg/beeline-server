@@ -40,6 +40,10 @@ export default function (modelCache) {
     },
     referrer: DataTypes.STRING,
     status: DataTypes.STRING
+  }, {
+    defaultScope: {
+      attributes: { exclude: ['logo', 'features', 'terms'] } // exclude by default the heavy attributes
+    }
   })
 
   ssaclAttributeRoles(Company)

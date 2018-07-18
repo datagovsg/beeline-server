@@ -36,9 +36,7 @@ export const register = function register(server, options, next) {
 
     handler: function(request, reply) {
       let m = common.getModels(request)
-      m.TransportCompany.findAll({
-        attributes: { exclude: ["logo"] },
-      }).then(resp => {
+      m.TransportCompany.findAll().then(resp => {
         reply(
           resp.map(x => {
             return cleanCompanyInfo(x.toJSON())
@@ -62,9 +60,10 @@ export const register = function register(server, options, next) {
     },
     handler: function(request, reply) {
       let m = common.getModels(request)
-      m.TransportCompany.findById(request.params.id, {
-        attributes: { exclude: ["logo"] },
-      })
+      m.TransportCompany.unscoped()
+        .findById(request.params.id, {
+          attributes: { exclude: ["logo"] },
+        })
         .then(resp => {
           if (!resp) return reply(Boom.notFound())
           reply(cleanCompanyInfo(resp.toJSON()))
@@ -141,7 +140,9 @@ export const register = function register(server, options, next) {
     async handler(request, reply) {
       try {
         let m = common.getModels(request)
-        let companyInst = await m.TransportCompany.findById(request.params.id)
+        let companyInst = await m.TransportCompany.unscoped().findById(
+          request.params.id
+        )
 
         await auth.assertAdminRole(
           request.auth.credentials,
