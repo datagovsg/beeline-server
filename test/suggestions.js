@@ -355,4 +355,38 @@ lab.experiment("Suggestion manipulation", function () {
       expect(userSuggestionIds).to.include(sugg.result.id)
     }
   })
+
+  lab.test("Suggest days mask", async function () {
+    const geojsonPoint = (lnglat) => ({type: 'Point', coordinates: lnglat})
+    const suggestionSetByInt = await m.Suggestion.create({
+      board: geojsonPoint([103.8, 1.38]),
+      alight: geojsonPoint([103.9, 1.39]),
+      time: 8 * 3600 * 1e3,
+      daysMask: parseInt('1010111', 2),
+    })
+
+    expect(suggestionSetByInt.daysOfWeek).to.equal([true, true, true, false, true, false, true])
+
+    const suggestionSetByArray = await m.Suggestion.create({
+      board: geojsonPoint([103.8, 1.38]),
+      alight: geojsonPoint([103.9, 1.39]),
+      time: 8 * 3600 * 1e3,
+      daysOfWeek: [false, false, true, true, true, true, false],
+    })
+
+    expect(suggestionSetByArray.daysMask).to.equal(parseInt('0111100', 2))
+
+    try {
+      await m.Suggestion.create({
+        board: geojsonPoint([103.8, 1.38]),
+        alight: geojsonPoint([103.9, 1.39]),
+        time: 8 * 3600 * 1e3,
+        daysOfWeek: [false, false, true, true, true, true],
+      })
+
+      throw new Error("Fake error")
+    } catch (err) {
+      expect(err.message).to.equal("daysOfWeek takes an array of exactly 7 booleans")
+    }
+  })
 })
