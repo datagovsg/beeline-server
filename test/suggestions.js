@@ -1,360 +1,221 @@
-/* eslint no-await-in-loop: 0 */
+import Lab from "lab"
+import {expect} from "code"
+import _ from 'lodash'
+import querystring from 'querystring'
+import { loginAs, randomEmail } from "./test_common.js"
+import Joi from '../src/lib/util/joi'
 
-let Lab = require("lab")
-export const lab = Lab.script()
-
-const {expect} = require("code")
 const server = require("../src/index.js")
 const {models: m} = require("../src/lib/core/dbschema")()
 
-import _ from 'lodash'
-import uuid from "uuid"
-import Joi from "joi"
+export const lab = Lab.script()
 
 lab.experiment("Suggestion manipulation", function () {
-  let authHeaders
-  let destroyList = []
-  let user
+  let userHeaders
+  let superadminHeaders
+  let user, user2
+
+  const makeTime = (hour, minutes) => hour * 3600e3 + minutes * 60e3
 
   lab.before({timeout: 10000}, async function () {
     user = await m.User.create({
       name: "My Test User",
-      password: "TestingPassword",
+      email: randomEmail(),
+      emailVerified: true,
     })
-    authHeaders = {
+    user2 = await m.User.create({
+      name: "My Test User",
+      email: randomEmail(),
+      emailVerified: true,
+    })
+    userHeaders = {
       authorization: `Bearer ${user.makeToken()}`,
     }
-    destroyList.push(user)
+    superadminHeaders = {
+      authorization: `Bearer ` + (await loginAs("superadmin", {email: 'test@data.gov.sg'}))
+        .result.sessionToken,
+    }
+
+    // Empty the table
+    await m.Suggestion.truncate()
   })
 
   lab.after(async function () {
-    for (let it of destroyList.reverse()) {
-      await it.destroy()
-    }
-    destroyList = []
+    await user.destroy()
+    await user2.destroy()
   })
 
-  lab.test("CRUD suggestions", async function () {
-    // create some suggestions...
-    let suggestions = [
-      await server.inject({
-        url: "/suggestions",
-        headers: authHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.2,
-          boardLon: 103.1,
-          alightLat: 1.4,
-          alightLon: 104.0,
-          time: 7 * 3600 + 30 * 60,
-        },
-      }),
-      await server.inject({
-        url: "/suggestions",
-        headers: authHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.21,
-          boardLon: 103.2,
-          alightLat: 1.39,
-          alightLon: 103.9,
-          time: 8 * 3600 + 0 * 60,
-        },
-      }),
-      await server.inject({
-        url: "/suggestions",
-        headers: authHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.22,
-          boardLon: 103.3,
-          alightLat: 1.38,
-          alightLon: 103.8,
-          time: 8 * 3600 + 30 * 60,
-        },
-      }),
-    ]
-
-    for (let sugg of suggestions) {
-      expect(sugg.statusCode).to.equal(200)
-    }
-
-    // Get all suggestions
-    let getSuggestions = await server.inject({
-      url: "/suggestions",
-      method: "GET",
-      headers: authHeaders,
-    })
-    expect(getSuggestions.statusCode).to.equal(200)
-    for (let sugg of suggestions) {
-      expect(suggestions.map(s => s.result.id)).to.include(sugg.result.id)
-    }
-
-    // Ensure PUT works
-    let sid = suggestions[0].result.id
-    let putData = {
-      boardLat: 1.38,
-      boardLon: 103.8,
-      alightLat: 1.39,
-      alightLon: 103.71,
-      time: 6 * 3600,
-    }
-    let putResult = await server.inject({
-      method: "PUT",
-      url: "/suggestions/" + sid,
-      headers: authHeaders,
-      payload: putData,
-    })
-    expect(putResult.statusCode).to.equal(200)
-    let afterPut = await server.inject({
-      method: "GET",
-      url: "/suggestions/" + sid,
-      headers: authHeaders,
-    })
-    expect(afterPut.statusCode).to.equal(200)
-    expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
-    expect(afterPut.result.board.coordinates[1]).to.equal(putData.boardLat)
-    expect(afterPut.result.alight.coordinates[0]).to.equal(putData.alightLon)
-    expect(afterPut.result.alight.coordinates[1]).to.equal(putData.alightLat)
-    expect(afterPut.result.time).to.equal(putData.time)
-
-    // Ensure delete works
-    for (let sugg of suggestions) {
-      let delResult = await server.inject({
-        method: "DELETE",
-        url: "/suggestions/" + sugg.result.id,
-        headers: authHeaders,
-      })
-      expect(delResult.statusCode).to.equal(200)
-    }
-
-    // Get all suggestions
-    getSuggestions = await server.inject({
-      url: "/suggestions",
-      method: "GET",
-      headers: authHeaders,
-    })
-    expect(getSuggestions.statusCode).to.equal(200)
-    for (let sugg of suggestions) {
-      expect(suggestions.map(s => s.id)).to.not.include(sugg.result.id)
-    }
-  })
-
-  lab.test("CRUD anonymous suggestions", async function () {
-    let anonHeaders = {
-      "Beeline-Device-UUID": uuid.v4(),
-    }
-
-    // create some suggestions...
-    let suggestions = [
-      await server.inject({
-        url: "/suggestions",
-        headers: anonHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.2,
-          boardLon: 103.1,
-          alightLat: 1.4,
-          alightLon: 104.0,
-          time: 7 * 3600 + 30 * 60,
-        },
-      }),
-      await server.inject({
-        url: "/suggestions",
-        headers: anonHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.21,
-          boardLon: 103.2,
-          alightLat: 1.39,
-          alightLon: 103.9,
-          time: 8 * 3600 + 0 * 60,
-          referrer: 'ABC',
-        },
-      }),
-      await server.inject({
-        url: "/suggestions",
-        headers: anonHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.22,
-          boardLon: 103.3,
-          alightLat: 1.38,
-          alightLon: 103.8,
-          time: 8 * 3600 + 30 * 60,
-          referrer: 'XYZ',
-        },
-      }),
-    ]
-
-    for (let sugg of suggestions) {
-      expect(sugg.statusCode).to.equal(200)
-    }
-
-    let referrers = suggestions.map(x => x.result.referrer)
-    expect(referrers).to.include([null, 'ABC', 'XYZ'])
-
-
-    // Get all suggestions
-    let getSuggestions = await server.inject({
-      url: "/suggestions",
-      method: "GET",
-      headers: anonHeaders,
-    })
-    expect(getSuggestions.statusCode).to.equal(200)
-    for (let sugg of suggestions) {
-      expect(suggestions.map(s => s.result.id)).to.include(sugg.result.id)
-    }
-
-    // Ensure PUT works
-    let sid = suggestions[0].result.id
-    let putData = {
-      boardLat: 1.38,
-      boardLon: 103.8,
-      alightLat: 1.39,
-      alightLon: 103.71,
-      time: 6 * 3600,
-    }
-    let putResult = await server.inject({
-      method: "PUT",
-      url: "/suggestions/" + sid,
-      headers: anonHeaders,
-      payload: putData,
-    })
-    expect(putResult.statusCode).to.equal(200)
-    let afterPut = await server.inject({
-      method: "GET",
-      url: "/suggestions/" + sid,
-      headers: anonHeaders,
-    })
-    expect(afterPut.statusCode).to.equal(200)
-    expect(afterPut.result.board.coordinates[0]).to.equal(putData.boardLon)
-    expect(afterPut.result.board.coordinates[1]).to.equal(putData.boardLat)
-    expect(afterPut.result.alight.coordinates[0]).to.equal(putData.alightLon)
-    expect(afterPut.result.alight.coordinates[1]).to.equal(putData.alightLat)
-    expect(afterPut.result.time).to.equal(putData.time)
-
-    // Ensure delete works
-    for (let sugg of suggestions) {
-      let delResult = await server.inject({
-        method: "DELETE",
-        url: "/suggestions/" + sugg.result.id,
-        headers: anonHeaders,
-      })
-      expect(delResult.statusCode).to.equal(200)
-    }
-
-    // Get all suggestions
-    getSuggestions = await server.inject({
-      url: "/suggestions",
-      method: "GET",
-      headers: anonHeaders,
-    })
-    expect(getSuggestions.statusCode).to.equal(200)
-    for (let sugg of suggestions) {
-      expect(suggestions.map(s => s.id)).to.not.include(sugg.result.id)
-    }
-  })
-
-  lab.test("No suggestions when anonymous", async function () {
-    let anonHeaders = {
-      "Beeline-Device-UUID": uuid.v4(),
-    }
-    let response1 = await server.inject({
-      url: "/suggestions",
-      headers: anonHeaders,
-      method: "POST",
-      payload: {
-        boardLat: 1.2,
-        boardLon: 103.1,
-        alightLat: 1.4,
-        alightLon: 104.0,
-        time: 7 * 3600 + 30 * 60,
+  lab.test("Create and fetch suggestions", async () => {
+    // Create suggestions
+    let suggestionsData = [
+      {
+        board: {lat: 1.2, lng: 103.1},
+        alight: {lat: 1.4, lng: 104.0},
+        time: makeTime(7, 30),
+        daysOfWeek: {Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false},
       },
-    })
-    expect(response1.statusCode).to.equal(200)
-
-    let response2 = await server.inject({
-      url: "/suggestions",
-      headers: {},
-      method: "GET",
-    })
-    expect(response2.statusCode).to.equal(200)
-    expect(response2.result.length).to.equal(0)
-  })
-
-
-  lab.test("Deanonymize suggestions", async function () {
-    let anonHeaders = {
-      "Beeline-Device-UUID": uuid.v4(),
-    }
-
-    // create some suggestions...
-    let suggestionsResp = [
-      await server.inject({
-        url: "/suggestions",
-        headers: anonHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.2,
-          boardLon: 103.1,
-          alightLat: 1.4,
-          alightLon: 104.0,
-          time: 7 * 3600 + 30 * 60,
-        },
-      }),
-      await server.inject({
-        url: "/suggestions",
-        headers: anonHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.21,
-          boardLon: 103.2,
-          alightLat: 1.39,
-          alightLon: 103.9,
-          time: 8 * 3600 + 0 * 60,
-        },
-      }),
-      await server.inject({
-        url: "/suggestions",
-        headers: anonHeaders,
-        method: "POST",
-        payload: {
-          boardLat: 1.22,
-          boardLon: 103.3,
-          alightLat: 1.38,
-          alightLon: 103.8,
-          time: 8 * 3600 + 30 * 60,
-        },
-      }),
+      {
+        board: {lat: 1.21, lng: 103.2},
+        alight: {lat: 1.39, lng: 103.9},
+        time: makeTime(8, 0),
+        daysOfWeek: {Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false},
+      },
+      {
+        board: {lat: 1.22, lng: 103.3},
+        alight: {lat: 1.38, lng: 103.8},
+        time: makeTime(8, 30),
+        daysOfWeek: {Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false},
+      },
     ]
 
-    for (let sugg of suggestionsResp) {
-      expect(sugg.statusCode).to.equal(200)
+    // Create suggestions
+    const responses = await Promise.all(suggestionsData.map(
+      (payload) => server.inject({
+        url: "/suggestions",
+        headers: userHeaders,
+        method: "POST",
+        payload,
+      })))
+
+    for (let response of responses) {
+      expect(response.statusCode).equal(200)
     }
 
-    // Convert anonymous to non-anonymous
-    let userHeaders = _.assign({}, authHeaders, anonHeaders)
+    let suggestionsInDatabase = await m.Suggestion.findAll()
+    for (let [response, suggestion] of _.zip(responses, suggestionsInDatabase)) {
+      expect(suggestion.userId).equal(response.result.userId)
+    }
 
-    await server.inject({
-      url: "/suggestions/deanonymize",
-      method: "POST",
+    // Single fetch
+    const singleResult = await server.inject({
+      url: `/suggestions/${responses[0].result.id}`,
+      headers: userHeaders,
+      method: 'GET',
+    })
+    expect(singleResult.result.alight.coordinates[0]).equal(104.0)
+    expect(singleResult.result.board.coordinates[0]).equal(103.1)
+
+    // Superadmin fetch
+    const superadminFetchResponse = await server.inject({
+      url: "/suggestions",
+      method: "GET",
+      headers: superadminHeaders,
+    })
+    expect(superadminFetchResponse.result.length).equal(3)
+    expect(superadminFetchResponse.result.every(r => r.userId === user.id))
+
+    // User 2 fetch
+    const user2FetchResponse = await server.inject({
+      url: "/suggestions",
+      method: "GET",
+      headers: {Authorization: `Bearer ${user2.makeToken()}`},
+    })
+    expect(user2FetchResponse.result.length).equal(3)
+    expect(user2FetchResponse.result.every(r => r.userId !== user.id))
+
+    // Last ID fetch
+    const maxId = _.max(responses.map(r => r.result.id))
+    const lastIdFetchResponse = await server.inject({
+      url: "/suggestions?" + querystring.stringify({
+        lastId: maxId,
+      }),
+      method: "GET",
       headers: userHeaders,
     })
+    expect(lastIdFetchResponse.result.length).equal(2)
+    expect(lastIdFetchResponse.result.every(r => r.id < maxId)).true()
+    expect(lastIdFetchResponse.result.every(r => r.userId === user.id)).true()
+  })
 
-    // get the suggestions belonging to this user
-    let userSuggestions = await m.Suggestion.findAll({
-      where: {
-        userId: user.id,
+  lab.test("Update and delete suggestions", async () => {
+    const suggestion = await m.Suggestion.create({
+      userId: user.id,
+      board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
+      alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      time: makeTime(6, 45),
+      daysOfWeek: {
+        Mon: true,
+        Tue: true,
+        Wed: true,
+        Thu: true,
+        Fri: true,
+        Sat: false,
+        Sun: false,
       },
     })
-    destroyList = destroyList.concat(userSuggestions)
 
-    // ensure that the anonymous suggestions have been converted
-    let userSuggestionIds = userSuggestions.map(sugg => sugg.id)
-    for (let sugg of suggestionsResp) {
-      expect(userSuggestionIds).to.include(sugg.result.id)
-    }
+    const putResponse = await server.inject({
+      url: `/suggestions/${suggestion.id}`,
+      method: 'PUT',
+      headers: userHeaders,
+      payload: {
+        board: {lat: 1.4, lng: 103.9},
+        alight: {lat: 1.3, lng: 103.8},
+        time: makeTime(6, 50),
+        daysOfWeek: {
+          Mon: false,
+          Tue: false,
+          Wed: false,
+          Thu: false,
+          Fri: false,
+          Sat: true,
+          Sun: true,
+        },
+      },
+    })
+    expect(putResponse.statusCode).equal(200)
+
+    await suggestion.reload()
+
+    expect(suggestion.board.coordinates[1]).equal(1.4)
+    expect(suggestion.alight.coordinates[1]).equal(1.3)
+    expect(suggestion.time).equal(makeTime(6, 50))
+    expect(suggestion.daysOfWeek.Sat).equal(true)
+    expect(suggestion.daysOfWeek.Sun).equal(true)
+
+    const deleteResponse = await server.inject({
+      url: `/suggestions/${suggestion.id}`,
+      method: 'DELETE',
+      headers: userHeaders,
+    })
+    expect(deleteResponse.statusCode).equal(200)
+
+    expect(await m.Suggestion.findById(suggestion.id)).null()
+
+    expect((await server.inject({
+      url: `/suggestions/${suggestion.id}`,
+      method: 'GET',
+    })).statusCode).equal(404)
+  })
+
+  lab.test("Deanonymize suggestions", async function () {
+    const suggestion = await m.Suggestion.create({
+      userId: null,
+      email: user.email,
+      board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
+      alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      time: makeTime(6, 45),
+      daysOfWeek: {
+        Mon: true,
+        Tue: true,
+        Wed: true,
+        Thu: true,
+        Fri: true,
+        Sat: false,
+        Sun: false,
+      },
+    })
+
+    // create some suggestions...
+    const deanonymizeResponse = await server.inject({
+      url: "/suggestions/deanonymize",
+      headers: userHeaders,
+      method: "POST",
+    })
+    expect(deanonymizeResponse.statusCode).equal(200)
+
+    await suggestion.reload()
+    expect(suggestion.userId).equal(user.id)
   })
 
   lab.test("Suggest days mask", async function () {
@@ -362,7 +223,7 @@ lab.experiment("Suggestion manipulation", function () {
     const suggestionSetByInt = await m.Suggestion.create({
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
-      time: 8 * 3600 * 1e3,
+      time: makeTime(8, 0),
       daysMask: parseInt('1010111', 2),
     })
 
@@ -379,7 +240,7 @@ lab.experiment("Suggestion manipulation", function () {
     const suggestionSetByArray = await m.Suggestion.create({
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
-      time: 8 * 3600 * 1e3,
+      time: makeTime(8, 0),
       daysOfWeek: {
         Mon: false,
         Tue: false,
@@ -393,21 +254,19 @@ lab.experiment("Suggestion manipulation", function () {
 
     expect(suggestionSetByArray.daysMask).to.equal(parseInt('0111100', 2))
 
-    await expect(
-      m.Suggestion.create({
-        board: geojsonPoint([103.8, 1.38]),
-        alight: geojsonPoint([103.9, 1.39]),
-        time: 8 * 3600 * 1e3,
-        daysOfWeek: {
-          Mon: false,
-          Tue: false,
-          Wed: true,
-          Thu: true,
-          Fri: true,
-          Sat: true,
-          // Sunday missing
-        },
-      })
-    ).rejects()
+    await expect((async () => m.Suggestion.create({
+      board: geojsonPoint([103.8, 1.38]),
+      alight: geojsonPoint([103.9, 1.39]),
+      time: makeTime(8, 0),
+      daysOfWeek: {
+        Mon: false,
+        Tue: false,
+        Wed: true,
+        Thu: true,
+        Fri: true,
+        Sat: true,
+        // Sunday missing
+      },
+    }))()).rejects()
   })
 })
