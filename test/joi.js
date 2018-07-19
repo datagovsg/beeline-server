@@ -35,4 +35,12 @@ lab.experiment("Lat-Lng Validation", function () {
     expect(Joi.attempt({type: 'POINT', coordinates: [103.8, 1.38]}, schema))
       .equal({type: 'POINT', coordinates: [103.8, 1.38]})
   })
+
+  lab.test("Range limitations", async function () {
+    expect(() => Joi.attempt({lat: 1.38, lng: 103.8}, schema.latRange([0, 1]))).throws()
+    expect(() => Joi.attempt({lat: 1.38, lng: 103.8}, schema.latRange([1, 2]))).not.throws()
+
+    expect(() => Joi.attempt({lat: 1.38, lng: 103.8}, schema.lngRange([100, 102]))).throws()
+    expect(() => Joi.attempt({lat: 1.38, lng: 103.8}, schema.lngRange([102, 104]))).not.throws()
+  })
 })

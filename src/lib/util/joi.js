@@ -35,6 +35,8 @@ module.exports = Joi.extend([
     name: "latlng",
     language: {
       latlng: "needs to be a GeoJSON point, or LatLng object",
+      latRange: "Latitude must be between {{min}} and {{max}}",
+      lngRange: "Longitude must be between {{min}} and {{max}}",
     },
     pre(value, state, options) {
       const tryLatLng = Joi.validate(value, {
@@ -53,8 +55,7 @@ module.exports = Joi.extend([
         type: Joi.string().valid("Point", "POINT"),
         coordinates: Joi.array()
           .items(Joi.number())
-          .max(2)
-          .min(2),
+          .length(2),
       })
 
       if (!tryGeoJson.error) {
@@ -64,5 +65,59 @@ module.exports = Joi.extend([
       // return this.createError("latlng", { v: value }, state, options)
       return tryGeoJson.error
     },
+    rules: [
+      {
+        name: "latRange",
+        params: {
+          range: Joi.array()
+            .items(
+              Joi.number()
+                .min(-90)
+                .max(90)
+            )
+            .length(2),
+        },
+        validate(params, value, state, options) {
+          if (
+            params.range[0] <= value.coordinates[1] &&
+            value.coordinates[1] <= params.range[1]
+          ) {
+            return value
+          }
+          return this.createError(
+            "latlng.latRange",
+            { v: value, min: params.range[0], max: params.range[1] },
+            state,
+            options
+          )
+        },
+      },
+      {
+        name: "lngRange",
+        params: {
+          range: Joi.array()
+            .items(
+              Joi.number()
+                .min(-180)
+                .max(180)
+            )
+            .length(2),
+        },
+        validate(params, value, state, options) {
+          if (
+            params.range[0] <= value.coordinates[0] &&
+            value.coordinates[0] <= params.range[1]
+          ) {
+            return value
+          }
+          return this.createError(
+            "latlng.lngRange",
+            { v: value, min: params.range[0], max: params.range[1] },
+            state,
+            options
+          )
+        },
+      },
+    ],
   },
 ])
