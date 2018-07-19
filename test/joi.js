@@ -1,10 +1,10 @@
-const Lab = require("lab")
-const lab = exports.lab = Lab.script()
+import Lab from 'lab'
+export const lab = Lab.script()
 
 const Joi = require("../src/lib/util/joi")
-const {expect} = require('code')
+import {expect} from 'code'
 
-lab.experiment("Telehphone number validation", function () {
+lab.experiment("Telephone number validation", function () {
   const telephoneValidation = Joi.string().telephone()
 
   lab.test("Valid numbers", async function () {
@@ -18,5 +18,21 @@ lab.experiment("Telehphone number validation", function () {
     expect(() => Joi.assert('+65banana', telephoneValidation)).throw()
     expect(() => Joi.assert('+601234567', telephoneValidation)).throw()
     expect(() => Joi.assert('1234567', telephoneValidation)).throw()
+  })
+})
+
+lab.experiment("Lat-Lng Validation", function () {
+  const schema = Joi.latlng()
+
+  lab.test("LatLng is converted to GeoJson", async function () {
+    expect(Joi.attempt({lat: 1.38, lng: 103.8}, schema))
+      .equal({type: 'POINT', coordinates: [103.8, 1.38]})
+  })
+
+  lab.test("GeoJson is accepted too", async function () {
+    expect(Joi.attempt({type: 'Point', coordinates: [103.8, 1.38]}, schema))
+      .equal({type: 'POINT', coordinates: [103.8, 1.38]})
+    expect(Joi.attempt({type: 'POINT', coordinates: [103.8, 1.38]}, schema))
+      .equal({type: 'POINT', coordinates: [103.8, 1.38]})
   })
 })
