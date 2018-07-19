@@ -12,10 +12,13 @@ import {
 } from "../util/common"
 
 /**
- * @param {Number} id - a specific suggestion id. Optional
- * @param {Object} request - the incoming HAPI request
- * @return {Object} a Sequelize WHERE clause that fetches the suggestions
- * that the user is entitled to
+ * Returns a Sequelize WHERE clause suited
+ * for determining whether the user credentials
+ * is authorized to make changes to
+ * the suggestion
+ * @param {number} id
+ * @param {object} request
+ * @return {object} The Sequelize WHERE clause
  */
 function authenticateAgent(id, request) {
   let creds = request.auth ? request.auth.credentials : null
@@ -64,7 +67,13 @@ function authenticateAgent(id, request) {
   return query
 }
 
-export const register = function register(server, options, next) {
+/**
+ *
+ * @param {*} server
+ * @param {*} options
+ * @param {*} next
+ */
+export function register(server, options, next) {
   server.route({
     method: "GET",
     path: "/companies/{companyId}/suggestions",
@@ -103,7 +112,7 @@ export const register = function register(server, options, next) {
               const limit = 1000
               let numWritten = 0
 
-              while (true) { // eslint-disable-line no-constant-condition
+              for (;;) {
                 const q = {
                   order: [["id", "ASC"]],
                   transaction: t,
@@ -111,12 +120,10 @@ export const register = function register(server, options, next) {
                   limit,
                 }
 
-                // eslint-disable no-await-in-loop
-                const suggestions = await m.Suggestion.findAll(q)
+                const suggestions = await m.Suggestion.findAll(q) // eslint-disable-line no-await-in-loop
                 const ownedByCompany = suggestions.filter(
                   s => s.referrer === companyReferrer
                 )
-                // eslint-enable no-await-in-loop
 
                 if (ownedByCompany.length) {
                   for (let i = 0; i < ownedByCompany.length; i++) {
@@ -130,9 +137,7 @@ export const register = function register(server, options, next) {
                     numWritten++
 
                     if (!writeResult) {
-                      // eslint-disable no-await-in-loop
-                      await new Promise(resolve => io.once("drain", resolve))
-                      // eslint-enable no-await-in-loop
+                      await new Promise(resolve => io.once("drain", resolve)) // eslint-disable-line no-await-in-loop
                     }
                   }
                 }
@@ -149,7 +154,7 @@ export const register = function register(server, options, next) {
             .catch(err => {
               io.write("Oops!")
               io.end()
-              console.error(err)
+              console.log(err) // eslint-disable-line
             })
         }
       } catch (err) {
