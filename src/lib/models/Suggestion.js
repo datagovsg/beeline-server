@@ -1,4 +1,5 @@
-import assert from "assert"
+import Joi from "joi"
+
 /**
  * The Suggestion data model
  * @param {ModelCache} modelCache
@@ -32,30 +33,27 @@ export default function(modelCache) {
         type: DataTypes.VIRTUAL,
         get() {
           const mask = this.getDataValue("daysMask")
-          return [
-            Boolean(mask & parseInt("0000001", 2)),
-            Boolean(mask & parseInt("0000010", 2)),
-            Boolean(mask & parseInt("0000100", 2)),
-            Boolean(mask & parseInt("0001000", 2)),
-            Boolean(mask & parseInt("0010000", 2)),
-            Boolean(mask & parseInt("0100000", 2)),
-            Boolean(mask & parseInt("1000000", 2)),
-          ]
+          return {
+            Mon: Boolean(mask & parseInt("0000001", 2)),
+            Tue: Boolean(mask & parseInt("0000010", 2)),
+            Wed: Boolean(mask & parseInt("0000100", 2)),
+            Thu: Boolean(mask & parseInt("0001000", 2)),
+            Fri: Boolean(mask & parseInt("0010000", 2)),
+            Sat: Boolean(mask & parseInt("0100000", 2)),
+            Sun: Boolean(mask & parseInt("1000000", 2)),
+          }
         },
         set(value) {
-          assert(
-            value.length === 7,
-            "daysOfWeek takes an array of exactly 7 booleans"
-          )
+          Joi.assert(value, DaysOfWeekSchema)
 
           const maskValue = [
-            Boolean(value[0]) && parseInt("0000001", 2),
-            Boolean(value[1]) && parseInt("0000010", 2),
-            Boolean(value[2]) && parseInt("0000100", 2),
-            Boolean(value[3]) && parseInt("0001000", 2),
-            Boolean(value[4]) && parseInt("0010000", 2),
-            Boolean(value[5]) && parseInt("0100000", 2),
-            Boolean(value[6]) && parseInt("1000000", 2),
+            Boolean(value.Mon) && parseInt("0000001", 2),
+            Boolean(value.Tue) && parseInt("0000010", 2),
+            Boolean(value.Wed) && parseInt("0000100", 2),
+            Boolean(value.Thu) && parseInt("0001000", 2),
+            Boolean(value.Fri) && parseInt("0010000", 2),
+            Boolean(value.Sat) && parseInt("0100000", 2),
+            Boolean(value.Sun) && parseInt("1000000", 2),
           ].reduce((a, b) => a | b, 0)
 
           this.setDataValue("daysMask", maskValue)
@@ -100,7 +98,17 @@ export default function(modelCache) {
   )
 }
 
-export var postSync = [
+export const DaysOfWeekSchema = Joi.object({
+  Mon: Joi.bool().required(),
+  Tue: Joi.bool().required(),
+  Wed: Joi.bool().required(),
+  Thu: Joi.bool().required(),
+  Fri: Joi.bool().required(),
+  Sat: Joi.bool().required(),
+  Sun: Joi.bool().required(),
+})
+
+export const postSync = [
   `
   CREATE INDEX sugg_board_index ON suggestions
   USING GIST (

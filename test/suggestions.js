@@ -9,6 +9,7 @@ const {models: m} = require("../src/lib/core/dbschema")()
 
 import _ from 'lodash'
 import uuid from "uuid"
+import Joi from "joi"
 
 lab.experiment("Suggestion manipulation", function () {
   let authHeaders
@@ -365,28 +366,48 @@ lab.experiment("Suggestion manipulation", function () {
       daysMask: parseInt('1010111', 2),
     })
 
-    expect(suggestionSetByInt.daysOfWeek).to.equal([true, true, true, false, true, false, true])
+    expect(suggestionSetByInt.daysOfWeek).to.equal({
+      Mon: true,
+      Tue: true,
+      Wed: true,
+      Thu: false,
+      Fri: true,
+      Sat: false,
+      Sun: true,
+    })
 
     const suggestionSetByArray = await m.Suggestion.create({
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
       time: 8 * 3600 * 1e3,
-      daysOfWeek: [false, false, true, true, true, true, false],
+      daysOfWeek: {
+        Mon: false,
+        Tue: false,
+        Wed: true,
+        Thu: true,
+        Fri: true,
+        Sat: true,
+        Sun: false,
+      },
     })
 
     expect(suggestionSetByArray.daysMask).to.equal(parseInt('0111100', 2))
 
-    try {
-      await m.Suggestion.create({
+    await expect(
+      m.Suggestion.create({
         board: geojsonPoint([103.8, 1.38]),
         alight: geojsonPoint([103.9, 1.39]),
         time: 8 * 3600 * 1e3,
-        daysOfWeek: [false, false, true, true, true, true],
+        daysOfWeek: {
+          Mon: false,
+          Tue: false,
+          Wed: true,
+          Thu: true,
+          Fri: true,
+          Sat: true,
+          // Sunday missing
+        },
       })
-
-      throw new Error("Fake error")
-    } catch (err) {
-      expect(err.message).to.equal("daysOfWeek takes an array of exactly 7 booleans")
-    }
+    ).rejects()
   })
 })
