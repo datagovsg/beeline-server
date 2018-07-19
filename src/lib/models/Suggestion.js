@@ -94,6 +94,19 @@ export default function(modelCache) {
     },
     {
       indexes: [{ fields: ["userId"] } /* Necessary for reverse lookup */],
+      classMethods: {
+        bindEmailToUserId(email, userId) {
+          return this.update(
+            { userId },
+            {
+              where: {
+                userId: null,
+                email,
+              },
+            }
+          )
+        },
+      },
     }
   )
 }
