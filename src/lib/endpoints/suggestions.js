@@ -10,6 +10,7 @@ import {
   defaultErrorHandler,
   assertFound,
 } from "../util/common"
+import { DaysOfWeekSchema } from "../models/Suggestion"
 
 /**
  * Returns a Sequelize WHERE clause suited
@@ -235,6 +236,7 @@ export function register(server, options, next) {
 
           currentMode: Joi.string().optional(),
           referrer: Joi.string().optional(),
+          daysOfWeek: DaysOfWeekSchema,
         }),
       },
       description: `Creates a new suggestion. Anonymous suggestions are allowed, provided a
@@ -321,6 +323,7 @@ device-UUID is provided.`,
             .max(60 * 60 * 24),
 
           currentMode: Joi.string().optional(),
+          daysOfWeek: DaysOfWeekSchema,
         }),
       },
     },
