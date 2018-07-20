@@ -40,11 +40,6 @@ lab.experiment("Suggestion manipulation", function () {
     await m.Suggestion.truncate()
   })
 
-  lab.after(async function () {
-    await user.destroy()
-    await user2.destroy()
-  })
-
   lab.test("Create and fetch suggestions", async () => {
     // Create suggestions
     let suggestionsData = [
