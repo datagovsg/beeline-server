@@ -1,5 +1,10 @@
 import ssaclAttributeRoles from "ssacl-attribute-roles"
 
+/**
+ * Returns the model for a TransportCompany
+ * @param {object} modelCache
+ * @return {Model}
+ */
 export default function(modelCache) {
   let DataTypes = modelCache.db.Sequelize
   let Company = modelCache.db.define(
@@ -7,11 +12,11 @@ export default function(modelCache) {
     {
       type: DataTypes.INTEGER,
       logo: DataTypes.BLOB,
-      name: DataTypes.STRING(50),
-      email: DataTypes.STRING(50),
-      contactNo: DataTypes.STRING(50),
+      name: DataTypes.STRING(50), // eslint-disable-line
+      email: DataTypes.STRING(50), // eslint-disable-line
+      contactNo: DataTypes.STRING(50), // eslint-disable-line
       smsOpCode: {
-        type: DataTypes.STRING(11),
+        type: DataTypes.STRING(11), // eslint-disable-line
         allowNull: true,
       },
       features: DataTypes.TEXT,
@@ -54,6 +59,10 @@ export default function(modelCache) {
   return Company
 }
 
+/**
+ *
+ * @param {object} modelCache
+ */
 export function makeAssociation(modelCache) {
   let Driver = modelCache.require("Driver")
   let TransportCompany = modelCache.require("TransportCompany")
