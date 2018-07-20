@@ -1,8 +1,7 @@
-const _ = require("lodash")
-const Joi = require("joi")
-const common = require("../util/common")
-const Boom = require("boom")
-const querystring = require("querystring")
+import _ from "lodash"
+import Joi from "joi"
+import Boom from "boom"
+import querystring from "querystring"
 import { Buffer } from "buffer"
 import axios from "axios"
 import process from "process"
@@ -11,11 +10,14 @@ import assert from "assert"
 import path from "path"
 import Handlebars from "handlebars"
 import fs from "fs"
+
 import * as auth from "../core/auth"
 import * as email from "../util/email"
+import * as common from "../util/common"
 import { toSVY } from "../util/svy21"
 import { NotFoundError, InvalidArgumentError } from "../util/errors"
 import { handleRequestWith, assertFound } from "../util/endpoints"
+import { DaysOfWeekSchema } from "../models/Suggestion"
 
 let getModels = common.getModels
 let getDB = common.getDB
@@ -92,7 +94,7 @@ export function register(server, options, next) {
 
         reply(suggestions.map(s => s.toJSON()))
       } catch (err) {
-        console.log(err.stack); // eslint-disable-line
+        console.log(err.stack) // eslint-disable-line
         reply(Boom.badImplementation(err.message))
       }
     },
@@ -178,6 +180,15 @@ export function register(server, options, next) {
           time: Joi.number()
             .integer()
             .required(),
+          daysOfWeek: DaysOfWeekSchema.default({
+            Mon: true,
+            Tue: true,
+            Wed: true,
+            Thu: true,
+            Fri: true,
+            Sat: false,
+            Sun: false,
+          }),
         },
       },
     },
@@ -218,6 +229,9 @@ export function register(server, options, next) {
         if (request.payload.time) {
           update.time = request.payload.time
         }
+        if (request.payload.daysOfWeek) {
+          update.daysOfWeek = request.payload.daysOfWeek
+        }
 
         await suggestion.update(update)
 
@@ -225,7 +239,7 @@ export function register(server, options, next) {
 
         reply(suggestion.toJSON())
       } catch (err) {
-        console.log(err.stack); // eslint-disable-line
+        console.log(err.stack) // eslint-disable-line
         reply(Boom.badImplementation(err.message))
       }
     },
@@ -304,6 +318,15 @@ export function register(server, options, next) {
           }).allow(null),
           currentMode: Joi.string().optional(),
           referrer: Joi.string().optional(),
+          daysOfWeek: DaysOfWeekSchema.default({
+            Mon: true,
+            Tue: true,
+            Wed: true,
+            Thu: true,
+            Fri: true,
+            Sat: false,
+            Sun: false,
+          }),
         }),
       },
     },
@@ -330,6 +353,7 @@ export function register(server, options, next) {
           time: request.payload.time,
           currentMode: request.payload.currentMode,
           email: request.payload.email,
+          daysOfWeek: request.payload.daysOfWeek,
           ipAddress: requestIP,
           referrer: request.payload.referrer,
         }
@@ -451,7 +475,7 @@ export function register(server, options, next) {
             })
         )
       } catch (err) {
-        console.log(err.stack); // eslint-disable-line
+        console.log(err.stack) // eslint-disable-line
         return reply(
           Boom.badRequest(`
           The suggestion failed to be verified

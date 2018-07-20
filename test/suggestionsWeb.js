@@ -60,6 +60,15 @@ lab.experiment("Suggestions from the web", function() {
       alightLat: 1.389,
       alightLon: 103.8199,
       time: 8999,
+      daysOfWeek: {
+        Mon: true,
+        Tue: false,
+        Wed: true,
+        Thu: true,
+        Fri: false,
+        Sat: true,
+        Sun: true,
+      },
     }
 
     let suggestResponse = await server.inject({
@@ -119,6 +128,15 @@ lab.experiment("Suggestions from the web", function() {
         boardLon: 103.81,
         alightLat: 1.389,
         alightLon: 103.8199,
+        daysOfWeek: {
+          Mon: true,
+          Tue: false,
+          Wed: true,
+          Thu: true,
+          Fri: false,
+          Sat: true,
+          Sun: true,
+        },
         time: 8999,
         referrer: "ABC",
       },
@@ -131,9 +149,40 @@ lab.experiment("Suggestions from the web", function() {
 
     // Because not verified!
     expect(emailSuggestions.length).equal(1)
-    expect(emailSuggestions[0].referrer === "ABC")
-    // body...
-    // FIXME: check email
+    expect(emailSuggestions[0].referrer).equal("ABC")
+    expect(emailSuggestions[0].daysMask).equal(parseInt('1101101', 2))
+  })
+
+  lab.test("Default daysOfWeek is MTWTF", async function() {
+    let now = Date.now()
+    let email = `test-${now}@example.com`
+    let suggestResponse = await server.inject({
+      method: "POST",
+      url: "/suggestions/web",
+      payload: {
+        email,
+        emailVerification: {
+          type: "auth0",
+          data: jwt.sign(
+            { email, email_verified: true },
+            new Buffer(process.env.PUBLIC_AUTH0_SECRET, "base64")
+          ),
+        },
+        boardLat: 1.381,
+        boardLon: 103.81,
+        alightLat: 1.389,
+        alightLon: 103.8199,
+        time: 8999,
+        referrer: "ABC",
+      },
+    })
+    expect(suggestResponse.statusCode).to.equal(200)
+
+    let emailSuggestions = await m.Suggestion.findAll({
+      where: { email },
+    })
+
+    expect(emailSuggestions[0].daysMask).equal(parseInt('0011111', 2))
   })
 
   lab.test(
@@ -170,6 +219,15 @@ lab.experiment("Suggestions from the web", function() {
           alightLat: 1.389,
           alightLon: 103.8199,
           time: 8999,
+          daysOfWeek: {
+            Mon: true,
+            Tue: false,
+            Wed: false,
+            Thu: true,
+            Fri: false,
+            Sat: true,
+            Sun: true,
+          },
           referrer: "ABC",
         },
       })
@@ -217,6 +275,15 @@ lab.experiment("Suggestions from the web", function() {
             { email, email_verified: true },
             new Buffer(process.env.PUBLIC_AUTH0_SECRET, "base64")
           ),
+        },
+        daysOfWeek: {
+          Mon: true,
+          Tue: false,
+          Wed: true,
+          Thu: true,
+          Fri: false,
+          Sat: false,
+          Sun: true,
         },
         boardLat: 1.381,
         boardLon: 103.81,
