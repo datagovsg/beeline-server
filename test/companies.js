@@ -1,16 +1,18 @@
-const Lab = require("lab")
-const lab = exports.lab = Lab.script()
+import Lab from "lab"
 
-const {expect} = require("code")
-const server = require("../src/index.js")
-const _ = require("lodash")
-const URL = require('url')
-const jwt = require('jsonwebtoken')
-const querystring = require('querystring')
+import {expect} from "code"
+import server from "../src/index.js"
+import _ from "lodash"
+import URL from 'url'
+import jwt from 'jsonwebtoken'
+import querystring from 'querystring'
+import sinon from 'sinon'
 
-const {loginAs, randomEmail} = require("./test_common")
+import {loginAs, randomEmail} from "./test_common"
+
+export const lab = Lab.script()
+
 const {models: m} = require("../src/lib/core/dbschema")()
-
 let testData = require("./test_data")
 
 lab.experiment("Company manipulation", function () {
@@ -111,16 +113,16 @@ lab.experiment("Company manipulation", function () {
   })
 
   lab.test('Stripe Connect (partial test)', async function () {
-    let adminEmail = randomEmail()
-    let adminInst = await m.Admin.create({
+    const adminEmail = randomEmail()
+    const adminInst = await m.Admin.create({
       email: adminEmail,
     })
-    let companyInst = await m.TransportCompany.create({})
+    const companyInst = await m.TransportCompany.create({})
 
     await adminInst.addTransportCompany(companyInst.id, {permissions: ['manage-company']})
 
     // Check the whoami function
-    let response = await server.inject({
+    const response = await server.inject({
       method: 'POST',
       url: `/companies/${companyInst.id}/stripeConnect`,
       headers: {
@@ -131,7 +133,7 @@ lab.experiment("Company manipulation", function () {
       },
     })
 
-    let urlResult = URL.parse(response.result, true)
+    const urlResult = URL.parse(response.result, true)
     expect(urlResult.protocol).equal('https:')
     expect(urlResult.hostname).equal('connect.stripe.com')
     expect(urlResult.pathname).equal('/oauth/authorize')
@@ -139,26 +141,30 @@ lab.experiment("Company manipulation", function () {
     expect(urlResult.query.scope).equal('read_write')
     expect(urlResult.query.client_id).exist()
 
-    let state = jwt.decode(urlResult.query.state)
+    const state = jwt.decode(urlResult.query.state)
     expect(state.action).equal('stripeConnect')
     expect(state.redirect).equal('https://redirect.example.com/')
     expect(state.transportCompanyId).equal(companyInst.id)
 
     // The actual connecting part
-    // Monkey-patch the connectAccount method, since we can't test that
-    let originalConnectMethod = require('../src/lib/transactions/payment').connectAccount
-
-    require('../src/lib/transactions/payment').connectAccount = async function (code) {
-      expect(code).equal('TEST_TEST_OAUTH_CODE')
-      return {
-        stripe_user_id: 'TEST_TEST_USER_ID',
-        livemode: true,
-      }
-    }
-
+    let sandbox = null
     try {
+      sandbox = sinon.sandbox.create()
+
+      sandbox.stub(
+        require('../src/lib/transactions/payment'),
+        'connectAccount',
+        async (code) => {
+          expect(code).equal('TEST_TEST_OAUTH_CODE')
+          return {
+            stripe_user_id: 'TEST_TEST_USER_ID',
+            livemode: true,
+          }
+        }
+      )
+
       // Invalid auth code
-      let invalidResponse1 = await server.inject({
+      const invalidResponse1 = await server.inject({
         method: 'GET',
         url: `/companies/stripeConnect?` + querystring.stringify({
           code: 'TEST_TEST_FAKE_CODE',
@@ -173,7 +179,7 @@ lab.experiment("Company manipulation", function () {
       expect((await m.TransportCompany.findById(companyInst.id, {raw: true})).clientId).not.exist()
 
       // Invalid state (bad token)
-      let invalidResponse2 = await server.inject({
+      const invalidResponse2 = await server.inject({
         method: 'GET',
         url: `/companies/stripeConnect?` + querystring.stringify({
           code: 'TEST_TEST_OAUTH_CODE',
@@ -188,7 +194,7 @@ lab.experiment("Company manipulation", function () {
       expect((await m.TransportCompany.findById(companyInst.id, {raw: true})).clientId).not.exist()
 
       // Valid response
-      let connectResponse = await server.inject({
+      const connectResponse = await server.inject({
         method: 'GET',
         url: `/companies/stripeConnect?` + querystring.stringify({
           code: 'TEST_TEST_OAUTH_CODE',
@@ -205,7 +211,7 @@ lab.experiment("Company manipulation", function () {
     } catch (err) {
       throw err
     } finally {
-      require('../src/lib/transactions/payment').connectAccount = originalConnectMethod
+      if (sandbox) sandbox.restore()
     }
   })
 })
