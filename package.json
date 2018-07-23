@@ -31,7 +31,7 @@
     "babel-runtime": "^6.6.1",
     "bluebird": "^3.3.3",
     "boom": "^5.1.0",
-    "code": "^4.0.0",
+    "code": "^5.2.0",
     "commonmark": "^0.26.0",
     "dateformat": "^2.0.0",
     "fast-csv": "^2.4.0",
