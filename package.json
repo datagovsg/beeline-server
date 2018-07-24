@@ -52,7 +52,7 @@
     "mimos": "^3.0.3",
     "moment": "^2.22.1",
     "ngeohash": "^0.6.0",
-    "node-telegram-bot-api": "^0.27.1",
+    "node-telegram-bot-api": "^0.30.0",
     "nodemailer": "^2.5.0",
     "pg": "^6.1.0",
     "polyline": "^0.2.0",
