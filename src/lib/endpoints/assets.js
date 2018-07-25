@@ -1,7 +1,7 @@
 const _ = require("lodash")
 const Joi = require("joi")
 const commonmark = require("commonmark")
-const ical = require("ical")
+const ical = require("node-ical")
 
 const {
   handleRequestWith,
