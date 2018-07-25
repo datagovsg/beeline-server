@@ -46,85 +46,115 @@ export const postSync = [
   CREATE OR REPLACE VIEW "indicativeTrips" AS
 
   WITH
-    "routeNextTrip" AS (
-      SELECT DISTINCT ON (trips."routeId")
-        trips.*
-      FROM trips INNER JOIN "tripStops" ON "tripStops"."tripId" = trips.id
-      WHERE
-        "tripStops".time > CURRENT_TIMESTAMP
-      ORDER BY
-        trips."routeId", "tripStops".time ASC
+    "routeNextTripIds" AS (
+      SELECT
+        trips."routeId",
+        MAX(trips."id") AS "tripId"
+      FROM
+        trips INNER JOIN
+          (SELECT -- fetch the minimum date after today for each routeID
+            "routeId",
+            MIN("date") as "minDate"
+          FROM trips
+          WHERE date >= (CURRENT_TIMESTAMP at time zone (INTERVAL '+08:00'))::date
+          GROUP BY "routeId") AS "tripsWithMinDate"
+        ON trips."routeId" = "tripsWithMinDate"."routeId" AND trips."date" = "tripsWithMinDate"."minDate"
+      GROUP BY trips."routeId", "trips".date
     ),
 
-    "routeLastTrip" AS (
-      SELECT DISTINCT ON (trips."routeId")
-        trips.*
-      FROM trips INNER JOIN "tripStops" ON "tripStops"."tripId" = trips.id
-      ORDER BY
-        trips."routeId", "trips".date DESC
+    "routeLastTripIds" AS (
+      SELECT
+        trips."routeId",
+        MAX(trips."id") AS "tripId"
+      FROM
+        trips INNER JOIN
+          (SELECT -- fetch the minimum date after today for each routeID
+            "routeId",
+            MAX("date") as "maxDate"
+          FROM trips
+          GROUP BY "routeId") AS "tripsWithMaxDate"
+        ON trips."routeId" = "tripsWithMaxDate"."routeId" AND trips."date" = "tripsWithMaxDate"."maxDate"
+      GROUP BY trips."routeId", "trips".date
     ),
 
-    "tripStart" AS (
-      SELECT DISTINCT ON ("tripId")
-        "tripId",
-        "tripStops"."time",
-        "stops"."description"
-      FROM "tripStops" INNER JOIN "stops" ON "tripStops"."stopId" = "stops".id
-      WHERE "tripId" IN (SELECT "id" FROM "routeNextTrip")
-        OR "tripId" IN (SELECT "id" FROM "routeLastTrip")
-      ORDER BY "tripId", "tripStops"."time" ASC
+    "tripLastTripStopId" AS (
+      SELECT
+        "tripStops"."tripId",
+        MAX("tripStops"."id") as "tripStopId"
+      FROM
+        "tripStops" INNER JOIN
+          (SELECT
+            "tripId", MAX(time) AS "maxTime"
+          FROM "tripStops"
+          WHERE "tripStops"."tripId" IN (SELECT "tripId" FROM "routeLastTripIds" UNION SELECT "tripId" FROM "routeNextTripIds")
+          GROUP BY "tripId") AS "maxTimes"
+          ON "tripStops"."tripId" = "maxTimes"."tripId" AND "maxTimes"."maxTime" = "tripStops".time
+      GROUP BY
+        "tripStops"."tripId", "tripStops".time
     ),
 
-    "tripEnd" AS (
-      SELECT DISTINCT ON ("tripId")
-        "tripId",
-        "tripStops"."time",
-        "stops"."description"
-      FROM "tripStops" INNER JOIN "stops" ON "tripStops"."stopId" = "stops".id
-      WHERE "tripId" IN (SELECT "id" FROM "routeNextTrip")
-        OR "tripId" IN (SELECT "id" FROM "routeLastTrip")
-      ORDER BY "tripId", "tripStops"."time" DESC
+    "tripFirstTripStopId" AS (
+      SELECT
+        "tripStops"."tripId",
+        MAX("tripStops"."id") as "tripStopId"
+      FROM
+        "tripStops" INNER JOIN
+          (SELECT "tripId", MIN(time) AS "minTime"
+          FROM "tripStops"
+          WHERE "tripStops"."tripId" IN (SELECT "tripId" FROM "routeLastTripIds" UNION SELECT "tripId" FROM "routeNextTripIds")
+          GROUP BY "tripId") AS "minTimes"
+          ON "tripStops"."tripId" = "minTimes"."tripId" AND "minTimes"."minTime" = "tripStops".time
+      WHERE "tripStops"."tripId" IN (SELECT "tripId" FROM "routeLastTripIds" UNION SELECT "tripId" FROM "routeNextTripIds")
+      GROUP BY
+        "tripStops"."tripId", "tripStops".time
     )
 
   SELECT
-
-    -- For backward compatibility until we upgrade all the admin views
-    "routeNextTrip"."id" as "tripId",
-
     "routes"."id" as "routeId",
     "routeNextTrip"."id" as "nextTripId",
     "routeNextTrip"."price" as "nextPrice",
     "routeNextTrip"."capacity" as "nextCapacity",
-    ("nextTripStart"."time" - "routeNextTrip"."date") as "nextStartTime",
-    ("nextTripEnd"."time" - "routeNextTrip"."date") as "nextEndTime",
-    "nextTripStart"."description" as "nextStartDescription",
-    "nextTripEnd"."description" as "nextEndDescription",
+    ("nextTripFirstTripStop"."time" - "routeNextTrip"."date") as "nextStartTime",
+    ("nextTripLastTripStop"."time" - "routeNextTrip"."date") as "nextEndTime",
+    "nextTripFirstStop"."description" as "nextStartDescription",
+    "nextTripLastStop"."description" as "nextEndDescription",
     "nextTripDriver"."id" AS "nextDriverId",
     "nextTripDriver"."name" AS "nextDriverName",
 
     "routeLastTrip"."id" as "lastTripId",
     "routeLastTrip"."price" as "lastPrice",
     "routeLastTrip"."capacity" as "lastCapacity",
-    ("lastTripStart"."time" - "routeLastTrip"."date") as "lastStartTime",
-    ("lastTripEnd"."time" - "routeLastTrip"."date") as "lastEndTime",
-    "lastTripStart"."description" as "lastStartDescription",
-    "lastTripEnd"."description" as "lastEndDescription",
+    ("lastTripFirstTripStop"."time" - "routeLastTrip"."date") as "lastStartTime",
+    ("lastTripLastTripStop"."time" - "routeLastTrip"."date") as "lastEndTime",
+    "lastTripFirstStop"."description" as "lastStartDescription",
+    "lastTripLastStop"."description" as "lastEndDescription",
     "lastTripDriver"."id" AS "lastDriverId",
     "lastTripDriver"."name" AS "lastDriverName"
   FROM
     "routes"
 
-    LEFT OUTER JOIN ("routeNextTrip"
-    INNER JOIN "tripStart" AS "nextTripStart" ON "routeNextTrip"."id" = "nextTripStart"."tripId"
-    INNER JOIN "tripEnd" AS "nextTripEnd" ON "routeNextTrip"."id" = "nextTripEnd"."tripId"
-    LEFT OUTER JOIN "drivers" AS "nextTripDriver" ON "routeNextTrip"."driverId" = "nextTripDriver".id)
+    LEFT OUTER JOIN "routeNextTripIds" ON routes.id = "routeNextTripIds"."routeId"
+    LEFT OUTER JOIN "routeLastTripIds" ON routes.id = "routeLastTripIds"."routeId"
 
-      ON "routeNextTrip"."routeId" = "routes".id
+    LEFT JOIN "trips" AS "routeNextTrip" ON "routeNextTrip".id = "routeNextTripIds"."tripId"
+    LEFT JOIN "trips" AS "routeLastTrip" ON "routeLastTrip".id = "routeLastTripIds"."tripId"
 
-    FULL OUTER JOIN ("routeLastTrip"
-    INNER JOIN "tripStart" AS "lastTripStart" ON "routeLastTrip"."id" = "lastTripStart"."tripId"
-    INNER JOIN "tripEnd" AS "lastTripEnd" ON "routeLastTrip"."id" = "lastTripEnd"."tripId"
-    LEFT OUTER JOIN "drivers" AS "lastTripDriver" ON "routeLastTrip"."driverId" = "lastTripDriver".id)
-     ON "routeLastTrip"."routeId" = "routes"."id"
+    LEFT JOIN "tripFirstTripStopId" AS "nextTripFirstTripStopId" ON "routeNextTrip".id = "nextTripFirstTripStopId"."tripId"
+    LEFT JOIN "tripLastTripStopId" AS "nextTripLastTripStopId" ON "routeNextTrip".id = "nextTripLastTripStopId"."tripId"
+    LEFT JOIN "tripFirstTripStopId" AS "lastTripFirstTripStopId" ON "routeLastTrip".id = "lastTripFirstTripStopId"."tripId"
+    LEFT JOIN "tripLastTripStopId" AS "lastTripLastTripStopId" ON "routeLastTrip".id = "lastTripLastTripStopId"."tripId"
+
+    LEFT JOIN "tripStops" AS "nextTripFirstTripStop" ON "nextTripFirstTripStopId"."tripStopId" = "nextTripFirstTripStop".id
+    LEFT JOIN "tripStops" AS "nextTripLastTripStop" ON "nextTripLastTripStopId"."tripStopId" = "nextTripLastTripStop".id
+    LEFT JOIN "tripStops" AS "lastTripFirstTripStop" ON "lastTripFirstTripStopId"."tripStopId" = "lastTripFirstTripStop".id
+    LEFT JOIN "tripStops" AS "lastTripLastTripStop" ON "lastTripLastTripStopId"."tripStopId" = "lastTripLastTripStop".id
+
+    LEFT JOIN "stops" AS "nextTripFirstStop" ON "nextTripFirstTripStop"."stopId" = "nextTripFirstStop".id
+    LEFT JOIN "stops" AS "nextTripLastStop" ON "nextTripLastTripStop"."stopId" = "nextTripLastStop".id
+    LEFT JOIN "stops" AS "lastTripFirstStop" ON "lastTripFirstTripStop"."stopId" = "lastTripFirstStop".id
+    LEFT JOIN "stops" AS "lastTripLastStop" ON "lastTripLastTripStop"."stopId" = "lastTripLastStop".id
+
+    LEFT JOIN "drivers" AS "nextTripDriver" ON "nextTripDriver".id = "routeNextTrip"."driverId"
+    LEFT JOIN "drivers" AS "lastTripDriver" ON "lastTripDriver".id = "routeLastTrip"."driverId";
 `,
 ]
