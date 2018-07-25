@@ -1,38 +1,48 @@
-export default function (modelCache) {
-  var DataTypes = modelCache.db.Sequelize
-  return modelCache.db.define('indicativeTrip', {
-    routeId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: modelCache.require('Route')
+/**
+ *
+ * @param {*} modelCache
+ * @return {Model} the model for IndicativeTrip
+ */
+export default function(modelCache) {
+  let DataTypes = modelCache.db.Sequelize
+  return modelCache.db.define(
+    "indicativeTrip",
+    {
+      routeId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: modelCache.require("Route"),
+        },
+        primaryKey: true,
       },
-      primaryKey: true
-    },
-    nextTripId: DataTypes.INTEGER,
-    nextPrice: DataTypes.DECIMAL(10, 2), //eslint-disable-line
-    nextCapacity: DataTypes.INTEGER,
-    nextStartTime: DataTypes.DATE,
-    nextEndTime: DataTypes.DATE,
-    nextStartDescription: DataTypes.TEXT,
-    nextEndDescription: DataTypes.TEXT,
-    nextDriverId: DataTypes.INTEGER,
-    nextDriverName: DataTypes.STRING,
+      nextTripId: DataTypes.INTEGER,
+      nextPrice: DataTypes.DECIMAL(10, 2), //eslint-disable-line
+      nextCapacity: DataTypes.INTEGER,
+      nextStartTime: DataTypes.DATE,
+      nextEndTime: DataTypes.DATE,
+      nextStartDescription: DataTypes.TEXT,
+      nextEndDescription: DataTypes.TEXT,
+      nextDriverId: DataTypes.INTEGER,
+      nextDriverName: DataTypes.STRING,
 
-    lastTripId: DataTypes.INTEGER,
-    lastPrice: DataTypes.DECIMAL(10, 2), //eslint-disable-line
-    lastCapacity: DataTypes.INTEGER,
-    lastStartTime: DataTypes.DATE,
-    lastEndTime: DataTypes.DATE,
-    lastStartDescription: DataTypes.TEXT,
-    lastEndDescription: DataTypes.TEXT,
-    lastDriverId: DataTypes.INTEGER,
-    lastDriverName: DataTypes.STRING,
-  }, {timestamps: false})
+      lastTripId: DataTypes.INTEGER,
+      lastPrice: DataTypes.DECIMAL(10, 2), //eslint-disable-line
+      lastCapacity: DataTypes.INTEGER,
+      lastStartTime: DataTypes.DATE,
+      lastEndTime: DataTypes.DATE,
+      lastStartDescription: DataTypes.TEXT,
+      lastEndDescription: DataTypes.TEXT,
+      lastDriverId: DataTypes.INTEGER,
+      lastDriverName: DataTypes.STRING,
+    },
+    { timestamps: false }
+  )
 }
 
-export var dontSync = true
+export const dontSync = true
 
-export var postSync = [`
+export const postSync = [
+  `
   CREATE OR REPLACE VIEW "indicativeTrips" AS
 
   WITH
@@ -116,4 +126,5 @@ export var postSync = [`
     INNER JOIN "tripEnd" AS "lastTripEnd" ON "routeLastTrip"."id" = "lastTripEnd"."tripId"
     LEFT OUTER JOIN "drivers" AS "lastTripDriver" ON "routeLastTrip"."driverId" = "lastTripDriver".id)
      ON "routeLastTrip"."routeId" = "routes"."id"
-`]
+`,
+]
