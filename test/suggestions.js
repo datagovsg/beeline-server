@@ -90,18 +90,35 @@ lab.experiment("Suggestion manipulation", function () {
     expect(singleResult.result.alight.coordinates[0]).equal(104.0)
     expect(singleResult.result.board.coordinates[0]).equal(103.1)
 
-    // Superadmin fetch
-    const superadminFetchResponse = await server.inject({
+    // Fetch personal suggestions
+    const superadminFetchPersonalResponse = await server.inject({
       url: "/suggestions",
+      method: "GET",
+      headers: userHeaders,
+    })
+    expect(superadminFetchPersonalResponse.result.length).equal(3)
+    expect(superadminFetchPersonalResponse.result.every(r => r.userId === user.id))
+
+    // User 2 fetch personal suggestions --> no results
+    const user2FetchPersonalResponse = await server.inject({
+      url: "/suggestions",
+      method: "GET",
+      headers: {Authorization: `Bearer ${user2.makeToken()}`},
+    })
+    expect(user2FetchPersonalResponse.result.length).equal(0)
+
+    // Superadmin fetch all suggestions
+    const superadminFetchResponse = await server.inject({
+      url: "/allSuggestions",
       method: "GET",
       headers: superadminHeaders,
     })
     expect(superadminFetchResponse.result.length).equal(3)
     expect(superadminFetchResponse.result.every(r => r.userId === user.id))
 
-    // User 2 fetch
+    // User 2 fetch all suggestions
     const user2FetchResponse = await server.inject({
-      url: "/suggestions",
+      url: "/allSuggestions",
       method: "GET",
       headers: {Authorization: `Bearer ${user2.makeToken()}`},
     })
