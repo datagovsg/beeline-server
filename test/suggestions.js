@@ -128,7 +128,7 @@ lab.experiment("Suggestion manipulation", function () {
     // Last ID fetch
     const maxId = _.max(responses.map(r => r.result.id))
     const lastIdFetchResponse = await server.inject({
-      url: "/suggestions?" + querystring.stringify({
+      url: "/allSuggestions?" + querystring.stringify({
         lastId: maxId,
       }),
       method: "GET",
