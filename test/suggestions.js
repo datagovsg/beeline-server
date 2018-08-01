@@ -91,13 +91,13 @@ lab.experiment("Suggestion manipulation", function () {
     expect(singleResult.result.board.coordinates[0]).equal(103.1)
 
     // Fetch personal suggestions
-    const superadminFetchPersonalResponse = await server.inject({
+    const userFetchPersonalResponse = await server.inject({
       url: "/suggestions",
       method: "GET",
       headers: userHeaders,
     })
-    expect(superadminFetchPersonalResponse.result.length).equal(3)
-    expect(superadminFetchPersonalResponse.result.every(r => r.userId === user.id))
+    expect(userFetchPersonalResponse.result.length).equal(3)
+    expect(userFetchPersonalResponse.result.every(r => r.userId === user.id))
 
     // User 2 fetch personal suggestions --> no results
     const user2FetchPersonalResponse = await server.inject({
