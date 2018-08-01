@@ -105,7 +105,7 @@ export function register(server, options, next) {
     path: "/suggestions",
     config: {
       tags: ["api"],
-      auth: { access: {scope: ['user']}},
+      auth: { access: { scope: ["user"] } },
     },
     handler: handleRequestWith(
       (ig, request, { models }) =>
