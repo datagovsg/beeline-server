@@ -122,7 +122,7 @@ export function register(server, options, next) {
 
   server.route({
     method: "GET",
-    path: "/allSuggestions",
+    path: "/all_suggestions",
     config: {
       tags: ["api"],
       validate: {

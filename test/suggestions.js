@@ -109,7 +109,7 @@ lab.experiment("Suggestion manipulation", function () {
 
     // Superadmin fetch all suggestions
     const superadminFetchResponse = await server.inject({
-      url: "/allSuggestions",
+      url: "/all_suggestions",
       method: "GET",
       headers: superadminHeaders,
     })
@@ -118,7 +118,7 @@ lab.experiment("Suggestion manipulation", function () {
 
     // User 2 fetch all suggestions
     const user2FetchResponse = await server.inject({
-      url: "/allSuggestions",
+      url: "/all_suggestions",
       method: "GET",
       headers: {Authorization: `Bearer ${user2.makeToken()}`},
     })
@@ -128,7 +128,7 @@ lab.experiment("Suggestion manipulation", function () {
     // Last ID fetch
     const maxId = _.max(responses.map(r => r.result.id))
     const lastIdFetchResponse = await server.inject({
-      url: "/allSuggestions?" + querystring.stringify({
+      url: "/all_suggestions?" + querystring.stringify({
         lastId: maxId,
       }),
       method: "GET",
