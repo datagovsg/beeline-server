@@ -543,8 +543,10 @@ export function register(server, options, next) {
             .min(1)
             .default(1),
           format: Joi.string()
-            .valid(["json", "csvdump"])
-            .description("json, or csvdump. csvdump ignores perPage and page")
+            .valid(["json", "csv", "csvdump"])
+            .description(
+              "json, csv or csvdump. csvdump ignores perPage and page"
+            )
             .default("json"),
         },
       },
@@ -681,6 +683,47 @@ export function register(server, options, next) {
           writer.on("error", err => {
             console.error(err)
           })
+        } else if (request.query.format === "csv") {
+          const { page, perPage } = request.query
+          const relatedTransactionItems = await getTransactionItems(
+            m,
+            db,
+            query,
+            page,
+            perPage
+          )
+
+          const io = new stream.PassThrough()
+          const writer = fastCSV
+            .createWriteStream({ headers: true })
+            .transform(routePassJSONToCSV)
+          writer.pipe(io)
+
+          reply(io)
+            .header("Content-type", "text/csv")
+            .header(
+              "content-disposition",
+              'attachment; filename="route_pass_report.csv"'
+            )
+
+          try {
+            for (const row of relatedTransactionItems) {
+              if (!writer.write(row)) {
+                console.warn("Draining socket buffer")
+                await new Promise(resolve => {
+                  writer.once("drain", resolve)
+                })
+              }
+            }
+          } catch (err) {
+            // corrupt output to indicate error
+            console.error(err)
+            writer.write({
+              transactionId: `Error generating output: ${err}`,
+            })
+          } finally {
+            writer.end()
+          }
         } else if (request.query.format === "json") {
           const { page, perPage } = request.query
           const relatedTransactionItems = await getTransactionItems(
