@@ -230,10 +230,17 @@ lab.experiment("TransactionItems", function () {
 
     const csvResponse = await server.inject({
       method: 'GET',
-      url: `/companies/${companyId}/transaction_items/route_passes?format=csvdump`,
+      url: `/companies/${companyId}/transaction_items/route_passes?format=csv`,
       headers: authHeaders.admin,
     })
     expect(csvResponse.statusCode).equal(200)
+
+    const csvDumpResponse = await server.inject({
+      method: 'GET',
+      url: `/companies/${companyId}/transaction_items/route_passes?format=csvdump`,
+      headers: authHeaders.admin,
+    })
+    expect(csvDumpResponse.statusCode).equal(200)
 
     const userResponse = await server.inject({
       method: 'GET',
