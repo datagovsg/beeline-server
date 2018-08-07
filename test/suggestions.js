@@ -37,7 +37,7 @@ lab.experiment("Suggestion manipulation", function () {
     }
 
     // Empty the table
-    await m.Suggestion.truncate()
+    await m.Suggestion.destroy({where: ['1=1'], cascade: true})
   })
 
   lab.test("Create and fetch suggestions", async () => {
