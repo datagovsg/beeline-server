@@ -105,6 +105,26 @@ export function register(server, options, next) {
     path: "/suggestions",
     config: {
       tags: ["api"],
+      auth: { access: { scope: ["user"] } },
+    },
+    handler: handleRequestWith(
+      (ig, request, { models }) =>
+        models.Suggestion.findAll({
+          where: {
+            userId: request.auth.credentials.userId,
+          },
+          order: [["id", "DESC"]],
+          limit: request.query.limit,
+        }),
+      s => s.map(t => t.toJSON())
+    ),
+  })
+
+  server.route({
+    method: "GET",
+    path: "/all_suggestions",
+    config: {
+      tags: ["api"],
       validate: {
         query: {
           lastId: Joi.number().optional(),
