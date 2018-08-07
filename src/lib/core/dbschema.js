@@ -31,6 +31,7 @@ const genModelAndTasks = seq => {
   modelCache.require("RefundPayment")
   modelCache.require("Transfer")
   modelCache.require("Suggestion")
+  modelCache.require("SuggestedRoute")
   modelCache.require("TripStatus")
   modelCache.require("Alert")
   modelCache.require("Asset")
