@@ -15,6 +15,7 @@ module.exports = (server, options, next) => {
       require("./endpoints/liteRoutes"),
       require("./endpoints/routes"),
       require("./endpoints/stops"),
+      require("./endpoints/suggestedRoutes"),
       require("./endpoints/suggestions"),
       require("./endpoints/suggestionsWeb"),
       require("./endpoints/tickets"),
