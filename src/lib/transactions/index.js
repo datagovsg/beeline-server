@@ -782,7 +782,7 @@ function checkExpectedPrice(tb, price) {
 function absorbSmallPayments(tb) {
   const excess = tb._excessCredit()
 
-  if (excess > 0 && excess * 100 <= Payment.minTransactionChargeInCents()) {
+  if (excess > 0.0001 && excess * 100 <= Payment.minTransactionChargeInCents()) {
     const clone = new TransactionBuilder(tb)
 
     const outstandingAmountsList = outstandingAmounts(clone.items)
