@@ -70,7 +70,7 @@
     "timemachine": "^0.2.8",
     "twilio": "^2.9.0",
     "typescript": "^1.8.2",
-    "ura-subzones": "git+https://github.com/datagovsg/ura-subzones.git",
+    "@opengovsg/ura-subzones": "git+https://github.com/datagovsg/ura-subzones.git",
     "uuid": "^3.1.0",
     "vision": "^4.1.0",
     "xmldom": "^0.1.22"

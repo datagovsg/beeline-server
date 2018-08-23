@@ -1,6 +1,6 @@
 import _ from "lodash"
 import Joi from "../util/joi"
-import subzones from "ura-subzones"
+import subzones from "@opengovsg/ura-subzones"
 import {
   SecurityError,
   defaultErrorHandler,
