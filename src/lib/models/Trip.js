@@ -101,11 +101,20 @@ export default modelCache => {
           Joi.assert(
             val,
             Joi.object({
-              windowType: Joi.string(),
+              windowType: Joi.string()
+                .valid(["stop", "firstStop"])
+                .default("stop"),
               windowSize: Joi.number()
                 .integer()
-                .max(0),
+                .default(-300000),
+              notes: Joi.string()
+                .allow("")
+                .allow(null)
+                .default(null),
+              childTicketPrice: Joi.number().allow(null),
             })
+              .optional()
+              .allow(null)
           )
           this.setDataValue("bookingInfo", val)
         },
