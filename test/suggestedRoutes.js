@@ -159,7 +159,7 @@ lab.experiment("Suggested routes manipulation", function () {
       headers: superadminHeaders
     }
 
-    // test when user has no payment method
+    // test when user has no payment method 
     const noPaymentMethodResponse = await server.inject(request)
     expect(noPaymentMethodResponse.statusCode).equal(400)
     expect(noPaymentMethodResponse.result.message).includes('at least one saved payment')
