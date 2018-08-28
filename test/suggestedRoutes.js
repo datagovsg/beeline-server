@@ -276,7 +276,7 @@ lab.experiment("Suggested routes manipulation", function () {
       endWalkingDistance: 400,
       timeAllowance: 1800 * 1000, // Half an hour
       daysOfWeek: 31, // 0b0011111 = Mon-Fri
-      dataSource: "suggestions"
+      dataSource: "suggestions",
     }
 
     // Intercept calls to routing.beeline.sg
@@ -284,12 +284,12 @@ lab.experiment("Suggested routes manipulation", function () {
       return {
         data: [{
           stopId: 1,
-          time: 123
+          time: 123,
         }, {
           stopId: 2,
-          time: 456
+          time: 456,
         }],
-        status: 200
+        status: 200,
       }
     })
 
@@ -304,10 +304,10 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(postResponse.statusCode).equal(200)
     expect(postResponse.result).equal([{
       stopId: 1,
-      time: 123
+      time: 123,
     }, {
       stopId: 2,
-      time: 456
+      time: 456,
     }])
   })
 })
