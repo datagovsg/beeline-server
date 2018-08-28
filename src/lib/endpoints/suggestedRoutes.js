@@ -10,6 +10,7 @@ import {
 import { handleRequestWith, instToJSONOrNotFound } from "../util/endpoints"
 import { TransactionError } from "../util/errors"
 import { routeSchema } from "../models/SuggestedRoute"
+import axios from "axios"
 
 const DEFAULT_CROWDSTART_PRICE = 5.0
 const DEFAULT_CROWDSTART_VALIDITY = 30 // 30 days from now
@@ -202,9 +203,7 @@ export function register(server, options, next) {
         params: {
           suggestionId: Joi.number().integer(),
         },
-        payload: {
-          route: routeSchema,
-        },
+        payload: routeSchema,
       },
       description: `Create a new suggested route`,
       auth: { access: { scope: ["superadmin"] } },
@@ -212,7 +211,7 @@ export function register(server, options, next) {
     handler: handleRequestWith(
       (ig, request, { models }) =>
         models.SuggestedRoute.create({
-          ...request.payload,
+          route: request.payload,
           seedSuggestionId: request.params.suggestionId,
           userId: null /* Not created by a user */,
           adminEmail: request.auth.credentials.email,
@@ -302,6 +301,43 @@ export function register(server, options, next) {
       } catch (err) {
         defaultErrorHandler(reply)(err)
       }
+    },
+  })
+
+  server.route({
+    method: "POST",
+    path:
+      "/suggestions/{suggestionId}/suggested_routes/trigger_route_generation",
+    config: {
+      tags: ["api"],
+      validate: {
+        params: {
+          suggestionId: Joi.number().integer(),
+        },
+        payload: {
+          maxDetourMinutes: Joi.number(),
+          startClusterRadius: Joi.number().integer(),
+          startWalkingDistance: Joi.number().integer(),
+          endClusterRadius: Joi.number().integer(),
+          endWalkingDistance: Joi.number().integer(),
+          timeAllowance: Joi.number().integer(),
+          daysOfWeek: Joi.number().integer(),
+          dataSource: Joi.string(),
+        },
+      },
+      description: `Trigger Beeline Routing to generate a new route`,
+      auth: { access: { scope: ["user"] } },
+    },
+    async handler(request, reply) {
+      const response = await axios.post(
+        `${process.env.ROUTING_SERVER_URL}/suggestions/${
+          request.params.suggestionId
+        }/update`,
+        request.payload
+      )
+
+      // beeline-routing will return false on error and an array of the route on success
+      reply(response.data).code(response.status)
     },
   })
 

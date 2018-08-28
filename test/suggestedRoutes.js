@@ -1,6 +1,8 @@
 import Lab from "lab"
 import _ from "lodash"
-import {expect} from "code"
+import sinon from "sinon"
+import axios from "axios"
+import { expect } from "code"
 import subzones from "@opengovsg/ura-subzones"
 import { loginAs, randomEmail, createStripeToken } from "./test_common.js"
 import Joi from '../src/lib/util/joi'
@@ -15,6 +17,7 @@ lab.experiment("Suggested routes manipulation", function () {
   let userHeaders
   let user
   let suggestion
+  let sandbox
 
   const makeTime = (hour, minutes) => hour * 3600e3 + minutes * 60e3
 
@@ -52,6 +55,12 @@ lab.experiment("Suggested routes manipulation", function () {
         Sun: false,
       },
     })
+
+    sandbox = sinon.sandbox.create()
+  })
+
+  lab.after(async function () {
+    sandbox.restore()
   })
 
   // Note:
@@ -70,21 +79,19 @@ lab.experiment("Suggested routes manipulation", function () {
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: {
-        route: [{
-          lat: 1.31,
-          lng: 103.81,
-          stopId: 100,
-          description: 'Bla',
-          time: 7 * 3600e3,
-        }, {
-          lat: 1.38,
-          lng: 103.88,
-          stopId: 101,
-          description: 'Bla',
-          time: 8 * 3600e3,
-        }],
-      },
+      payload: [{
+        lat: 1.31,
+        lng: 103.81,
+        stopId: 100,
+        description: 'Bla',
+        time: 7 * 3600e3,
+      }, {
+        lat: 1.38,
+        lng: 103.88,
+        stopId: 101,
+        description: 'Bla',
+        time: 8 * 3600e3,
+      }],
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -121,7 +128,7 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(listResponse3.result.length).equal(0)
   })
 
-  lab.test("create and convert suggested route to crowdstart", {timeout: 20000}, async (flags) => {
+  lab.test("create and convert suggested route to crowdstart", {timeout: 20000}, async () => {
     // create suggested route 
     const routeStops = [{
       lat: 1.31,
@@ -153,7 +160,7 @@ lab.experiment("Suggested routes manipulation", function () {
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: { route: routeStops },
+      payload: routeStops,
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -258,5 +265,49 @@ lab.experiment("Suggested routes manipulation", function () {
     routeStops.forEach(s => {
       expect(tripStops.some(ts => ts.stopId === s.stopId)).true()
     })
+  })
+
+  lab.test("trigger new route generation", async () => {
+    const routeDetails = {
+      maxDetourMinutes: 2.0,
+      startClusterRadius: 4000,
+      startWalkingDistance: 400,
+      endClusterRadius: 4000,
+      endWalkingDistance: 400,
+      timeAllowance: 1800 * 1000, // Half an hour
+      daysOfWeek: 31, // 0b0011111 = Mon-Fri
+      dataSource: "suggestions"
+    }
+
+    // Intercept calls to routing.beeline.sg
+    const axiosPost = sandbox.stub(axios, 'post', async (url) => {
+      return {
+        data: [{
+          stopId: 1,
+          time: 123
+        }, {
+          stopId: 2,
+          time: 456
+        }],
+        status: 200
+      }
+    })
+
+    const postResponse = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes/trigger_route_generation`,
+      headers: userHeaders,
+      payload: routeDetails,
+    })
+
+    expect(axiosPost.called).true()
+    expect(postResponse.statusCode).equal(200)
+    expect(postResponse.result).equal([{
+      stopId: 1,
+      time: 123
+    }, {
+      stopId: 2,
+      time: 456
+    }])
   })
 })
