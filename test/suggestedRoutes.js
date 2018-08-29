@@ -282,13 +282,7 @@ lab.experiment("Suggested routes manipulation", function () {
     // Intercept calls to routing.beeline.sg
     const axiosPost = sandbox.stub(axios, 'post', async (url) => {
       return {
-        data: [{
-          stopId: 1,
-          time: 123,
-        }, {
-          stopId: 2,
-          time: 456,
-        }],
+        data: "Job queued",
         status: 200,
       }
     })
@@ -302,12 +296,6 @@ lab.experiment("Suggested routes manipulation", function () {
 
     expect(axiosPost.called).true()
     expect(postResponse.statusCode).equal(200)
-    expect(postResponse.result).equal([{
-      stopId: 1,
-      time: 123,
-    }, {
-      stopId: 2,
-      time: 456,
-    }])
+    expect(postResponse.result).equal("Job queued")
   })
 })
