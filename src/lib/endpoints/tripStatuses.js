@@ -5,11 +5,6 @@ import leftPad from "left-pad"
 import assert from "assert"
 
 import { getModels } from "../util/common"
-import {
-  routeRequestsTo,
-  handleRequestWith,
-  assertFound,
-} from "../util/endpoints"
 import * as events from "../events/events"
 
 const auth = require("../core/auth")
@@ -22,35 +17,8 @@ const auth = require("../core/auth")
  */
 export function register(server, options, next) {
   server.route({
-    method: "GET",
-    path: "/trips/{id}/statuses",
-    config: {
-      tags: ["api", "commuter"],
-      auth: false,
-      validate: {
-        params: {
-          id: Joi.number().integer(),
-        },
-        query: {
-          limit: Joi.number()
-            .integer()
-            .min(1)
-            .max(20)
-            .default(10),
-        },
-      },
-    },
-    handler: handleRequestWith(
-      (ignored, { params }, { models }) =>
-        models.Trip.findById(params.id, { attributes: ["messages"] }),
-      assertFound,
-      ({ messages }, { query }) =>
-        query.limit ? messages.slice(0, query.limit) : messages
-    ),
-  })
-
-  routeRequestsTo(server, ["/trips/{id}/statuses", "/trips/{id}/messages"], {
     method: "POST",
+    path: "/trips/{id}/messages",
     config: {
       tags: ["api", "admin", "driver"],
       auth: { access: { scope: ["driver", "admin", "superadmin"] } },

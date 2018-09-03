@@ -322,7 +322,7 @@ lab.experiment("Event subscriptions", function () {
     // Execute the cancellation
     await server.inject({
       method: 'POST',
-      url: `/trips/${tripInst.id}/statuses`,
+      url: `/trips/${tripInst.id}/messages`,
       payload: {
         status: 'cancelled',
       },
@@ -367,7 +367,7 @@ lab.experiment("Event subscriptions", function () {
     // Execute the cancellation
     await server.inject({
       method: 'POST',
-      url: `/trips/${tripInst.id}/statuses`,
+      url: `/trips/${tripInst.id}/messages`,
       payload: {
         status: 'cancelled',
       },
