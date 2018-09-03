@@ -132,6 +132,9 @@ export async function cleanlyDeleteUsers (where) {
   await models.Suggestion.destroy({
     where: {userId: {$in: userIds}},
   })
+  await models.Bid.destroy({
+    where: {userId: {$in: userIds}},
+  })
   await models.User.destroy({where})
 }
 

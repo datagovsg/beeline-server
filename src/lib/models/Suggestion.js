@@ -111,6 +111,21 @@ export default function(modelCache) {
   )
 }
 
+/**
+ *
+ * @param {*} modelCache
+ * @return {void}
+ */
+export function makeAssociation(modelCache) {
+  let SuggestedRoute = modelCache.require("SuggestedRoute")
+  let Suggestion = modelCache.require("Suggestion")
+
+  Suggestion.hasMany(SuggestedRoute, {
+    foreignKey: "seedSuggestionId",
+    as: "seedSuggestion",
+  })
+}
+
 export const DaysOfWeekSchema = Joi.object({
   Mon: Joi.bool().required(),
   Tue: Joi.bool().required(),

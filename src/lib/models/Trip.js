@@ -97,6 +97,27 @@ export default modelCache => {
        */
       bookingInfo: {
         type: DataTypes.JSON,
+        set(val) {
+          Joi.assert(
+            val,
+            Joi.object({
+              windowType: Joi.string()
+                .valid(["stop", "firstStop"])
+                .default("stop"),
+              windowSize: Joi.number()
+                .integer()
+                .default(-300000),
+              notes: Joi.string()
+                .allow("")
+                .allow(null)
+                .default(null),
+              childTicketPrice: Joi.number().allow(null),
+            })
+              .optional()
+              .allow(null)
+          )
+          this.setDataValue("bookingInfo", val)
+        },
       },
     },
     {
