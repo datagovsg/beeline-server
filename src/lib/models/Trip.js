@@ -352,7 +352,6 @@ export default modelCache => {
 export const makeAssociation = modelCache => {
   const Trip = modelCache.require("Trip")
   const TripStop = modelCache.require("TripStop")
-  const TripStatus = modelCache.require("TripStatus")
   const Driver = modelCache.require("Driver")
   const Route = modelCache.require("Route")
   const Vehicle = modelCache.require("Vehicle")
@@ -361,9 +360,6 @@ export const makeAssociation = modelCache => {
     onDelete: "CASCADE",
   })
   // Trip, ping statuses
-  Trip.hasMany(TripStatus, {
-    foreignKey: "tripId",
-  })
   Trip.belongsTo(Driver, {
     foreignKey: "driverId",
   })

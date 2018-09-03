@@ -447,44 +447,6 @@ Trip's company ID and driver's company ID must match.
   })
 
   server.route({
-    method: "GET",
-    path: "/trips/{id}/latest_info",
-    config: {
-      tags: ["api", "commuter"],
-      auth: false,
-      description: "Returns the current vehicle, driver, latest statuses",
-      validate: {
-        params: {
-          id: Joi.number().integer(),
-        },
-      },
-    },
-    handler: async function(request, reply) {
-      try {
-        let m = getModels(request)
-
-        let trip = await m.Trip.findById(request.params.id, {
-          attributes: ["id", "status", "date", "driverId", "messages"],
-          include: [{ model: m.Vehicle }, { model: m.Driver }],
-        })
-
-        if (!trip) {
-          return reply(Boom.notFound())
-        }
-
-        reply({
-          trip: trip.toJSON(),
-          statuses: trip.toJSON().messages,
-          code: trip.getCode(true),
-        })
-      } catch (err) {
-        console.error(err.stack)
-        reply(Boom.badImplementation(err))
-      }
-    },
-  })
-
-  server.route({
     method: "PUT",
     path: "/trips/{id}",
     config: {

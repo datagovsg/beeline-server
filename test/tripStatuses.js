@@ -84,14 +84,14 @@ lab.experiment("TripStatus manipulation", function () {
     }
 
     // GET tripStatuses?
-    const response = await server.inject({
+    const { result: initialResult } = await server.inject({
       method: "GET",
-      url: `/trips/${trip.id}/statuses`,
+      url: `/trips/${trip.id}`,
     })
     for (let message of messages) {
-      expect(response.result.map(x => x.message)).to.include(message)
+      expect(initialResult.messages.map(x => x.message)).to.include(message)
     }
-    expect(response.result.length).to.equal(messages.length)
+    expect(initialResult.messages.length).to.equal(messages.length)
 
     await server.inject({
       method: "POST",
