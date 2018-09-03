@@ -22,7 +22,6 @@ before_deploy:
   # Build out a docker image, push it to Docker Hub,
   # then tell Elastic Beanstalk (later) of the recently pushed image
   - if [ "$BABEL_ENV" == "web" ]; then
-      set -eou pipefail;
       docker login -u $DOCKER_USER -p $DOCKER_PASSWORD;
       export REPO=$TRAVIS_REPO_SLUG;
       export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`;
