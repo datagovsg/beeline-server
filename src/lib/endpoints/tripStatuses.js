@@ -80,7 +80,7 @@ export function register(server, options, next) {
           message,
         }
 
-        let changes = message
+        let changes = typeof message === 'string'
           ? { status, messages: [data].concat(tripInst.messages) }
           : { status }
 
