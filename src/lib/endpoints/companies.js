@@ -9,6 +9,7 @@ import commonmark from "commonmark"
 import querystring from "querystring"
 import BlueBird from "bluebird"
 import sharp from "sharp"
+import { imageMimeForBytes } from "../util/image"
 
 let getModels = common.getModels
 let defaultErrorHandler = common.defaultErrorHandler
@@ -398,14 +399,15 @@ action="/companies/10/logo"
 
         company.logo = Buffer.concat(bufs)
 
-        if (company.logo[0] === 137 && company.logo[1] === "P".charCodeAt(0)) {
-          await company.save()
-          reply(company.logo).header("Content-type", "image/png")
-        } else if (company.logo[0] === "J".charCodeAt(0)) {
-          await company.save()
-          reply(company.logo).header("Content-type", "image/jpeg")
+        const mime = imageMimeForBytes(company.logo)
+        if (mime === null) {
+          reply(
+            Boom.badRequest(
+              "Image type cannot be determined. Magic bytes not recognized"
+            )
+          )
         } else {
-          reply(null)
+          reply(company.logo).header("Content-Type", mime)
         }
       } catch (err) {
         defaultErrorHandler(reply)(err)
