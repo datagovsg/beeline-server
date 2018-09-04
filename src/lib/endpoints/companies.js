@@ -10,6 +10,7 @@ import querystring from "querystring"
 import BlueBird from "bluebird"
 import sharp from "sharp"
 import { imageMimeForBytes } from "../util/image"
+import { InvalidArgumentError } from "../util/errors"
 
 let getModels = common.getModels
 let defaultErrorHandler = common.defaultErrorHandler
@@ -401,10 +402,8 @@ action="/companies/10/logo"
 
         const mime = imageMimeForBytes(company.logo)
         if (mime === null) {
-          reply(
-            Boom.badRequest(
-              "Image type cannot be determined. Magic bytes not recognized"
-            )
+          throw new InvalidArgumentError(
+            "Unknown magic bytes. Image MIME cannot be determined"
           )
         } else {
           reply(company.logo).header("Content-Type", mime)
