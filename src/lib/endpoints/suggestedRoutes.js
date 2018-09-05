@@ -333,7 +333,8 @@ export function register(server, options, next) {
         `${process.env.ROUTING_SERVER_URL}/suggestions/${
           request.params.suggestionId
         }/update`,
-        request.payload
+        request.payload,
+        { headers: { authorization: request.headers.authorization } },
       )
 
       // beeline-routing will return false on error and an array of the route on success
