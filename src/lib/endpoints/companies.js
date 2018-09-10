@@ -9,7 +9,7 @@ import commonmark from "commonmark"
 import querystring from "querystring"
 import BlueBird from "bluebird"
 import sharp from "sharp"
-import { imageMimeForBytes } from "../util/image"
+import { imageMimeForMagicBytes } from "../util/image"
 import { InvalidArgumentError } from "../util/errors"
 
 let getModels = common.getModels
@@ -400,7 +400,7 @@ action="/companies/10/logo"
 
         company.logo = Buffer.concat(bufs)
 
-        const mime = imageMimeForBytes(company.logo)
+        const mime = imageMimeForMagicBytes(company.logo)
         if (mime === null) {
           throw new InvalidArgumentError(
             "Unknown magic bytes. Image MIME cannot be determined"
