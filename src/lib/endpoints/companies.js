@@ -406,6 +406,7 @@ action="/companies/10/logo"
             "Unknown magic bytes. Image MIME cannot be determined"
           )
         } else {
+          await company.save()
           reply(company.logo).header("Content-Type", mime)
         }
       } catch (err) {
