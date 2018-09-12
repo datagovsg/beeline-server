@@ -155,7 +155,7 @@ export const DaysOfWeekSchema = Joi.object({
 export const LocationDescriptionSchema = Joi.object({
   description: Joi.string(),
   postalCode: Joi.number(),
-  oneMapAddress: Joi.object()
+  oneMapAddress: Joi.object(),
 })
 
 export const postSync = [

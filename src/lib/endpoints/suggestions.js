@@ -2,7 +2,10 @@ const Boom = require("boom")
 import _ from "lodash"
 import Joi from "../util/joi"
 import { getModels, defaultErrorHandler, SecurityError } from "../util/common"
-import { DaysOfWeekSchema, LocationDescriptionSchema } from "../models/Suggestion"
+import {
+  DaysOfWeekSchema,
+  LocationDescriptionSchema,
+} from "../models/Suggestion"
 import {
   assertFound,
   handleRequestWith,

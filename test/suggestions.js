@@ -375,4 +375,52 @@ lab.experiment("Suggestion manipulation", function () {
       },
     }))()).rejects()
   })
+
+  lab.test("Board and alight descriptions", async function () {
+    const completeDescriptions = await m.Suggestion.create({
+      board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
+      alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      boardDesc: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+      },
+      alightDesc: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+      },
+      time: makeTime(8, 0),
+      daysMask: parseInt('1010111', 2),
+    })
+
+    expect(completeDescriptions.boardDesc.postalCode).to.equal(4560)
+    expect(completeDescriptions.boardDesc.description).to.equal("456, A Street, S 4560")
+    expect(completeDescriptions.boardDesc.oneMapAddress).to.equal({ postal: 4560, blk_no: 456, road_name: "A Street" } )
+
+    await expect((async () => m.Suggestion.create({
+      board: {lat: 1.2, lng: 103.1},
+      alight: {lat: 1.4, lng: 104.0},
+      time: makeTime(8, 0),
+      boardDesc: { 
+        postalCode: 4560,
+        description: "456, A Street, S 4560", 
+        // oneMapAddress missibg
+      },
+      alightDesc: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+      },
+      daysOfWeek: {
+        Mon: false,
+        Tue: false,
+        Wed: true,
+        Thu: true,
+        Fri: true,
+        Sat: true,
+        Sun: false
+      },
+    }))()).rejects()
+  })
 })
