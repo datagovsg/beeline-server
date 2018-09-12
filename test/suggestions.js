@@ -48,12 +48,12 @@ lab.experiment("Suggestion manipulation", function () {
         boardDesc: { 
           postalCode: 1013, 
           description: "16, A Street, S 1013", 
-          oneMapAddress: { postal: 1013, blk_no: 16, road_name: "A Street" } 
+          oneMapAddress: { postal: 1013, blk_no: 16, road_name: "A Street" }, 
         },
         alightDesc: { 
           postalCode: 1023, 
           description: "18, B Street, S 1023", 
-          oneMapAddress: { postal: 1023, blk_no: 18, road_name: "B Street" } 
+          oneMapAddress: { postal: 1023, blk_no: 18, road_name: "B Street" }, 
         },
         alight: {lat: 1.4, lng: 104.0},
         time: makeTime(7, 30),
@@ -64,12 +64,12 @@ lab.experiment("Suggestion manipulation", function () {
         boardDesc: { 
           postalCode: 1033, 
           description: "16, C Street, S 1033", 
-          oneMapAddress: { postal: 1033, blk_no: 16, road_name: "C Street" } 
+          oneMapAddress: { postal: 1033, blk_no: 16, road_name: "C Street" }, 
         },
         alightDesc: { 
           postalCode: 1113, 
           description: "18, D Street, S 1113", 
-          oneMapAddress: { postal: 1113, blk_no: 18, road_name: "D Street" } 
+          oneMapAddress: { postal: 1113, blk_no: 18, road_name: "D Street" }, 
         },
         alight: {lat: 1.39, lng: 103.9},
         time: makeTime(8, 0),
@@ -80,12 +80,12 @@ lab.experiment("Suggestion manipulation", function () {
         boardDesc: { 
           postalCode: 1213, 
           description: "16, E Street, S 1213", 
-          oneMapAddress: { postal: 1213, blk_no: 16, road_name: "E Street" } 
+          oneMapAddress: { postal: 1213, blk_no: 16, road_name: "E Street" }, 
         },
         alightDesc: { 
           postalCode: 1313, 
           description: "18, F Street, S 1313", 
-          oneMapAddress: { postal: 1313, blk_no: 18, road_name: "F Street" } 
+          oneMapAddress: { postal: 1313, blk_no: 18, road_name: "F Street" }, 
         },
         alight: {lat: 1.38, lng: 103.8},
         time: makeTime(8, 30),
@@ -179,12 +179,12 @@ lab.experiment("Suggestion manipulation", function () {
       boardDesc: { 
         postalCode: 1013, 
         description: "16, A Street, S 1013", 
-        oneMapAddress: { postal: 1013, blk_no: 16, road_name: "A Street" } 
+        oneMapAddress: { postal: 1013, blk_no: 16, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 1023, 
         description: "18, B Street, S 1023", 
-        oneMapAddress: { postal: 1023, blk_no: 18, road_name: "B Street" } 
+        oneMapAddress: { postal: 1023, blk_no: 18, road_name: "B Street" }, 
       },
       time: makeTime(6, 45),
       daysOfWeek: {
@@ -208,12 +208,12 @@ lab.experiment("Suggestion manipulation", function () {
         boardDesc: { 
           postalCode: 4560, 
           description: "456, A Street, S 4560", 
-          oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+          oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
         },
         alightDesc: { 
           postalCode: 7560, 
           description: "756, B Street, S 7560", 
-          oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+          oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
         },
         time: makeTime(6, 50),
         daysOfWeek: {
@@ -263,12 +263,12 @@ lab.experiment("Suggestion manipulation", function () {
       boardDesc: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       time: makeTime(6, 45),
       daysOfWeek: {
@@ -302,12 +302,12 @@ lab.experiment("Suggestion manipulation", function () {
       boardDesc: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       time: makeTime(8, 0),
       daysMask: parseInt('1010111', 2),
@@ -329,12 +329,12 @@ lab.experiment("Suggestion manipulation", function () {
       boardDesc: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       time: makeTime(8, 0),
       daysOfWeek: {
@@ -357,12 +357,12 @@ lab.experiment("Suggestion manipulation", function () {
       boardDesc: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       daysOfWeek: {
         Mon: false,
@@ -383,12 +383,12 @@ lab.experiment("Suggestion manipulation", function () {
       boardDesc: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       time: makeTime(8, 0),
       daysMask: parseInt('1010111', 2),
@@ -410,7 +410,7 @@ lab.experiment("Suggestion manipulation", function () {
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       daysOfWeek: {
         Mon: false,
@@ -419,7 +419,7 @@ lab.experiment("Suggestion manipulation", function () {
         Thu: true,
         Fri: true,
         Sat: true,
-        Sun: false
+        Sun: false,
       },
     }))()).rejects()
   })

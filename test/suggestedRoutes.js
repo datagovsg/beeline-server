@@ -47,12 +47,12 @@ lab.experiment("Suggested routes manipulation", function () {
       boardDesc: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" } 
+        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
       },
       alightDesc: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" } 
+        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
       },
       time: makeTime(6, 45),
       daysOfWeek: {
