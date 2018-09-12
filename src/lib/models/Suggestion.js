@@ -19,8 +19,7 @@ export default function(modelCache) {
         set(val) {
           Joi.assert(val, LocationDescriptionSchema)
           this.setDataValue("boardDesc", val)
-        },
-        allowNull: false,
+        }
       },
       alight: {
         type: DataTypes.GEOMETRY("POINT"), // eslint-disable-line
@@ -31,8 +30,7 @@ export default function(modelCache) {
         set(val) {
           Joi.assert(val, LocationDescriptionSchema)
           this.setDataValue("alightDesc", val)
-        },
-        allowNull: false,
+        }
       },
       time: {
         type: DataTypes.INTEGER,
