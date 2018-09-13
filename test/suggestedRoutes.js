@@ -44,15 +44,15 @@ lab.experiment("Suggested routes manipulation", function () {
       email: user.email,
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
-      boardDesc: { 
+      boardDescription: { 
         postalCode: 4560, 
         description: "456, A Street, S 4560", 
-        oneMapAddress: { postal: 4560, blk_no: 456, road_name: "A Street" }, 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
       },
-      alightDesc: { 
+      alightDescription: { 
         postalCode: 7560, 
         description: "756, B Street, S 7560", 
-        oneMapAddress: { postal: 7560, blk_no: 756, road_name: "B Street" }, 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
       time: makeTime(6, 45),
       daysOfWeek: {

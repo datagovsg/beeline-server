@@ -200,8 +200,8 @@ export function register(server, options, next) {
             .min(0)
             .max(24 * 3600e3),
 
-          boardDesc: LocationDescriptionSchema,
-          alightDesc: LocationDescriptionSchema,
+          boardDescription: LocationDescriptionSchema,
+          alightDescription: LocationDescriptionSchema,
           currentMode: Joi.string().optional(),
           referrer: Joi.string().optional(),
           daysOfWeek: DaysOfWeekSchema,
@@ -248,8 +248,8 @@ export function register(server, options, next) {
             .min(0)
             .max(24 * 3600e3),
 
-          boardDesc: LocationDescriptionSchema,
-          alightDesc: LocationDescriptionSchema,
+          boardDescription: LocationDescriptionSchema,
+          alightDescription: LocationDescriptionSchema,
           currentMode: Joi.string().optional(),
           daysOfWeek: DaysOfWeekSchema,
         }),

@@ -14,22 +14,22 @@ export default function(modelCache) {
         type: DataTypes.GEOMETRY("POINT"), // eslint-disable-line
         allowNull: false,
       },
-      boardDesc: {
+      boardDescription: {
         type: DataTypes.JSONB,
         set(val) {
           Joi.assert(val, LocationDescriptionSchema)
-          this.setDataValue("boardDesc", val)
+          this.setDataValue("boardDescription", val)
         },
       },
       alight: {
         type: DataTypes.GEOMETRY("POINT"), // eslint-disable-line
         allowNull: false,
       },
-      alightDesc: {
+      alightDescription: {
         type: DataTypes.JSONB,
         set(val) {
           Joi.assert(val, LocationDescriptionSchema)
-          this.setDataValue("alightDesc", val)
+          this.setDataValue("alightDescription", val)
         },
       },
       time: {
@@ -153,7 +153,7 @@ export const DaysOfWeekSchema = Joi.object({
 export const LocationDescriptionSchema = Joi.object({
   description: Joi.string(),
   postalCode: Joi.number(),
-  oneMapAddress: Joi.object(),
+  oneMapData: Joi.object(),
 })
 
 export const postSync = [
