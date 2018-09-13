@@ -2,7 +2,10 @@ const Boom = require("boom")
 import _ from "lodash"
 import Joi from "../util/joi"
 import { getModels, defaultErrorHandler, SecurityError } from "../util/common"
-import { DaysOfWeekSchema } from "../models/Suggestion"
+import {
+  DaysOfWeekSchema,
+  LocationDescriptionSchema,
+} from "../models/Suggestion"
 import {
   assertFound,
   handleRequestWith,
@@ -197,6 +200,8 @@ export function register(server, options, next) {
             .min(0)
             .max(24 * 3600e3),
 
+          boardDescription: LocationDescriptionSchema,
+          alightDescription: LocationDescriptionSchema,
           currentMode: Joi.string().optional(),
           referrer: Joi.string().optional(),
           daysOfWeek: DaysOfWeekSchema,
@@ -243,6 +248,8 @@ export function register(server, options, next) {
             .min(0)
             .max(24 * 3600e3),
 
+          boardDescription: LocationDescriptionSchema,
+          alightDescription: LocationDescriptionSchema,
           currentMode: Joi.string().optional(),
           daysOfWeek: DaysOfWeekSchema,
         }),

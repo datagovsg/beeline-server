@@ -45,18 +45,48 @@ lab.experiment("Suggestion manipulation", function () {
     let suggestionsData = [
       {
         board: {lat: 1.2, lng: 103.1},
+        boardDescription: { 
+          postalCode: 1013, 
+          description: "16, A Street, S 1013", 
+          oneMapData: { POSTAL: 1013, BLK_NO: 16, ROAD_NAME: "A Street" }, 
+        },
+        alightDescription: { 
+          postalCode: 1023, 
+          description: "18, B Street, S 1023", 
+          oneMapData: { POSTAL: 1023, BLK_NO: 18, ROAD_NAME: "B Street" }, 
+        },
         alight: {lat: 1.4, lng: 104.0},
         time: makeTime(7, 30),
         daysOfWeek: {Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false},
       },
       {
         board: {lat: 1.21, lng: 103.2},
+        boardDescription: { 
+          postalCode: 1033, 
+          description: "16, C Street, S 1033", 
+          oneMapData: { POSTAL: 1033, BLK_NO: 16, ROAD_NAME: "C Street" }, 
+        },
+        alightDescription: { 
+          postalCode: 1113, 
+          description: "18, D Street, S 1113", 
+          oneMapData: { POSTAL: 1113, BLK_NO: 18, ROAD_NAME: "D Street" }, 
+        },
         alight: {lat: 1.39, lng: 103.9},
         time: makeTime(8, 0),
         daysOfWeek: {Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false},
       },
       {
         board: {lat: 1.22, lng: 103.3},
+        boardDescription: { 
+          postalCode: 1213, 
+          description: "16, E Street, S 1213", 
+          oneMapData: { POSTAL: 1213, BLK_NO: 16, ROAD_NAME: "E Street" }, 
+        },
+        alightDescription: { 
+          postalCode: 1313, 
+          description: "18, F Street, S 1313", 
+          oneMapData: { POSTAL: 1313, BLK_NO: 18, ROAD_NAME: "F Street" }, 
+        },
         alight: {lat: 1.38, lng: 103.8},
         time: makeTime(8, 30),
         daysOfWeek: {Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: false, Sun: false},
@@ -88,7 +118,9 @@ lab.experiment("Suggestion manipulation", function () {
       method: 'GET',
     })
     expect(singleResult.result.alight.coordinates[0]).equal(104.0)
+    expect(singleResult.result.alightDescription.description).equal("18, B Street, S 1023")
     expect(singleResult.result.board.coordinates[0]).equal(103.1)
+    expect(singleResult.result.boardDescription.description).equal("16, A Street, S 1013")
 
     // Fetch personal suggestions
     const userFetchPersonalResponse = await server.inject({
@@ -144,6 +176,16 @@ lab.experiment("Suggestion manipulation", function () {
       userId: user.id,
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      boardDescription: { 
+        postalCode: 1013, 
+        description: "16, A Street, S 1013", 
+        oneMapData: { POSTAL: 1013, BLK_NO: 16, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 1023, 
+        description: "18, B Street, S 1023", 
+        oneMapData: { POSTAL: 1023, BLK_NO: 18, ROAD_NAME: "B Street" }, 
+      },
       time: makeTime(6, 45),
       daysOfWeek: {
         Mon: true,
@@ -163,6 +205,16 @@ lab.experiment("Suggestion manipulation", function () {
       payload: {
         board: {lat: 1.4, lng: 103.9},
         alight: {lat: 1.3, lng: 103.8},
+        boardDescription: { 
+          postalCode: 4560, 
+          description: "456, A Street, S 4560", 
+          oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+        },
+        alightDescription: { 
+          postalCode: 7560, 
+          description: "756, B Street, S 7560", 
+          oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+        },
         time: makeTime(6, 50),
         daysOfWeek: {
           Mon: false,
@@ -180,7 +232,9 @@ lab.experiment("Suggestion manipulation", function () {
     await suggestion.reload()
 
     expect(suggestion.board.coordinates[1]).equal(1.4)
+    expect(suggestion.boardDescription.description).equal("456, A Street, S 4560")
     expect(suggestion.alight.coordinates[1]).equal(1.3)
+    expect(suggestion.alightDescription.description).equal("756, B Street, S 7560")
     expect(suggestion.time).equal(makeTime(6, 50))
     expect(suggestion.daysOfWeek.Sat).equal(true)
     expect(suggestion.daysOfWeek.Sun).equal(true)
@@ -206,6 +260,16 @@ lab.experiment("Suggestion manipulation", function () {
       email: user.email,
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      boardDescription: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
       time: makeTime(6, 45),
       daysOfWeek: {
         Mon: true,
@@ -235,6 +299,16 @@ lab.experiment("Suggestion manipulation", function () {
     const suggestionSetByInt = await m.Suggestion.create({
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
+      boardDescription: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
       time: makeTime(8, 0),
       daysMask: parseInt('1010111', 2),
     })
@@ -252,6 +326,16 @@ lab.experiment("Suggestion manipulation", function () {
     const suggestionSetByArray = await m.Suggestion.create({
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
+      boardDescription: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
       time: makeTime(8, 0),
       daysOfWeek: {
         Mon: false,
@@ -270,6 +354,16 @@ lab.experiment("Suggestion manipulation", function () {
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
       time: makeTime(8, 0),
+      boardDescription: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
       daysOfWeek: {
         Mon: false,
         Tue: false,
@@ -278,6 +372,54 @@ lab.experiment("Suggestion manipulation", function () {
         Fri: true,
         Sat: true,
         // Sunday missing
+      },
+    }))()).rejects()
+  })
+
+  lab.test("Board and alight descriptions", async function () {
+    const completeDescriptions = await m.Suggestion.create({
+      board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
+      alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      boardDescription: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
+      time: makeTime(8, 0),
+      daysMask: parseInt('1010111', 2),
+    })
+
+    expect(completeDescriptions.boardDescription.postalCode).to.equal(4560)
+    expect(completeDescriptions.boardDescription.description).to.equal("456, A Street, S 4560")
+    expect(completeDescriptions.boardDescription.oneMapData).to.equal({ POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" } )
+
+    await expect((async () => m.Suggestion.create({
+      board: {lat: 1.2, lng: 103.1},
+      alight: {lat: 1.4, lng: 104.0},
+      time: makeTime(8, 0),
+      boardDescription: { 
+        postalCode: 4560,
+        description: "456, A Street, S 4560", 
+        // oneMapData missibg
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
+      daysOfWeek: {
+        Mon: false,
+        Tue: false,
+        Wed: true,
+        Thu: true,
+        Fri: true,
+        Sat: true,
+        Sun: false,
       },
     }))()).rejects()
   })

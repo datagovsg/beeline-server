@@ -44,6 +44,16 @@ lab.experiment("Suggested routes manipulation", function () {
       email: user.email,
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
+      boardDescription: { 
+        postalCode: 4560, 
+        description: "456, A Street, S 4560", 
+        oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
+      },
+      alightDescription: { 
+        postalCode: 7560, 
+        description: "756, B Street, S 7560", 
+        oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
+      },
       time: makeTime(6, 45),
       daysOfWeek: {
         Mon: true,
