@@ -295,7 +295,7 @@ lab.experiment("Suggestions from the web", function() {
     expect(suggestResponse.statusCode).to.equal(200)
 
     // Add an entry with a null email
-    await m.Suggestion.create({
+    const suggestion = await m.Suggestion.create({
       board: {
         type: "Point",
         coordinates: [103.810011, 1.381],
@@ -309,35 +309,102 @@ lab.experiment("Suggestions from the web", function() {
       time: 999999,
     })
 
-    let similarSuggestionsResponse = await server.inject({
-      url:
-        "/suggestions/web/similar?" +
-        qs.stringify({
-          startLat: 1.381005,
-          startLng: 103.81005,
-          endLat: 1.389001,
-          endLng: 103.8199001,
-        }),
-    })
-    expect(similarSuggestionsResponse.statusCode).equal(200)
-    expect(
-      _.some(
-        similarSuggestionsResponse.result,
-        s =>
-          s.time === 8999991 &&
-          s.email.indexOf("*****") !== -1 &&
-          s.email.indexOf("test-") === -1
-      )
-    ).true()
-    expect(
-      _.every(
-        similarSuggestionsResponse.result,
-        s => s.email === null || s.email.indexOf("test-") === -1
-      )
-    ).true()
-    expect(
-      _.every(similarSuggestionsResponse.result, s => s.ipAddress === null)
-    ).true()
+    /**
+     *
+     * @param {json} query
+     * @return {json}
+     */
+    async function getResponseForSimilarQuery(query) {
+      const response = await server.inject({
+        url:
+          "/suggestions/web/similar?" +
+          qs.stringify(query),
+      })
+      expect(response.statusCode).equal(200)
+
+      return response.result
+    }
+
+    /**
+     * every, but also checks that the array is nonempty
+     * @param {array} m
+     * @param {function} f
+     * @return {boolean}
+     */
+    function strictEvery(m, f) {
+      return m.length > 0 && _.every(m, f)
+    }
+
+    // Check redaction
+    expect(_.some(
+      await getResponseForSimilarQuery({
+        startLat: 1.381005,
+        startLng: 103.81005,
+        endLat: 1.389001,
+        endLng: 103.8199001,
+      }),
+      s =>
+        s.time === 8999991 &&
+        s.email.indexOf("*****") !== -1 &&
+        s.email.indexOf("test-") === -1
+    )).true()
+
+    expect(strictEvery(
+      await getResponseForSimilarQuery({
+        startLat: 1.381005,
+        startLng: 103.81005,
+        endLat: 1.389001,
+        endLng: 103.8199001,
+      }),
+      s => (s.email === null || s.email.indexOf("test-") === -1) &&
+        s.ipAddress === null
+    )).true()
+
+    // Check that limit by time will succeed
+    expect(strictEvery(
+      await getResponseForSimilarQuery({
+        startLat: 1.381005,
+        startLng: 103.81005,
+        endLat: 1.389001,
+        endLng: 103.8199001,
+        time: 999999,
+        maxTimeDifference: 1000,
+      }),
+      s =>
+        Math.abs(new Date(s.time).getTime() - 999999) <= 1000
+    )).true()
+
+    // Check that limit by time anonymity
+    expect(strictEvery(
+      await getResponseForSimilarQuery({
+        startLat: 1.381005,
+        startLng: 103.81005,
+        endLat: 1.389001,
+        endLng: 103.8199001,
+        includeAnonymous: false,
+      }),
+      s => s.email !== null
+    )).true()
+
+    // Check that limit by created date works
+    expect((
+      await getResponseForSimilarQuery({
+        startLat: 1.381005,
+        startLng: 103.81005,
+        endLat: 1.389001,
+        endLng: 103.8199001,
+        createdSince: new Date(Date.now() + 100).toISOString(),
+      })
+    ).length).equal(0)
+    expect((
+      await getResponseForSimilarQuery({
+        startLat: 1.381005,
+        startLng: 103.81005,
+        endLat: 1.389001,
+        endLng: 103.8199001,
+        createdSince: suggestion.createdAt.toISOString(),
+      })
+    ).length).equal(1)
   })
 
   lab.test("updateTravelTime()", { timeout: 5000 }, async function() {

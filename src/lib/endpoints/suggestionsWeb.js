@@ -510,6 +510,10 @@ export function register(server, options, next) {
           endDistance: Joi.number()
             .default(5000)
             .max(5000),
+          time: Joi.number().optional(),
+          maxTimeDifference: Joi.number().default(1800e3),
+          includeAnonymous: Joi.boolean().default(true),
+          createdSince: Joi.date().optional(),
         },
       },
       description: `Suggestions by all users`,
@@ -520,6 +524,18 @@ export function register(server, options, next) {
 
         let startXY = toSVY([request.query.startLng, request.query.startLat])
         let endXY = toSVY([request.query.endLng, request.query.endLat])
+
+        const timeQuery = request.query.time
+          ? `ABS(time - ${request.query.time}) <= ${
+              request.query.maxTimeDifference
+            }`
+          : `1=1`
+        const includeAnonymousQuery = request.query.includeAnonymous
+          ? " 1=1 "
+          : `email IS NOT NULL`
+        const createdSinceQuery = request.query.createdSince
+          ? `"createdAt" >= '${request.query.createdSince.toISOString()}'::timestamptz`
+          : `1=1`
 
         let sugg = await db.query(
           `
@@ -534,7 +550,10 @@ export function register(server, options, next) {
           ST_distance(
             ST_Transform(ST_SetSRID(alight, 4326), 3414),
             ST_GeomFromText('POINT(${endXY[0]} ${endXY[1]})', 3414)
-          ) < ${request.query.endDistance})
+          ) < ${request.query.endDistance}) AND
+          ${timeQuery} AND
+          ${includeAnonymousQuery} AND
+          ${createdSinceQuery}
         `,
           {
             type: db.QueryTypes.SELECT,
