@@ -28,6 +28,7 @@ export default function(modelCache) {
   return modelCache.db.define("suggestedRoute", {
     seedSuggestionId: DataTypes.INTEGER,
     userId: DataTypes.INTEGER,
+    routeId: DataTypes.INTEGER,
     adminEmail: DataTypes.STRING,
     route: {
       type: DataTypes.JSONB,
@@ -47,9 +48,14 @@ export default function(modelCache) {
 export function makeAssociation(modelCache) {
   let Suggestion = modelCache.require("Suggestion")
   let SuggestedRoute = modelCache.require("SuggestedRoute")
+  let Route = modelCache.require("Route")
 
   SuggestedRoute.belongsTo(Suggestion, {
     foreignKey: "seedSuggestionId",
     as: "seedSuggestion",
+  })
+  SuggestedRoute.belongsTo(Route, {
+    foreignKey: "routeId",
+    as: "crowdstartRoute",
   })
 }
