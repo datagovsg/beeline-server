@@ -46,12 +46,12 @@ lab.experiment("Suggestion manipulation", function () {
       {
         board: {lat: 1.2, lng: 103.1},
         boardDescription: { 
-          postalCode: 1013, 
+          postalCode: "1013", 
           description: "16, A Street, S 1013", 
           oneMapData: { POSTAL: 1013, BLK_NO: 16, ROAD_NAME: "A Street" }, 
         },
         alightDescription: { 
-          postalCode: 1023, 
+          postalCode: "1023", 
           description: "18, B Street, S 1023", 
           oneMapData: { POSTAL: 1023, BLK_NO: 18, ROAD_NAME: "B Street" }, 
         },
@@ -62,12 +62,12 @@ lab.experiment("Suggestion manipulation", function () {
       {
         board: {lat: 1.21, lng: 103.2},
         boardDescription: { 
-          postalCode: 1033, 
+          postalCode: "1033", 
           description: "16, C Street, S 1033", 
           oneMapData: { POSTAL: 1033, BLK_NO: 16, ROAD_NAME: "C Street" }, 
         },
         alightDescription: { 
-          postalCode: 1113, 
+          postalCode: "1113", 
           description: "18, D Street, S 1113", 
           oneMapData: { POSTAL: 1113, BLK_NO: 18, ROAD_NAME: "D Street" }, 
         },
@@ -78,12 +78,12 @@ lab.experiment("Suggestion manipulation", function () {
       {
         board: {lat: 1.22, lng: 103.3},
         boardDescription: { 
-          postalCode: 1213, 
+          postalCode: "1213", 
           description: "16, E Street, S 1213", 
           oneMapData: { POSTAL: 1213, BLK_NO: 16, ROAD_NAME: "E Street" }, 
         },
         alightDescription: { 
-          postalCode: 1313, 
+          postalCode: "1313", 
           description: "18, F Street, S 1313", 
           oneMapData: { POSTAL: 1313, BLK_NO: 18, ROAD_NAME: "F Street" }, 
         },
@@ -177,12 +177,12 @@ lab.experiment("Suggestion manipulation", function () {
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
       boardDescription: { 
-        postalCode: 1013, 
+        postalCode: "1013", 
         description: "16, A Street, S 1013", 
         oneMapData: { POSTAL: 1013, BLK_NO: 16, ROAD_NAME: "A Street" }, 
       },
       alightDescription: { 
-        postalCode: 1023, 
+        postalCode: "1023", 
         description: "18, B Street, S 1023", 
         oneMapData: { POSTAL: 1023, BLK_NO: 18, ROAD_NAME: "B Street" }, 
       },
@@ -206,12 +206,12 @@ lab.experiment("Suggestion manipulation", function () {
         board: {lat: 1.4, lng: 103.9},
         alight: {lat: 1.3, lng: 103.8},
         boardDescription: { 
-          postalCode: 4560, 
+          postalCode: "4560", 
           description: "456, A Street, S 4560", 
           oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
         },
         alightDescription: { 
-          postalCode: 7560, 
+          postalCode: "7560", 
           description: "756, B Street, S 7560", 
           oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
         },
@@ -261,12 +261,12 @@ lab.experiment("Suggestion manipulation", function () {
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
       boardDescription: { 
-        postalCode: 4560, 
+        postalCode: "4560", 
         description: "456, A Street, S 4560", 
         oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
       },
       alightDescription: { 
-        postalCode: 7560, 
+        postalCode: "7560", 
         description: "756, B Street, S 7560", 
         oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
@@ -300,12 +300,12 @@ lab.experiment("Suggestion manipulation", function () {
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
       boardDescription: { 
-        postalCode: 4560, 
+        postalCode: "4560", 
         description: "456, A Street, S 4560", 
         oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
       },
       alightDescription: { 
-        postalCode: 7560, 
+        postalCode: "7560", 
         description: "756, B Street, S 7560", 
         oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
@@ -327,12 +327,12 @@ lab.experiment("Suggestion manipulation", function () {
       board: geojsonPoint([103.8, 1.38]),
       alight: geojsonPoint([103.9, 1.39]),
       boardDescription: { 
-        postalCode: 4560, 
+        postalCode: "4560", 
         description: "456, A Street, S 4560", 
         oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
       },
       alightDescription: { 
-        postalCode: 7560, 
+        postalCode: "7560", 
         description: "756, B Street, S 7560", 
         oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
@@ -355,12 +355,12 @@ lab.experiment("Suggestion manipulation", function () {
       alight: geojsonPoint([103.9, 1.39]),
       time: makeTime(8, 0),
       boardDescription: { 
-        postalCode: 4560, 
+        postalCode: "4560", 
         description: "456, A Street, S 4560", 
         oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
       },
       alightDescription: { 
-        postalCode: 7560, 
+        postalCode: "7560", 
         description: "756, B Street, S 7560", 
         oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
@@ -381,12 +381,12 @@ lab.experiment("Suggestion manipulation", function () {
       board: Joi.attempt({lat: 1.3, lng: 103.8}, Joi.latlng()),
       alight: Joi.attempt({lat: 1.35, lng: 103.75}, Joi.latlng()),
       boardDescription: { 
-        postalCode: 4560, 
+        postalCode: "4560", 
         description: "456, A Street, S 4560", 
         oneMapData: { POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" }, 
       },
       alightDescription: { 
-        postalCode: 7560, 
+        postalCode: "7560", 
         description: "756, B Street, S 7560", 
         oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
@@ -394,7 +394,7 @@ lab.experiment("Suggestion manipulation", function () {
       daysMask: parseInt('1010111', 2),
     })
 
-    expect(completeDescriptions.boardDescription.postalCode).to.equal(4560)
+    expect(completeDescriptions.boardDescription.postalCode).to.equal("4560")
     expect(completeDescriptions.boardDescription.description).to.equal("456, A Street, S 4560")
     expect(completeDescriptions.boardDescription.oneMapData).to.equal({ POSTAL: 4560, BLK_NO: 456, ROAD_NAME: "A Street" } )
 
@@ -403,12 +403,12 @@ lab.experiment("Suggestion manipulation", function () {
       alight: {lat: 1.4, lng: 104.0},
       time: makeTime(8, 0),
       boardDescription: { 
-        postalCode: 4560,
+        postalCode: "4560",
         description: "456, A Street, S 4560", 
         // oneMapData missibg
       },
       alightDescription: { 
-        postalCode: 7560, 
+        postalCode: "7560", 
         description: "756, B Street, S 7560", 
         oneMapData: { POSTAL: 7560, BLK_NO: 756, ROAD_NAME: "B Street" }, 
       },
