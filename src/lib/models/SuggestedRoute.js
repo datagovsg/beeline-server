@@ -17,6 +17,7 @@ export const routeSchema = Joi.array()
     }).unknown()
   )
   .min(2)
+  .allow(false)
 
 /**
  * The Suggestion data model
