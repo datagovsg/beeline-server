@@ -288,6 +288,66 @@ lab.experiment("Suggested routes manipulation", function () {
       .every(([lat, lng]) => (Math.abs(lat) < 90 && Math.abs(lng) < 180))).true()
   })
 
+  lab.test("create suggested routes with different values for route, including false", async () => {
+    const postResponse = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes`,
+      headers: superadminHeaders,
+      payload: 'false',
+    })
+    expect(postResponse.statusCode).equal(200)
+
+    // check suggested route has been created
+     const getResponse = await server.inject({
+      method: 'GET',
+      url: `/suggestions/${suggestion.id}/suggested_routes/${postResponse.result.id}`,
+    })
+    expect(getResponse.statusCode).equal(200)
+    expect(getResponse.result.id).equal(postResponse.result.id)
+    expect(getResponse.result.route).equal(false)
+
+    const postResponse2 = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes`,
+      headers: superadminHeaders,
+      payload: new Buffer('false', 'utf-8'),
+    })
+    expect(postResponse2.statusCode).equal(200)
+
+    const routeStops = [{
+      lat: 1.31,
+      lng: 103.81,
+      stopId: 100,
+      description: 'Bus Stop 0',
+      time: 7 * 3600e3,
+    }, {
+      lat: 1.32,
+      lng: 103.82,
+      stopId: 102,
+      description: 'Bus Stop 1',
+      time: 8 * 3600e3,
+    }]
+
+    const postResponse3 = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes`,
+      headers: superadminHeaders,
+      payload: routeStops,
+    })
+    expect(postResponse3.statusCode).equal(200)
+
+    // check suggested route has been created
+    const getResponse2 = await server.inject({
+      method: 'GET',
+      url: `/suggestions/${suggestion.id}/suggested_routes`,
+    })
+    expect(getResponse2.statusCode).equal(200)
+    // check that routes are sorted by desc recency
+    expect(getResponse2.result[0].route).equal(routeStops)
+    expect(getResponse2.result[1].route).equal(false)
+    expect(getResponse2.result[2].route).equal(false)
+  })
+
   lab.test("trigger new route generation", async () => {
     const routeDetails = {
       maxDetourMinutes: 2.0,
