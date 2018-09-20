@@ -19,7 +19,7 @@
     "prettier-lint": "bash scripts/prettier-lint.sh"
   },
   "author": "Government Technology Agency of Singapore (https://www.tech.gov.sg)",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "dependencies": {
     "@mapbox/togeojson": "^0.16.0",
     "axios": "^0.18.0",
