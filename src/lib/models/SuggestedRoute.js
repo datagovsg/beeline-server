@@ -14,6 +14,7 @@ export const routeSchema = Joi.array()
       time: Joi.number().integer(),
       stopId: Joi.number().integer(),
       description: Joi.string(),
+      pathToNext: Joi.string().allow(null), // encoded polyline string
     }).unknown()
   )
   .min(2)
