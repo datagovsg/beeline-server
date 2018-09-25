@@ -54,9 +54,11 @@ const createCrowdstartRouteDetails = async function createCrowdstartRouteDetails
   const toStop = subzones.getSubzoneAtPoint([to.lng, to.lat]).properties
     .niceName
 
-  const decodedPaths = _.flatten(suggestedRoute.map(({ pathToNext }) => {
-    return polyline.decode(pathToNext)
-  }))
+  const decodedPaths = _.flatten(
+    suggestedRoute.map(({ pathToNext }) => {
+      return polyline.decode(pathToNext)
+    })
+  )
 
   const route = await m.Route.create(
     {
