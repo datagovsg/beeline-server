@@ -148,28 +148,28 @@ lab.experiment("Suggested routes manipulation", function () {
       stopId: 100,
       description: 'Bus Stop 0',
       time: 7 * 3600e3,
-      pathToNext: "i_eGig_xRqD}M"
+      pathToNext: "i_eGig_xRqD}M",
     }, {
       lat: 1.32,
       lng: 103.82,
       stopId: 102,
       description: 'Bus Stop 1',
       time: 8 * 3600e3,
-      pathToNext: "{deGgv_xR{CyKo@mBsBkIu@}B"
+      pathToNext: "{deGgv_xR{CyKo@mBsBkIu@}B",
     }, {
       lat: 1.33,
       lng: 103.83,
       stopId: 103,
       description: 'Bus Stop 2',
       time: 9 * 3600e3,
-      pathToNext: "qpeGyt`xRi@eBsAoF]{CQ_CCaB?{BBwAF}@PsA`AqG^sBHgBBoBCaC@qBDcAZ{Cr@sCZ{@`@y@xBkDzBeD"
+      pathToNext: "qpeGyt`xRi@eBsAoF]{CQ_CCaB?{BBwAF}@PsA`AqG^sBHgBBoBCaC@qBDcAZ{Cr@sCZ{@`@y@xBkDzBeD",
     }, {
       lat: 1.34,
       lng: 103.84,
       stopId: 104,
       description: 'Bus Stop 3',
       time: 10 * 3600e3,
-      pathToNext: "meeGakcxRdCsD\e@|AeCvEyGr@aApHaKxAqB`@{@d@}A\qANs@bBwGL_@f@u@TS"
+      pathToNext: "meeGakcxRdCsD\e@|AeCvEyGr@aApHaKxAqB`@{@d@}A\qANs@bBwGL_@f@u@TS", // eslint-disable-line no-useless-escape
     }]
 
     const postResponse = await server.inject({
