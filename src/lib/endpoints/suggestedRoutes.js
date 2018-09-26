@@ -37,7 +37,7 @@ const ensureUserHasCreditCard = async function ensureUserHasCreditCard(user) {
   )
 }
 
-const createCrowdstartRouteDetails = async function createCrowdstartRouteDetails(
+const buildCrowdstartRouteDetails = async function buildCrowdstartRouteDetails(
   suggestionInst,
   suggestedRouteInst,
   { m, transaction }
@@ -55,12 +55,23 @@ const createCrowdstartRouteDetails = async function createCrowdstartRouteDetails
     .niceName
 
   const decodedPaths = _.flatten(
-    suggestedRoute.map(({ pathToNext }) => {
-      return polyline.decode(pathToNext)
+    suggestedRoute.map(r => {
+      if (!r.pathToNext) return []
+      return polyline.decode(r.pathToNext)
     })
   )
 
-  const route = await m.Route.create(
+  const date = moment()
+    .add(DEFAULT_CROWDSTART_START, "d")
+    .toDate()
+  const dateAtTime = msOfDay => {
+    return moment(date)
+      .startOf("day")
+      .add(msOfDay, "ms")
+      .toDate()
+  }
+
+  const route = await m.Route.build(
     {
       name: `${fromStop} to ${toStop}`,
       from: fromStop,
@@ -88,40 +99,25 @@ subject to change
 - Expiry of the crowdstart may be extended if there are more people joining
 the campaign.
     `,
+      trips: [{
+        date,
+        capacity: DEFAULT_CROWDSTART_CAPACITY,
+        price: DEFAULT_CROWDSTART_PRICE * 10,
+        status: null,
+        bookingInfo: {
+          windowType: "stop",
+          windowSize: -5 * 60e3,
+        },
+        tripStops: await Promise.all(suggestedRoute.map(async ({ stopId, time }, index) => ({
+          stopId,
+          stop: await m.Stop.findById(stopId),
+          canBoard: index < dropOffIndex,
+          canAlight: index > 0,
+          time: dateAtTime(time),
+        }))),
+      }],
     },
-    { transaction }
-  )
-
-  const date = moment()
-    .add(DEFAULT_CROWDSTART_START, "d")
-    .toDate()
-  const dateAtTime = msOfDay => {
-    return moment(date)
-      .startOf("day")
-      .add(msOfDay, "ms")
-      .toDate()
-  }
-
-  // create Trip
-  await m.Trip.create(
-    {
-      date,
-      capacity: DEFAULT_CROWDSTART_CAPACITY,
-      price: DEFAULT_CROWDSTART_PRICE * 10,
-      status: null,
-      routeId: route.id,
-      bookingInfo: {
-        windowType: "stop",
-        windowSize: -5 * 60e3,
-      },
-      tripStops: suggestedRoute.map(({ stopId, time }, index) => ({
-        stopId,
-        canBoard: index < dropOffIndex,
-        canAlight: index > 0,
-        time: dateAtTime(time),
-      })),
-    },
-    { transaction, include: [{ model: m.TripStop }] }
+    { transaction, include: [{model: m.Trip, include: [{model: m.TripStop, include: [m.Stop]}]}] }
   )
 
   return route
@@ -255,7 +251,54 @@ export function register(server, options, next) {
   })
 
   server.route({
-    method: "POST",
+    method: "GET",
+    path:
+      "/suggestions/{suggestionId}/suggested_routes/{id}/preview_route",
+    config: {
+      tags: ["api"],
+      validate: {
+        params: {
+          suggestionId: Joi.number().integer(),
+          id: Joi.number().integer(),
+        },
+      },
+      description: `Create a new suggested routes`,
+      auth: { access: { scope: ["user"] } },
+    },
+    async handler(request, reply) {
+
+      try {
+        let m = getModels(request)
+
+        // Get suggestion and suggested route
+        const suggestionInst = await m.Suggestion.findById(
+          request.params.suggestionId
+        )
+        const suggestedRouteInst = await m.SuggestedRoute.find({
+          where: {
+            id: request.params.id,
+            seedSuggestionId: request.params.suggestionId,
+          },
+          order: [["id", "DESC"]],
+        })
+
+        const route = await buildCrowdstartRouteDetails(
+          suggestionInst,
+          suggestedRouteInst,
+          {
+            m,
+          }
+        )
+
+        reply(route.toJSON())
+      } catch (err) {
+        defaultErrorHandler(reply)(err)
+      }
+    },
+  })
+
+  server.route({
+    method: "GET",
     path:
       "/suggestions/{suggestionId}/suggested_routes/{id}/convert_to_crowdstart",
     config: {
@@ -274,10 +317,11 @@ export function register(server, options, next) {
         { m, db },
         { user, suggestionInst, suggestedRouteInst }
       ) {
-        return db.transaction(async transaction => {
+        return db.transaction
+        (async transaction => {
           // create crowdstart route details from suggested route
           // create route, trip and stops
-          const route = await createCrowdstartRouteDetails(
+          const route = await buildCrowdstartRouteDetails(
             suggestionInst,
             suggestedRouteInst,
             {
@@ -286,13 +330,16 @@ export function register(server, options, next) {
             }
           )
 
+          await route.save()
+
           // create bid
-          return m.Bid.createForUserAndRoute(
+          const bid = m.Bid.createForUserAndRoute(
             user,
             route,
             DEFAULT_CROWDSTART_PRICE,
             { transaction }
           )
+          return {route, bid}
         })
       }
 
@@ -316,23 +363,16 @@ export function register(server, options, next) {
           order: [["id", "DESC"]],
         })
 
-        const newBid = await createCrowdstartRouteAndBid(
+        const {route, bid} = await createCrowdstartRouteAndBid(
           { m, db },
           { user, suggestionInst, suggestedRouteInst }
         )
 
-        suggestedRouteInst.update({ routeId: newBid.routeId })
+        suggestedRouteInst.update({ routeId: route.id })
 
         reply({
-          bid: newBid.toJSON(),
-          route: (await m.Route.findById(newBid.routeId, {
-            include: [
-              {
-                model: m.Trip,
-                include: [{ model: m.TripStop, include: [m.Stop] }],
-              },
-            ],
-          })).toJSON(),
+          bid: bid.toJSON(),
+          route: route.toJSON(),
         })
       } catch (err) {
         defaultErrorHandler(reply)(err)
