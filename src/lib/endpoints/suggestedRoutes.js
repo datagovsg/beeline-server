@@ -99,26 +99,38 @@ subject to change
 - Expiry of the crowdstart may be extended if there are more people joining
 the campaign.
     `,
-      trips: [{
-        date,
-        capacity: DEFAULT_CROWDSTART_CAPACITY,
-        price: DEFAULT_CROWDSTART_PRICE * 10,
-        status: null,
-        bookingInfo: {
-          windowType: "stop",
-          windowSize: -5 * 60e3,
+      trips: [
+        {
+          date,
+          capacity: DEFAULT_CROWDSTART_CAPACITY,
+          price: DEFAULT_CROWDSTART_PRICE * 10,
+          status: null,
+          bookingInfo: {
+            windowType: "stop",
+            windowSize: -5 * 60e3,
+          },
+          tripStops: await Promise.all(
+            suggestedRoute.map(async ({ stopId, time }, index) => ({
+              stopId,
+              canBoard: index < dropOffIndex,
+              canAlight: index > 0,
+              time: dateAtTime(time),
+            }))
+          ),
         },
-        tripStops: await Promise.all(suggestedRoute.map(async ({ stopId, time }, index) => ({
-          stopId,
-          stop: await m.Stop.findById(stopId),
-          canBoard: index < dropOffIndex,
-          canAlight: index > 0,
-          time: dateAtTime(time),
-        }))),
-      }],
+      ],
     },
-    { transaction, include: [{model: m.Trip, include: [{model: m.TripStop, include: [m.Stop]}]}] }
+    {
+      transaction,
+      include: [{ model: m.Trip, include: [{ model: m.TripStop }] }],
+    }
   )
+
+  for (let trip of route.trips) {
+    for (let tripStop of trip.tripStops) {
+      tripStop.setDataValue("stop", await m.Stop.findById(tripStop.stopId))
+    }
+  }
 
   return route
 }
@@ -252,8 +264,7 @@ export function register(server, options, next) {
 
   server.route({
     method: "GET",
-    path:
-      "/suggestions/{suggestionId}/suggested_routes/{id}/preview_route",
+    path: "/suggestions/{suggestionId}/suggested_routes/{id}/preview_route",
     config: {
       tags: ["api"],
       validate: {
@@ -317,8 +328,7 @@ export function register(server, options, next) {
         { m, db },
         { user, suggestionInst, suggestedRouteInst }
       ) {
-        return db.transaction
-        (async transaction => {
+        return db.transaction(async transaction => {
           // create crowdstart route details from suggested route
           // create route, trip and stops
           const route = await buildCrowdstartRouteDetails(
@@ -333,13 +343,13 @@ export function register(server, options, next) {
           await route.save()
 
           // create bid
-          const bid = m.Bid.createForUserAndRoute(
+          const bid = await m.Bid.createForUserAndRoute(
             user,
             route,
             DEFAULT_CROWDSTART_PRICE,
             { transaction }
           )
-          return {route, bid}
+          return { route, bid }
         })
       }
 
@@ -363,7 +373,7 @@ export function register(server, options, next) {
           order: [["id", "DESC"]],
         })
 
-        const {route, bid} = await createCrowdstartRouteAndBid(
+        const { route, bid } = await createCrowdstartRouteAndBid(
           { m, db },
           { user, suggestionInst, suggestedRouteInst }
         )

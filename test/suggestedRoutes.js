@@ -20,8 +20,52 @@ lab.experiment("Suggested routes manipulation", function () {
   let user
   let suggestion
   let sandbox
+  let stops = []
+  let routeStops = []
 
   const makeTime = (hour, minutes) => hour * 3600e3 + minutes * 60e3
+
+  lab.beforeEach(async function () {
+    stops = await Promise.all([1, 2, 3, 4, 5].map(i => 
+      m.Stop.create({
+        description: `Test Stop ${i + 1}`,
+        coordinates: {
+          type: 'Point',
+          coordinates: [103.8 + i * 0.01, 1.3 + i * 0.01]
+        }
+      })
+    ))
+
+    routeStops = [{
+      lat: stops[0].coordinates.coordinates[1],
+      lng: stops[0].coordinates.coordinates[0],
+      stopId: stops[0].id,
+      description: 'Bus Stop 0',
+      time: 7 * 3600e3,
+      pathToNext: "i_eGig_xRqD}M",
+    }, {
+      lat: stops[1].coordinates.coordinates[1],
+      lng: stops[1].coordinates.coordinates[0],
+      stopId: stops[1].id,
+      description: 'Bus Stop 1',
+      time: 8 * 3600e3,
+      pathToNext: "{deGgv_xR{CyKo@mBsBkIu@}B",
+    }, {
+      lat: stops[2].coordinates.coordinates[1],
+      lng: stops[2].coordinates.coordinates[0],
+      stopId: stops[2].id,
+      description: 'Bus Stop 2',
+      time: 9 * 3600e3,
+      pathToNext: "qpeGyt`xRi@eBsAoF]{CQ_CCaB?{BBwAF}@PsA`AqG^sBHgBBoBCaC@qBDcAZ{Cr@sCZ{@`@y@xBkDzBeD",
+    }, {
+      lat: stops[3].coordinates.coordinates[1],
+      lng: stops[3].coordinates.coordinates[0],
+      stopId: stops[3].id,
+      description: 'Bus Stop 3',
+      time: 10 * 3600e3,
+      pathToNext: "meeGakcxRdCsD\e@|AeCvEyGr@aApHaKxAqB`@{@d@}A\qANs@bBwGL_@f@u@TS", // eslint-disable-line no-useless-escape
+    }]
+  })
 
   lab.before({timeout: 10000}, async function () {
     user = await m.User.create({
@@ -141,37 +185,6 @@ lab.experiment("Suggested routes manipulation", function () {
   })
 
   lab.test("create suggested route and preview route", {timeout: 20000}, async () => {
-    // create suggested route 
-    const routeStops = [{
-      lat: 1.31,
-      lng: 103.81,
-      stopId: 100,
-      description: 'Bus Stop 0',
-      time: 7 * 3600e3,
-      pathToNext: "i_eGig_xRqD}M",
-    }, {
-      lat: 1.32,
-      lng: 103.82,
-      stopId: 102,
-      description: 'Bus Stop 1',
-      time: 8 * 3600e3,
-      pathToNext: "{deGgv_xR{CyKo@mBsBkIu@}B",
-    }, {
-      lat: 1.33,
-      lng: 103.83,
-      stopId: 103,
-      description: 'Bus Stop 2',
-      time: 9 * 3600e3,
-      pathToNext: "qpeGyt`xRi@eBsAoF]{CQ_CCaB?{BBwAF}@PsA`AqG^sBHgBBoBCaC@qBDcAZ{Cr@sCZ{@`@y@xBkDzBeD",
-    }, {
-      lat: 1.34,
-      lng: 103.84,
-      stopId: 104,
-      description: 'Bus Stop 3',
-      time: 10 * 3600e3,
-      pathToNext: "meeGakcxRdCsD\e@|AeCvEyGr@aApHaKxAqB`@{@d@}A\qANs@bBwGL_@f@u@TS", // eslint-disable-line no-useless-escape
-    }]
-
     const postResponse = await server.inject({
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
@@ -258,37 +271,6 @@ lab.experiment("Suggested routes manipulation", function () {
   })
 
   lab.test("create and convert suggested route to crowdstart", {timeout: 20000}, async () => {
-    // create suggested route 
-    const routeStops = [{
-      lat: 1.31,
-      lng: 103.81,
-      stopId: 100,
-      description: 'Bus Stop 0',
-      time: 7 * 3600e3,
-      pathToNext: "i_eGig_xRqD}M",
-    }, {
-      lat: 1.32,
-      lng: 103.82,
-      stopId: 102,
-      description: 'Bus Stop 1',
-      time: 8 * 3600e3,
-      pathToNext: "{deGgv_xR{CyKo@mBsBkIu@}B",
-    }, {
-      lat: 1.33,
-      lng: 103.83,
-      stopId: 103,
-      description: 'Bus Stop 2',
-      time: 9 * 3600e3,
-      pathToNext: "qpeGyt`xRi@eBsAoF]{CQ_CCaB?{BBwAF}@PsA`AqG^sBHgBBoBCaC@qBDcAZ{Cr@sCZ{@`@y@xBkDzBeD",
-    }, {
-      lat: 1.34,
-      lng: 103.84,
-      stopId: 104,
-      description: 'Bus Stop 3',
-      time: 10 * 3600e3,
-      pathToNext: "meeGakcxRdCsD\e@|AeCvEyGr@aApHaKxAqB`@{@d@}A\qANs@bBwGL_@f@u@TS", // eslint-disable-line no-useless-escape
-    }]
-
     const postResponse = await server.inject({
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
