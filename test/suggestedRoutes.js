@@ -322,7 +322,14 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(userBids[0].price).equal('5.00')
     expect(validResponse.result.bid.id).equal(userBids[0].id)
 
-    const route = validResponse.result.route
+    // check route was created
+    const [route] = await m.Route.findAll({
+      where: {id: userBids[0].routeId},	
+      include: [	
+        { model: m.Trip, include: [{model: m.TripStop, include: [m.Stop]}]},
+      ],	
+    })
+    expect(route.id).equal(validResponse.result.route.id)
 
     // check suggested route has been created
     const getResponse2 = await server.inject({
