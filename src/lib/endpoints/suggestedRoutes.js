@@ -273,11 +273,10 @@ export function register(server, options, next) {
           id: Joi.number().integer(),
         },
       },
-      description: `Create a new suggested routes`,
+      description: `Builds a preview route from suggested route`,
       auth: { access: { scope: ["user"] } },
     },
     async handler(request, reply) {
-
       try {
         let m = getModels(request)
 
@@ -324,7 +323,8 @@ export function register(server, options, next) {
       auth: { access: { scope: ["user"] } },
     },
     async handler(request, reply) {
-      const createCrowdstartRouteAndBid = async function createCrowdstartRouteAndBid(
+      /* eslint-disable require-jsdoc */
+      async function createCrowdstartRouteAndBid(
         { m, db },
         { user, suggestionInst, suggestedRouteInst }
       ) {
@@ -378,7 +378,7 @@ export function register(server, options, next) {
           { user, suggestionInst, suggestedRouteInst }
         )
 
-        suggestedRouteInst.update({ routeId: route.id })
+        await suggestedRouteInst.update({ routeId: route.id })
 
         reply({
           bid: bid.toJSON(),
