@@ -30,14 +30,14 @@ function stringDays(days) {
   return _.filter(week, d => days[d]).join(", ")
 }
 
-const ensureUserHasCreditCard = async function ensureUserHasCreditCard(user) {
+const ensureUserHasCreditCard = async function(user) {
   TransactionError.assert(
     _.get(user, "savedPaymentInfo.sources.data.length", 0) >= 1,
     "You need to have at least one saved payment method to create a crowdstart route"
   )
 }
 
-const buildCrowdstartRouteDetails = async function buildCrowdstartRouteDetails(
+const buildCrowdstartRouteDetails = async function(
   suggestionInst,
   suggestedRouteInst,
   { m, transaction }
@@ -126,6 +126,7 @@ the campaign.
     }
   )
 
+  // Insert stop data seperately to prevent creating stops again when saving route
   for (let trip of route.trips) {
     for (let tripStop of trip.tripStops) {
       tripStop.setDataValue("stop", await m.Stop.findById(tripStop.stopId))
@@ -308,7 +309,7 @@ export function register(server, options, next) {
   })
 
   server.route({
-    method: "GET",
+    method: "POST",
     path:
       "/suggestions/{suggestionId}/suggested_routes/{id}/convert_to_crowdstart",
     config: {

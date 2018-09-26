@@ -202,15 +202,15 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(getResponse.result.id).equal(postResponse.result.id)
 
     const suggestedRouteId = postResponse.result.id
-    const postResponse2 = await server.inject({
+    const getResponse2 = await server.inject({
       method: 'GET',
       url: `/suggestions/${suggestion.id}/suggested_routes/${suggestedRouteId}/preview_route`,
       headers: userHeaders,
     })
-    expect(postResponse2.statusCode).equal(200)
+    expect(getResponse2.statusCode).equal(200)
 
     // check route preview
-    const route = postResponse2.result
+    const route = getResponse2.result
 
     expect(route.id).equal(null)
     expect(route.schedule).equal("Mon, Tue, Wed, Thu, Fri")
@@ -289,7 +289,7 @@ lab.experiment("Suggested routes manipulation", function () {
 
     const suggestedRouteId = postResponse.result.id
     const request = {
-      method: 'GET',
+      method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes/${suggestedRouteId}/convert_to_crowdstart`,
       headers: userHeaders,
     }
