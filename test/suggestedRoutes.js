@@ -31,8 +31,8 @@ lab.experiment("Suggested routes manipulation", function () {
         description: `Test Stop ${i + 1}`,
         coordinates: {
           type: 'Point',
-          coordinates: [103.8 + i * 0.01, 1.3 + i * 0.01]
-        }
+          coordinates: [103.8 + i * 0.01, 1.3 + i * 0.01],
+        },
       })
     ))
 
