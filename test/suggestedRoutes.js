@@ -43,6 +43,8 @@ lab.experiment("Suggested routes manipulation", function () {
       description: 'Bus Stop 0',
       time: 7 * 3600e3,
       pathToNext: "i_eGig_xRqD}M",
+      numBoard: 10,
+      numAlight: 0,
     }, {
       lat: stops[1].coordinates.coordinates[1],
       lng: stops[1].coordinates.coordinates[0],
@@ -50,6 +52,8 @@ lab.experiment("Suggested routes manipulation", function () {
       description: 'Bus Stop 1',
       time: 8 * 3600e3,
       pathToNext: "{deGgv_xR{CyKo@mBsBkIu@}B",
+      numBoard: 13,
+      numAlight: 0,
     }, {
       lat: stops[2].coordinates.coordinates[1],
       lng: stops[2].coordinates.coordinates[0],
@@ -57,6 +61,8 @@ lab.experiment("Suggested routes manipulation", function () {
       description: 'Bus Stop 2',
       time: 9 * 3600e3,
       pathToNext: "qpeGyt`xRi@eBsAoF]{CQ_CCaB?{BBwAF}@PsA`AqG^sBHgBBoBCaC@qBDcAZ{Cr@sCZ{@`@y@xBkDzBeD",
+      numBoard: 0,
+      numAlight: 8,
     }, {
       lat: stops[3].coordinates.coordinates[1],
       lng: stops[3].coordinates.coordinates[0],
@@ -64,6 +70,8 @@ lab.experiment("Suggested routes manipulation", function () {
       description: 'Bus Stop 3',
       time: 10 * 3600e3,
       pathToNext: "meeGakcxRdCsD\e@|AeCvEyGr@aApHaKxAqB`@{@d@}A\qANs@bBwGL_@f@u@TS", // eslint-disable-line no-useless-escape
+      numBoard: 0,
+      numAlight: 15,
     }]
   })
 
@@ -243,8 +251,8 @@ lab.experiment("Suggested routes manipulation", function () {
         ).properties.niceName
 
     expect(route.name).equal(`${from} to ${to}`)
-    expect(route.from).equal(`${from}`)
-    expect(route.to).equal(`${to}`)
+    expect(route.from).equal(from)
+    expect(route.to).equal(to)
 
     const tripStops = _.sortBy(route.trips[0].tripStops, ts => ts.time)
 
@@ -252,10 +260,10 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(midnightOffset(tripStops[0].time)).equal(7 * 3600 * 1000)
     expect(midnightOffset(tripStops[tripStops.length - 1].time)).equal(10 * 3600 * 1000)
 
-    tripStops.slice(0, tripStops.length - 1)
-      .forEach(ts => expect(ts.canBoard).true())
-    tripStops.slice(1, tripStops.length)
-      .forEach(ts => expect(ts.canAlight).true())
+    tripStops
+      .forEach((ts, i) => expect(ts.canBoard).equal(routeStops[i].numBoard > 0))
+    tripStops
+      .forEach((ts, i) => expect(ts.canAlight).equal(routeStops[i].numAlight > 0))
 
     // Check the stop description
     routeStops.forEach(s => {
@@ -324,10 +332,10 @@ lab.experiment("Suggested routes manipulation", function () {
 
     // check route was created
     const [route] = await m.Route.findAll({
-      where: {id: userBids[0].routeId},	
-      include: [	
+      where: {id: userBids[0].routeId},
+      include: [
         { model: m.Trip, include: [{model: m.TripStop, include: [m.Stop]}]},
-      ],	
+      ],
     })
     expect(route.id).equal(validResponse.result.route.id)
 
@@ -370,8 +378,8 @@ lab.experiment("Suggested routes manipulation", function () {
         ).properties.niceName
 
     expect(route.name).equal(`${from} to ${to}`)
-    expect(route.from).equal(`${from}`)
-    expect(route.to).equal(`${to}`)
+    expect(route.from).equal(from)
+    expect(route.to).equal(to)
 
     const tripStops = _.sortBy(route.trips[0].tripStops, ts => ts.time)
 
@@ -379,10 +387,10 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(midnightOffset(tripStops[0].time)).equal(7 * 3600 * 1000)
     expect(midnightOffset(tripStops[tripStops.length - 1].time)).equal(10 * 3600 * 1000)
 
-    tripStops.slice(0, tripStops.length - 1)
-      .forEach(ts => expect(ts.canBoard).true())
-    tripStops.slice(1, tripStops.length)
-      .forEach(ts => expect(ts.canAlight).true())
+    tripStops
+      .forEach((ts, i) => expect(ts.canBoard).equal(routeStops[i].numBoard > 0))
+    tripStops
+      .forEach((ts, i) => expect(ts.canAlight).equal(routeStops[i].numAlight > 0))
 
     // Check the stop description
     routeStops.forEach(s => {

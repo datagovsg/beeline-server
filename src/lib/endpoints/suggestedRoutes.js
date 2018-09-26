@@ -42,12 +42,10 @@ const buildCrowdstartRouteDetails = async function(
   suggestedRouteInst,
   { m, transaction }
 ) {
-  // FIXME: assuming the stops are sorted in route order
   const days = stringDays(suggestionInst.daysOfWeek)
   const suggestedRoute = suggestedRouteInst.route
   const from = suggestedRoute[0]
-  const dropOffIndex = suggestedRoute.length - 1
-  const to = suggestedRoute[dropOffIndex]
+  const to = suggestedRoute[suggestedRoute.length - 1]
 
   const fromStop = subzones.getSubzoneAtPoint([from.lng, from.lat]).properties
     .niceName
@@ -110,12 +108,14 @@ the campaign.
             windowSize: -5 * 60e3,
           },
           tripStops: await Promise.all(
-            suggestedRoute.map(async ({ stopId, time }, index) => ({
-              stopId,
-              canBoard: index < dropOffIndex,
-              canAlight: index > 0,
-              time: dateAtTime(time),
-            }))
+            suggestedRoute.map(
+              async ({ stopId, time, numBoard, numAlight }, index) => ({
+                stopId,
+                canBoard: numBoard > 0,
+                canAlight: numAlight > 0,
+                time: dateAtTime(time),
+              })
+            )
           ),
         },
       ],
