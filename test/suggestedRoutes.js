@@ -23,6 +23,8 @@ lab.experiment("Suggested routes manipulation", function () {
   let stops = []
   let routeStops = []
 
+  let savedBeelineCompanyId = null
+
   const makeTime = (hour, minutes) => hour * 3600e3 + minutes * 60e3
 
   lab.beforeEach(async function () {
@@ -75,7 +77,12 @@ lab.experiment("Suggested routes manipulation", function () {
     }]
   })
 
-  lab.before({timeout: 10000}, async function () {
+  lab.before({timeout: 10000}, async function (flags) {
+    // In the production environment, this value is hard coded.
+    // However, in testing, the IDs may not be consistent
+    savedBeelineCompanyId = process.env.BEELINE_COMPANY_ID
+    process.env.BEELINE_COMPANY_ID = (await m.TransportCompany.find()).id.toString()
+
     user = await m.User.create({
       name: "My Test User",
       email: randomEmail(),
@@ -125,6 +132,7 @@ lab.experiment("Suggested routes manipulation", function () {
 
   lab.after(async function () {
     sandbox.restore()
+    process.env.BEELINE_COMPANY_ID = savedBeelineCompanyId
   })
 
   // Note:
@@ -237,8 +245,7 @@ lab.experiment("Suggested routes manipulation", function () {
       Date.now() + 15 * 24 * 3600e3
     )
 
-    const companyId = await m.TransportCompany.find({ where: { name: "Beeline" } })
-    expect(route.transportCompanyId).equal(companyId)
+    expect(route.transportCompanyId).equal(parseInt(process.env.BEELINE_COMPANY_ID))
 
     const from = 
       subzones
@@ -364,8 +371,7 @@ lab.experiment("Suggested routes manipulation", function () {
       Date.now() + 15 * 24 * 3600e3
     )
 
-    const companyId = await m.TransportCompany.find({ where: { name: "Beeline" } })
-    expect(route.transportCompanyId).equal(companyId)
+    expect(route.transportCompanyId).equal(parseInt(process.env.BEELINE_COMPANY_ID))
 
     const from = 
       subzones
