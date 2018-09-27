@@ -42,6 +42,8 @@ export TEST_IDEMPOTENCY=$(date '+%s')
 export NO_DAEMON_MONITORING=1
 export ROUTES_REFRESH_INTERVAL=1 # cache routes only for 1 ms
 
+export BEELINE_COMPANY_ID=1
+
 # Import the live data for testing
 refresh_cache() {
   if [ -z "${DATABASE_SOURCE:-}" ]; then
