@@ -80,10 +80,10 @@ for (let v of warnVariables) {
 }
 
 const server = new Hapi.Server({
-  debug: {
+  debug: process.env.VERBOSE_LOGS ? {
     request: ["error"],
     log: ["error"],
-  },
+  } : {},
   app: {
     webDomain: process.env.WEB_DOMAIN || "staging.beeline.sg",
     emailDomain: process.env.EMAIL_DOMAIN || "staging.beeline.sg",
@@ -120,11 +120,13 @@ server.on("stop", () => {
 })
 
 server.on("response", function({ info, method, url, response }) {
-  console.log(
-    `${info.remoteAddress} - ${method.toUpperCase()} ${url.path} -> ${
-      (response || {}).statusCode
-    }`
-  )
+  if (process.env.VERBOSE_LOGS) {
+    console.log(
+      `${info.remoteAddress} - ${method.toUpperCase()} ${url.path} -> ${
+        (response || {}).statusCode
+      }`
+    )
+  }
 })
 
 // Set up Swagger to allow you to view API documentation
