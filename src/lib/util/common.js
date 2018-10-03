@@ -1,24 +1,32 @@
+/* eslint-disable require-jsdoc */
+
 const boom = require("boom")
 const request = require("request")
-const leftPad = require('left-pad')
-const assert = require('assert')
-const jwt = require('jsonwebtoken')
+const leftPad = require("left-pad")
+const assert = require("assert")
+const jwt = require("jsonwebtoken")
 const Sequelize = require("sequelize")
 
 const {
-  SecurityError, NotFoundError,
-  RateLimitError, InvalidArgumentError,
-  TransactionError, ChargeError
-} = require('./errors')
+  SecurityError,
+  NotFoundError,
+  RateLimitError,
+  InvalidArgumentError,
+  TransactionError,
+  ChargeError,
+} = require("./errors")
 
 export {
-  SecurityError, NotFoundError,
-  RateLimitError, InvalidArgumentError,
-  TransactionError, ChargeError
+  SecurityError,
+  NotFoundError,
+  RateLimitError,
+  InvalidArgumentError,
+  TransactionError,
+  ChargeError,
 }
 
-export function defaultErrorHandler (cb) {
-  return (err) => {
+export function defaultErrorHandler(cb) {
+  return err => {
     console.error(err.stack)
 
     if (err instanceof SecurityError) {
@@ -49,46 +57,46 @@ export function defaultErrorHandler (cb) {
   }
 }
 
-export function criticalErrorHandler (cb) {
-  return (err) => {
+export function criticalErrorHandler(cb) {
+  return err => {
     if (process.env.SLACK_WEBHOOK_URL) {
       request({
-        method: 'POST',
+        method: "POST",
         url: process.env.SLACK_WEBHOOK_URL,
         headers: {
-          "Content-type": "application/json"
+          "Content-type": "application/json",
         },
         body: JSON.stringify({
           text: err.stack,
-          color: 'danger'
-        })
+          color: "danger",
+        }),
       })
     }
     cb(boom.badRequest(err))
   }
 }
 
-export function getDB (request) {
+export function getDB(request) {
   return request.server.plugins["sequelize"].db
 }
-export function getModels (request) {
+export function getModels(request) {
   return request.server.plugins["sequelize"].models
 }
 
-export function midnightToday () {
-  var d = new Date()
+export function midnightToday() {
+  let d = new Date()
   // local time
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
-export function midnightTomorrow () {
-  var d = new Date()
+export function midnightTomorrow() {
+  let d = new Date()
   // local time
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
 }
 
-export function getDeviceUUID (request) {
+export function getDeviceUUID(request) {
   // check that is is a valid uuid
-  var uuid = request.headers["beeline-device-uuid"]
+  let uuid = request.headers["beeline-device-uuid"]
 
   if (!uuid) return null
 
@@ -99,102 +107,148 @@ export function getDeviceUUID (request) {
     return null
   } else {
     uuid =
-      uuid.substr(0, 8) + "-" +
-      uuid.substr(8, 4) + "-" +
-      uuid.substr(12, 4) + "-" +
-      uuid.substr(16, 4) + "-" +
+      uuid.substr(0, 8) +
+      "-" +
+      uuid.substr(8, 4) +
+      "-" +
+      uuid.substr(12, 4) +
+      "-" +
+      uuid.substr(16, 4) +
+      "-" +
       uuid.substr(20, 12)
     return uuid
   }
 }
 
-
-export function roundToNearestCent (value) {
+export function roundToNearestCent(value) {
   return Math.round(value * 100) / 100
 }
 
-export function assertFound (object, message) {
+export function assertFound(object, message) {
   if (!object) throw new NotFoundError(message)
 }
 
-var months = 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'.split(',')
-var dayOfWeek = 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'.split(',')
+let months = "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(",")
+let dayOfWeek = "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(
+  ","
+)
 
-export function formatDate (date) {
-  if (!date) return ''
-  if (typeof (date) === 'string') {
+export function formatDate(date) {
+  if (!date) return ""
+  if (typeof date === "string") {
     date = new Date(date)
   }
-  if (typeof (date) === 'number') {
-    date = new Date(date)
-  }
-  assert(date instanceof Date)
-
-  return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear()
-}
-export function formatDateUTC (date) {
-  if (!date) return ''
-  if (typeof (date) === 'string') {
-    date = new Date(date)
-  }
-  if (typeof (date) === 'number') {
+  if (typeof date === "number") {
     date = new Date(date)
   }
   assert(date instanceof Date)
 
-  return date.getUTCDate() + ' ' + months[date.getUTCMonth()] + ' ' + date.getUTCFullYear()
+  return (
+    date.getDate() + " " + months[date.getMonth()] + " " + date.getFullYear()
+  )
 }
-
-export function formatDateLong (date) {
-  if (!date) return ''
-
-  if (typeof (date) === 'string') {
+export function formatDateUTC(date) {
+  if (!date) return ""
+  if (typeof date === "string") {
     date = new Date(date)
   }
-  if (typeof (time) === 'number') {
+  if (typeof date === "number") {
+    date = new Date(date)
+  }
+  assert(date instanceof Date)
+
+  return (
+    date.getUTCDate() +
+    " " +
+    months[date.getUTCMonth()] +
+    " " +
+    date.getUTCFullYear()
+  )
+}
+
+export function formatDateLong(date) {
+  if (!date) return ""
+
+  if (typeof date === "string") {
+    date = new Date(date)
+  }
+  if (typeof time === "number") {
     date = new Date(date)
   }
 
-  return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() +
-    ', ' + dayOfWeek[date.getDay()]
+  return (
+    date.getDate() +
+    " " +
+    months[date.getMonth()] +
+    " " +
+    date.getFullYear() +
+    ", " +
+    dayOfWeek[date.getDay()]
+  )
 }
 
-export function formatTime24 (time) {
-  if (typeof (time) === 'string') {
+export function formatTime24(time) {
+  if (typeof time === "string") {
     time = new Date(time)
   }
-  if (typeof (time) === 'number') {
+  if (typeof time === "number") {
     time = new Date(time)
   }
-  return leftPad(time.getHours(), 2, '0') + ':' + leftPad(time.getMinutes(), 2, '0')
+  return (
+    leftPad(time.getHours(), 2, "0") + ":" + leftPad(time.getMinutes(), 2, "0")
+  )
 }
 
-export function formatTime12 (time) {
-  if (typeof (time) === 'string') {
+export function formatTime12(time) {
+  if (typeof time === "string") {
     time = new Date(time)
   }
-  if (typeof (time) === 'number') {
+  if (typeof time === "number") {
     time = new Date(time)
   }
-  var hours = time.getHours()
-  var minutes = time.getMinutes()
+  let hours = time.getHours()
+  let minutes = time.getMinutes()
 
-  var hours12 = (hours % 12) || 12
+  let hours12 = hours % 12 || 12
 
-  return leftPad(hours12, 2, '\u2007') + ':' + leftPad(minutes, 2, '0') +
-    ' ' + (hours < 12 ? 'AM' : 'PM')
+  return (
+    leftPad(hours12, 2, "\u2007") +
+    ":" +
+    leftPad(minutes, 2, "0") +
+    " " +
+    (hours < 12 ? "AM" : "PM")
+  )
 }
 
-export function assertUTCMidnight (date) {
+export function assertUTCMidnight(date) {
   try {
     assert(date instanceof Date, `${date} is not a Date`)
 
-    var errorMessage = `Date ${date.toISOString()} is not in UTC midnight`
+    let errorMessage = `Date ${date.toISOString()} is not in UTC midnight`
     assert.strictEqual(date.getUTCHours(), 0, errorMessage)
     assert.strictEqual(date.getUTCMinutes(), 0, errorMessage)
     assert.strictEqual(date.getUTCSeconds(), 0, errorMessage)
     assert.strictEqual(date.getUTCMilliseconds(), 0, errorMessage)
   } catch (e) {
     throw new InvalidArgumentError(e.message)
+  }
+}
+
+/**
+ * Return the next {day} in the week from {date}
+ *
+ * @param {object} date
+ * @param {integer} day
+ * @return {object}
+ */
+export function getNextDayInWeek(date, day) {
+  const today = date.isoWeekday()
+
+  if (today <= day) {
+    // if day is in same week
+    return date.isoWeekday(day)
+  } else {
+    // otherwise, return day in next week
+    return date.add(1, "weeks").isoWeekday(day)
   }
 }
