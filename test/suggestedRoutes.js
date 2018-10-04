@@ -507,8 +507,12 @@ lab.experiment("Suggested routes manipulation", function () {
       endClusterRadius: 4000,
       endWalkingDistance: 400,
       timeAllowance: 1800 * 1000, // Half an hour
-      daysOfWeek: 31, // 0b0011111 = Mon-Fri
+      matchDaysOfWeek: true,
       dataSource: "suggestions",
+      imputedDwellTime: 10000,
+      includeAnonymous: false,
+      createdSince: Date.now() - 365 * 24 * 60 * 60 * 1000,
+      suboptimalStopChoiceAllowance: 10000,
     }
 
     // Intercept calls to routing.beeline.sg
