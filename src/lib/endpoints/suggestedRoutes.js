@@ -83,7 +83,7 @@ const buildCrowdstartRouteDetails = async function(
 
   let date = moment().add(DEFAULT_CROWDSTART_START)
   date = getNextDayInWeek(date, 1).toDate() // Get nearest Monday
-  let crowdstartExpiry = moment(date).add(DEFAULT_CROWDSTART_VALIDITY)
+  let crowdstartExpiry = moment().add(DEFAULT_CROWDSTART_VALIDITY)
   crowdstartExpiry = getNextDayInWeek(crowdstartExpiry, 5).toDate() // Get nearest Friday
   const dateAtTime = msOfDay => {
     return moment(date)

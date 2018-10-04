@@ -244,7 +244,7 @@ lab.experiment("Suggested routes manipulation", function () {
     // get start date 3 mths and 2 wks away on a Monday
     const startDate = getNextDayInWeek(moment().add(3, 'M').add(2, 'w'), 1)
     // get end date 3 mths away from start date on a Friday
-    const endDate = getNextDayInWeek(moment(startDate).add(3, 'M'), 5)
+    const endDate = getNextDayInWeek(moment().add(3, 'M'), 5)
     expect(route.trips[0].date.getTime()).most(startDate)
     expect(new Date(route.notes.crowdstartExpiry).getTime()).most(endDate)
 
@@ -372,7 +372,7 @@ lab.experiment("Suggested routes manipulation", function () {
     // get start date 3 mths and 2 wks away on a Monday
     const startDate = getNextDayInWeek(moment().add(3, 'M').add(2, 'w'), 1)
     // get end date 3 mths away from start date on a Friday
-    const endDate = getNextDayInWeek(moment(startDate).add(3, 'M'), 5)
+    const endDate = getNextDayInWeek(moment().add(3, 'M'), 5)
     expect(route.trips[0].date.getTime()).most(startDate)
     expect(new Date(route.notes.crowdstartExpiry).getTime()).most(endDate)
 
