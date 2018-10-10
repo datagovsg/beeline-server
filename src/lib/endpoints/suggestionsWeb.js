@@ -513,6 +513,10 @@ export function register(server, options, next) {
           time: Joi.number().optional(),
           maxTimeDifference: Joi.number().default(1800e3),
           includeAnonymous: Joi.boolean().default(true),
+          daysMask: Joi.number()
+            .integer()
+            .min(0)
+            .default(127),
           createdSince: Joi.date().optional(),
         },
       },
@@ -537,6 +541,10 @@ export function register(server, options, next) {
           ? `"createdAt" >= '${request.query.createdSince.toISOString()}'::timestamptz`
           : `1=1`
 
+        const daysMaskQuery = request.query.daysMask
+          ? `("daysMask" & ${request.query.daysMask}) <> 0`
+          : `1=1`
+
         let sugg = await db.query(
           `
           SELECT DISTINCT ON (board, alight, time, email)
@@ -553,7 +561,8 @@ export function register(server, options, next) {
           ) < ${request.query.endDistance}) AND
           ${timeQuery} AND
           ${includeAnonymousQuery} AND
-          ${createdSinceQuery}
+          ${createdSinceQuery} AND
+          ${daysMaskQuery}
         `,
           {
             type: db.QueryTypes.SELECT,
