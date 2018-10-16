@@ -152,19 +152,22 @@ lab.experiment("Suggested routes manipulation", function () {
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: [{
-        lat: 1.31,
-        lng: 103.81,
-        stopId: 100,
-        description: 'Bla',
-        time: 7 * 3600e3,
-      }, {
-        lat: 1.38,
-        lng: 103.88,
-        stopId: 101,
-        description: 'Bla',
-        time: 8 * 3600e3,
-      }],
+      payload: {
+        status: "Success",
+        stops: [{
+          lat: 1.31,
+          lng: 103.81,
+          stopId: 100,
+          description: 'Bla',
+          time: 7 * 3600e3,
+        }, {
+          lat: 1.38,
+          lng: 103.88,
+          stopId: 101,
+          description: 'Bla',
+          time: 8 * 3600e3,
+        }],
+      },
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -206,7 +209,10 @@ lab.experiment("Suggested routes manipulation", function () {
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: routeStops,
+      payload: {
+        status: "Success",
+        stops: routeStops,
+      },
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -293,7 +299,10 @@ lab.experiment("Suggested routes manipulation", function () {
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: routeStops,
+      payload: {
+        status: "Success",
+        stops: routeStops,
+      },
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -416,12 +425,15 @@ lab.experiment("Suggested routes manipulation", function () {
     expect(polyline.decode(route.path)).equal(decodedPath)
   })
 
-  lab.test("create suggested route with false value for route", async () => {
+  lab.test("create suggested route with failure response", async () => {
     const postResponse = await server.inject({
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: 'false', // use false as a string as booleam false is not accepted
+      payload: {
+        status: "Failure",
+        reason: "failed_to_generate_stops",
+      },
     })
     expect(postResponse.statusCode).equal(200)
 
@@ -432,7 +444,10 @@ lab.experiment("Suggested routes manipulation", function () {
     })
     expect(getResponse.statusCode).equal(200)
     expect(getResponse.result.id).equal(postResponse.result.id)
-    expect(getResponse.result.route).equal(false)
+    expect(getResponse.result.route).equal({
+      "status": "Failure",
+      "reason": "failed_to_generate_stops",
+    })
   })
 
   lab.test("suggested routes are returned in descending recency", async () => {
@@ -440,23 +455,29 @@ lab.experiment("Suggested routes manipulation", function () {
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes`,
       headers: superadminHeaders,
-      payload: 'false',
+      payload: {
+        status: "Failure",
+        reason: "failed_to_generate_stops",
+      },
     })
     expect(postResponse.statusCode).equal(200)
 
-    const routeStops = [{
-      lat: 1.31,
-      lng: 103.81,
-      stopId: 100,
-      description: 'Bus Stop 0',
-      time: 7 * 3600e3,
-    }, {
-      lat: 1.32,
-      lng: 103.82,
-      stopId: 102,
-      description: 'Bus Stop 1',
-      time: 8 * 3600e3,
-    }]
+    const routeStops = {
+      status: "Success",
+      stops: [{
+        lat: 1.31,
+        lng: 103.81,
+        stopId: 100,
+        description: 'Bus Stop 0',
+        time: 7 * 3600e3,
+      }, {
+        lat: 1.32,
+        lng: 103.82,
+        stopId: 102,
+        description: 'Bus Stop 1',
+        time: 8 * 3600e3,
+      }],
+    }
 
     const postResponse2 = await server.inject({
       method: 'POST',
@@ -466,19 +487,22 @@ lab.experiment("Suggested routes manipulation", function () {
     })
     expect(postResponse2.statusCode).equal(200)
 
-    const routeStops2 = [{
-      lat: 1.33,
-      lng: 103.81,
-      stopId: 100,
-      description: 'Bus Stop 2',
-      time: 7 * 3600e3,
-    }, {
-      lat: 1.34,
-      lng: 103.82,
-      stopId: 102,
-      description: 'Bus Stop 3',
-      time: 8 * 3600e3,
-    }]
+    const routeStops2 = {
+      status: "Success",
+      stops: [{
+        lat: 1.33,
+        lng: 103.81,
+        stopId: 100,
+        description: 'Bus Stop 2',
+        time: 7 * 3600e3,
+      }, {
+        lat: 1.34,
+        lng: 103.82,
+        stopId: 102,
+        description: 'Bus Stop 3',
+        time: 8 * 3600e3,
+      }],
+    }
 
     const postResponse3 = await server.inject({
       method: 'POST',
@@ -496,7 +520,10 @@ lab.experiment("Suggested routes manipulation", function () {
     // check that routes are sorted by desc recency
     expect(getResponse.result[0].route).equal(routeStops2)
     expect(getResponse.result[1].route).equal(routeStops)
-    expect(getResponse.result[2].route).equal(false)
+    expect(getResponse.result[2].route).equal({
+      status: "Failure",
+      reason: "failed_to_generate_stops",
+    })
   })
 
   lab.test("trigger new route generation", async () => {

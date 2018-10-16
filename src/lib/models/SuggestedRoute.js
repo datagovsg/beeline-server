@@ -1,6 +1,6 @@
 import Joi from "joi"
 
-export const routeSchema = Joi.array()
+export const stopsSchema = Joi.array()
   .items(
     Joi.object({
       lat: Joi.number(),
@@ -18,7 +18,17 @@ export const routeSchema = Joi.array()
     }).unknown()
   )
   .min(2)
-  .allow(false)
+
+export const routeSchema = Joi.alternatives().try(
+  Joi.object({
+    status: Joi.allow("Success"),
+    stops: stopsSchema,
+  }),
+  Joi.object({
+    status: Joi.allow("Failure"),
+    reason: Joi.string(),
+  })
+)
 
 /**
  * The Suggestion data model

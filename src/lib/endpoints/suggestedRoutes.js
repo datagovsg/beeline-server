@@ -65,9 +65,9 @@ const buildCrowdstartRouteDetails = async function(
   { m, transaction }
 ) {
   const days = getSchedule(suggestionInst.daysOfWeek)
-  const suggestedRoute = suggestedRouteInst.route
-  const from = suggestedRoute[0]
-  const to = suggestedRoute[suggestedRoute.length - 1]
+  const suggestedRouteStops = suggestedRouteInst.route.stops
+  const from = suggestedRouteStops[0]
+  const to = suggestedRouteStops[suggestedRouteStops.length - 1]
 
   const fromStop = subzones.getSubzoneAtPoint([from.lng, from.lat]).properties
     .niceName
@@ -75,7 +75,7 @@ const buildCrowdstartRouteDetails = async function(
     .niceName
 
   const decodedPaths = _.flatten(
-    suggestedRoute.map(r => {
+    suggestedRouteStops.map(r => {
       if (!r.pathToNext) return []
       return polyline.decode(r.pathToNext)
     })
@@ -125,7 +125,7 @@ the campaign.
             windowSize: -5 * 60e3,
           },
           tripStops: await Promise.all(
-            suggestedRoute.map(
+            suggestedRouteStops.map(
               async ({ stopId, time, numBoard, numAlight }, index) => ({
                 stopId,
                 canBoard: numBoard > 0,
