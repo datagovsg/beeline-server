@@ -550,6 +550,8 @@ lab.experiment("Suggested routes manipulation", function () {
       }
     })
 
+    let triggerTime = Date.now()
+
     const postResponse = await server.inject({
       method: 'POST',
       url: `/suggestions/${suggestion.id}/suggested_routes/trigger_route_generation`,
@@ -557,9 +559,59 @@ lab.experiment("Suggested routes manipulation", function () {
       payload: routeDetails,
     })
 
-    expect(axiosPost.called).true()
+    expect(axiosPost.calledOnce).true()
     expect(postResponse.statusCode).equal(200)
     expect(postResponse.result).equal("Job queued")
+
+    const getResponse = await server.inject({
+      method: 'GET',
+      url: `/suggestions/${suggestion.id}`,
+    })
+    expect(getResponse.statusCode).equal(200)
+    // check last trigger time
+    let lastTriggerTime = new Date(getResponse.result.lastTriggerTime).getTime()
+    expect(lastTriggerTime - triggerTime < 500).equal(true)
+
+    // trigger route generation again (within 20s)
+    const postResponse2 = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes/trigger_route_generation`,
+      headers: userHeaders,
+      payload: routeDetails,
+    })
+    // expect too many requests response
+    expect(postResponse2.statusCode).equal(429)
+    expect(postResponse2.result).equal("Too many requests to trigger route generation.")
+
+    // test for suggestion with last trigger time 24 hrs ago
+    await suggestion.update({ lastTriggerTime: Date.now() - 24 * 60 * 60e3 })
+    const getResponse2 = await server.inject({
+      method: 'GET',
+      url: `/suggestions/${suggestion.id}`,
+    })
+    expect(getResponse2.statusCode).equal(200)
+
+    triggerTime = Date.now()
+
+    const postResponse3 = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes/trigger_route_generation`,
+      headers: userHeaders,
+      payload: routeDetails,
+    })
+
+    expect(axiosPost.calledTwice).true()
+    expect(postResponse3.statusCode).equal(200)
+    expect(postResponse3.result).equal("Job queued")
+
+    const getResponse3 = await server.inject({
+      method: 'GET',
+      url: `/suggestions/${suggestion.id}`,
+    })
+    expect(getResponse3.statusCode).equal(200)
+    // check last trigger time
+    lastTriggerTime = new Date(getResponse3.result.lastTriggerTime).getTime()
+    expect(lastTriggerTime - triggerTime < 500).equal(true)
   })
 })
 

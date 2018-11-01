@@ -437,16 +437,38 @@ export function register(server, options, next) {
       auth: { access: { scope: ["user"] } },
     },
     async handler(request, reply) {
-      const response = await axios.post(
-        `${process.env.ROUTING_SERVER_URL}/suggestions/${
+      try {
+        // Get suggestion
+        let m = getModels(request)
+        const suggestionInst = await m.Suggestion.findById(
           request.params.suggestionId
-        }/update`,
-        request.payload,
-        { headers: { authorization: request.headers.authorization } }
-      )
+        )
 
-      // beeline-routing will return false on error and an array of the route on success
-      reply(response.data).code(response.status)
+        // trigger route generation if last trigger time was more than 20s ago
+        if (
+          !suggestionInst.lastTriggerTime ||
+          new Date(suggestionInst.lastTriggerTime).getTime() < Date.now() - 20e3
+        ) {
+          const response = await axios.post(
+            `${process.env.ROUTING_SERVER_URL}/suggestions/${
+              request.params.suggestionId
+            }/update`,
+            request.payload,
+            { headers: { authorization: request.headers.authorization } }
+          )
+
+          await suggestionInst.update({ lastTriggerTime: Date.now() })
+
+          // beeline-routing will return false on error and an array of the route on success
+          reply(response.data).code(response.status)
+        } 
+        // return too many requests error code
+        else {
+          reply("Too many requests to trigger route generation.").code(429)
+        }
+      } catch (err) {
+        defaultErrorHandler(reply)(err)
+      }
     },
   })
 

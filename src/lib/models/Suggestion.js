@@ -105,6 +105,11 @@ export default function(modelCache) {
       },
 
       travelTime: DataTypes.INTEGER,
+      
+      lastTriggerTime: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       indexes: [{ fields: ["userId"] } /* Necessary for reverse lookup */],
