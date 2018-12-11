@@ -410,6 +410,30 @@ export function register(server, options, next) {
 
   server.route({
     method: "POST",
+    path: "/suggestions/{suggestionId}/suggested_routes/mark_trigger_timestamp",
+    config: {
+      tags: ["api"],
+      validate: {
+        params: {
+          suggestionId: Joi.number().integer(),
+        },
+      },
+      description: `Manually mark when Beeline Routing triggered to generate a new route`,
+      auth: { access: { scope: ["user"] } },
+    },
+    handler: handleRequestWith(
+      (ig, request, { models }) =>
+        models.Suggestion.findById(request.params.suggestionId),
+      suggestionInst =>
+        suggestionInst
+          ? suggestionInst.update({ lastTriggerTime: Date.now() })
+          : suggestionInst,
+      instToJSONOrNotFound
+    ),
+  })
+
+  server.route({
+    method: "POST",
     path:
       "/suggestions/{suggestionId}/suggested_routes/trigger_route_generation",
     config: {
@@ -461,9 +485,8 @@ export function register(server, options, next) {
 
           // beeline-routing will return false on error and an array of the route on success
           reply(response.data).code(response.status)
-        } 
-        // return too many requests error code
-        else {
+        } else {
+          // return too many requests error code
           reply("Too many requests to trigger route generation.").code(429)
         }
       } catch (err) {

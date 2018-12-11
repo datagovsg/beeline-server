@@ -613,6 +613,30 @@ lab.experiment("Suggested routes manipulation", function () {
     lastTriggerTime = new Date(getResponse3.result.lastTriggerTime).getTime()
     expect(lastTriggerTime - triggerTime < 500).equal(true)
   })
+
+  lab.test("mark trigger timestamp", async () => {
+    let triggerTime = Date.now()
+
+    const postResponse = await server.inject({
+      method: 'POST',
+      url: `/suggestions/${suggestion.id}/suggested_routes/mark_trigger_timestamp`,
+      headers: userHeaders,
+    })
+
+    expect(postResponse.statusCode).equal(200)
+    // check last trigger time
+    let lastTriggerTime = new Date(postResponse.result.lastTriggerTime).getTime()
+    expect(lastTriggerTime - triggerTime < 500).equal(true)
+
+    const getResponse = await server.inject({
+      method: 'GET',
+      url: `/suggestions/${suggestion.id}`,
+    })
+    expect(getResponse.statusCode).equal(200)
+    // check last trigger time
+    lastTriggerTime = new Date(getResponse.result.lastTriggerTime).getTime()
+    expect(lastTriggerTime - triggerTime < 500).equal(true)
+  })
 })
 
 /**
