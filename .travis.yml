@@ -42,9 +42,10 @@ jobs:
         - docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
         - docker push $REPO
         - sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json
-        - git rm -f --ignore-unmatch Dockerfile
 
     - stage: eb
+      before_deploy:
+        - git rm -f --ignore-unmatch Dockerfile
       deploy:
         - provider: elasticbeanstalk
           access_key_id: $AWS_ACCESS_KEY_ID
