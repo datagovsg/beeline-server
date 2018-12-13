@@ -118,10 +118,13 @@ server.on("start", () => {
 server.on("stop", () => {
   events.emit("lifecycle", { stage: "stop" })
 })
+server.on("request", function({ info, method, url }) {
+  console.log(`${info.id} - ${method.toUpperCase()} ${url.path} -> requested`)
+})
 
 server.on("response", function({ info, method, url, response }) {
   console.log(
-    `${info.remoteAddress} - ${method.toUpperCase()} ${url.path} -> ${
+    `${info.id} - ${method.toUpperCase()} ${url.path} -> ${
       (response || {}).statusCode
     }`
   )
