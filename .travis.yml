@@ -26,18 +26,18 @@ before_deploy:
   # Build out a docker image, push it to Docker Hub,
   # then tell Elastic Beanstalk (later) of the recently pushed image
   - if [ "$BABEL_ENV" == "web" ]; then
-      docker login -u $DOCKER_USER -p $DOCKER_PASSWORD;
-      export REPO=$TRAVIS_REPO_SLUG;
-      export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`;
-      echo "Building image $REPO:$TAG";
-      ls;
-      cat .dockerignore;
-      cat Dockerfile;
-      docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT .;
-      docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG;
-      docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER;
-      docker push $REPO;
-      sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json;
+      docker login -u $DOCKER_USER -p $DOCKER_PASSWORD &&
+      export REPO=$TRAVIS_REPO_SLUG &&
+      export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi` &&
+      echo "Building image $REPO:$TAG" &&
+      ls &&
+      cat .dockerignore &&
+      cat Dockerfile &&
+      docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT . &&
+      docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG &&
+      docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER &&
+      docker push $REPO &&
+      sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json &&
       git rm -f --ignore-unmatch Dockerfile;
     fi
 deploy:
