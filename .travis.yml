@@ -11,98 +11,102 @@ env:
   - TZ=Asia/Singapore
   matrix:
   - BABEL_ENV=web
-script:
-  - ls
-  - npm test
-  - git remote set-branches --add origin master
-  - git fetch
-  - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
-  - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
-after_success:
-  - echo "On success, the working directory looks like..."
-  - ls
-before_deploy:
-  - if [ "$BABEL_ENV" == "web" ]; then npm install -g babel && npm run build; fi
-  # Build out a docker image, push it to Docker Hub,
-  # then tell Elastic Beanstalk (later) of the recently pushed image
-  - if [ "$BABEL_ENV" == "web" ]; then
-      docker login -u $DOCKER_USER -p $DOCKER_PASSWORD &&
-      export REPO=$TRAVIS_REPO_SLUG &&
-      export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi` &&
-      echo "Building image $REPO:$TAG" &&
-      ls &&
-      cat .dockerignore &&
-      git checkout Dockerfile &&
-      cat Dockerfile &&
-      docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT . &&
-      docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG &&
-      docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER &&
-      docker push $REPO &&
-      sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json &&
-      rm -f Dockerfile;
-    fi
-deploy:
-  - provider: lambda
-    function_name: expireStaleRoutePasses-staging
-    region: ap-southeast-1
-    role: arn:aws:iam::882000534153:role/service-role/batch
-    runtime: nodejs8.10
-    timeout: 300
-    memory_size: 256
-    handler_name: handler
-    module_name: dist/lib/aws/expireStaleRoutePasses
-    access_key_id: AKIAJQPC5ZBLGJX36AXA
-    secret_access_key:
-      secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
-    on:
-      branch: master
-  - provider: lambda
-    function_name: expireStaleRoutePasses-prod
-    region: ap-southeast-1
-    role: arn:aws:iam::882000534153:role/service-role/batch
-    runtime: nodejs8.10
-    timeout: 300
-    memory_size: 256
-    handler_name: handler
-    module_name: dist/lib/aws/expireStaleRoutePasses
-    access_key_id: AKIAJQPC5ZBLGJX36AXA
-    secret_access_key:
-      secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
-    on:
-      branch: production
+stages:
+  - name: test
+  - name: eb
+    if: branch IN ($DEV_BRANCH, $PROD_BRANCH, $ADMIN_BRANCH)
+  - name: lambda
+    if: branch IN ($DEV_BRANCH, $PROD_BRANCH)
+jobs:
+  include:
+    - stage: test
+      script:
+        - ls
+        - npm test
+        - git remote set-branches --add origin master
+        - git fetch
+        - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
+        - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
+      after_success:
+        - echo "On success, the working directory looks like..."
+        - ls
+        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+        - export REPO=$TRAVIS_REPO_SLUG
+        - export TAG=`if [ "$TRAVIS_BRANCH" == "production" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
+        - echo "Building image $REPO:$TAG"
+        - cat .dockerignore
+        - ls
+        - cat Dockerfile
+        - docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT .
+        - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG
+        - docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+        - docker push $REPO
+        - sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json
+        - git rm -f --ignore-unmatch Dockerfile
 
-  - provider: elasticbeanstalk
-    access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
-    skip_cleanup: true
-    region: "ap-southeast-1"
-    app: "beeline-server"
-    env: "beeline-server-dev"
-    bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
-    on:
-      branch: $DEV_BRANCH
+    - stage: eb
+      deploy:
+        - provider: elasticbeanstalk
+          access_key_id: $AWS_ACCESS_KEY_ID
+          secret_access_key: $AWS_SECRET_ACCESS_KEY
+          region: "ap-southeast-1"
+          app: "beeline-server"
+          env: "beeline-server-dev"
+          bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
+          on:
+            branch: $DEV_BRANCH
 
-  - provider: elasticbeanstalk
-    access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
-    skip_cleanup: true
-    region: "ap-southeast-1"
-    app: "beeline-server"
-    env: "beeline-server-prod"
-    bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
-    on:
-      branch: $PROD_BRANCH
+        - provider: elasticbeanstalk
+          access_key_id: $AWS_ACCESS_KEY_ID
+          secret_access_key: $AWS_SECRET_ACCESS_KEY
+          region: "ap-southeast-1"
+          app: "beeline-server"
+          env: "beeline-server-prod"
+          bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
+          on:
+            branch: $PROD_BRANCH
 
-  - provider: elasticbeanstalk
-    access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key: $AWS_SECRET_ACCESS_KEY
-    skip_cleanup: true
-    region: "ap-southeast-1"
-    app: "beeline-server"
-    env: "beeline-server-admin"
-    bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
-    on:
-      branch: $ADMIN_BRANCH
+        - provider: elasticbeanstalk
+          access_key_id: $AWS_ACCESS_KEY_ID
+          secret_access_key: $AWS_SECRET_ACCESS_KEY
+          region: "ap-southeast-1"
+          app: "beeline-server"
+          env: "beeline-server-admin"
+          bucket_name: "elasticbeanstalk-ap-southeast-1-882000534153"
+          on:
+            branch: $ADMIN_BRANCH
+
+    - stage: lambda
+      deploy:
+        - provider: lambda
+          function_name: expireStaleRoutePasses-staging
+          region: ap-southeast-1
+          role: arn:aws:iam::882000534153:role/service-role/batch
+          runtime: nodejs8.10
+          timeout: 300
+          memory_size: 256
+          handler_name: handler
+          module_name: dist/lib/aws/expireStaleRoutePasses
+          access_key_id: AKIAJQPC5ZBLGJX36AXA
+          secret_access_key:
+            secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
+          on:
+            branch: $DEV_BRANCH
+        - provider: lambda
+          function_name: expireStaleRoutePasses-prod
+          region: ap-southeast-1
+          role: arn:aws:iam::882000534153:role/service-role/batch
+          runtime: nodejs8.10
+          timeout: 300
+          memory_size: 256
+          handler_name: handler
+          module_name: dist/lib/aws/expireStaleRoutePasses
+          access_key_id: AKIAJQPC5ZBLGJX36AXA
+          secret_access_key:
+            secure: ClGc8wru2ABNdSYKEZ0DvVQQWKkIRN0Tvr8ae1AqhMPqimOqVMmsaLVITsHiZ07+mjnXs5kNOEouIht2tORMj1nCOrZ2oMB7dd9x6PX40/mL0kdRwWVJovUpExbY/IQfIMSijm063FapoFuhcehjEh5EtDdXsWZ+hESFI1zasQEEI0SkhCWLFgEqbNPlJoG+5oRNPMwyaMF1hLg0KeiJDyBzS14m68ERb3KoqjBNDylYfxeA2P/QuASP8ue4eIPY5/eK6qhMCw3L6LQmlYrB1SDVkSf6vFKLzlmi54gGoxGI4QpmE+TOV8P2fiMQlzPtG8yji6/zlOlPjObD+g24kBfzKHyWf9W3V20bBoZOnPCQ7vu9hMGJChHFJJrrjL2P2oPaCoTrt3u1i8v7z3FxOkYRlgxKoBgtFQEKN2vii0kR5+jDXD6JYrXjyq3sihZngasbGqbrGs+DlotuW2Lb+ApKJeJ96giyjoC4HcEVR/2LHuhHdRS34YXHNpp4Lq4ZH/ZCNhOEVwVaozRvyVt4qlB9di7puxNgnxeiQVQP8AkO8Y2LGGz1ooGLAbQLW5A+kiD5ScMaNVD6vK/611gQe8LQzA/AxhfpMJPgeE3N1uDkjToWWJ5IzuLArKaaGCm8CzSigRKBUD5+Dm91qXLfl/8xcY5KTcQvth0SUflyumg=
+          on:
+            branch: $PROD_BRANCH
+
 
 addons:
   postgresql: '9.6'
