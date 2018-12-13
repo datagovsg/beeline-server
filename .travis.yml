@@ -9,8 +9,6 @@ env:
   - CXX=g++-4.8
   - SHUTUP=1
   - TZ=Asia/Singapore
-  matrix:
-  - BABEL_ENV=web
 stages:
   - name: test
   - name: eb
@@ -41,13 +39,17 @@ jobs:
         - docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG
         - docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
         - docker push $REPO
-        - sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json
 
     - stage: eb
-      before_deploy:
+      script:
+        - npm install -g babel 
+        - npm run build
+        - sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json
         - git rm -f --ignore-unmatch Dockerfile
+        - rm -f Dockerfile
       deploy:
         - provider: elasticbeanstalk
+          skip_cleanup: true
           access_key_id: $AWS_ACCESS_KEY_ID
           secret_access_key: $AWS_SECRET_ACCESS_KEY
           region: "ap-southeast-1"
@@ -58,6 +60,7 @@ jobs:
             branch: $DEV_BRANCH
 
         - provider: elasticbeanstalk
+          skip_cleanup: true
           access_key_id: $AWS_ACCESS_KEY_ID
           secret_access_key: $AWS_SECRET_ACCESS_KEY
           region: "ap-southeast-1"
@@ -68,6 +71,7 @@ jobs:
             branch: $PROD_BRANCH
 
         - provider: elasticbeanstalk
+          skip_cleanup: true
           access_key_id: $AWS_ACCESS_KEY_ID
           secret_access_key: $AWS_SECRET_ACCESS_KEY
           region: "ap-southeast-1"
@@ -78,6 +82,9 @@ jobs:
             branch: $ADMIN_BRANCH
 
     - stage: lambda
+      script:
+        - npm install -g babel 
+        - npm run build
       deploy:
         - provider: lambda
           function_name: expireStaleRoutePasses-staging
