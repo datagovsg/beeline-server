@@ -14,9 +14,9 @@ env:
 stages:
   - name: test
   - name: eb
-    if: branch IN ("$DEV_BRANCH", "$PROD_BRANCH", "$ADMIN_BRANCH")
+    if: branch IN (env(DEV_BRANCH), env(PROD_BRANCH), env(ADMIN_BRANCH))
   - name: lambda
-    if: branch IN ("$DEV_BRANCH", "$PROD_BRANCH")
+    if: branch IN (env(DEV_BRANCH), env(PROD_BRANCH))
 jobs:
   include:
     - stage: test
