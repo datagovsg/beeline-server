@@ -12,11 +12,15 @@ env:
   matrix:
   - BABEL_ENV=web
 script:
+  - ls
   - npm test
   - git remote set-branches --add origin master
   - git fetch
   - echo Linting the following JS files in this branch - `git diff --name-only origin/master -- '*.js'`
   - ./node_modules/eslint/bin/eslint.js --max-warnings 0 `git diff --name-only origin/master -- '*.js'`
+after_success:
+  - echo "On success, the working directory looks like..."
+  - ls
 before_deploy:
   - if [ "$BABEL_ENV" == "web" ]; then npm install -g babel && npm run build; fi
   # Build out a docker image, push it to Docker Hub,
