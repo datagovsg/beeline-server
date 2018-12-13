@@ -1,4 +1,4 @@
-FROM node:9.4.0-alpine
+FROM node:10-alpine
 
 WORKDIR /app
 
@@ -9,12 +9,7 @@ COPY package.json  .
 # Install tzdata so that we can easily get the local datetime
 RUN apk update && apk add tzdata
 
-RUN apk update && apk add vips-dev fftw-dev --update-cache \
-  --repository https://dl-3.alpinelinux.org/alpine/edge/testing/
-
-RUN apk update && apk add --no-cache make gcc g++ python && \
-  npm install && \
-  apk del make gcc g++ python
+RUN npm install
 
 # Copy rest of source code into image
 COPY data/ data/

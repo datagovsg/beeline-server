@@ -22,6 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "@mapbox/togeojson": "^0.16.0",
+    "@opengovsg/ura-subzones": "^1.0.0",
     "axios": "^0.18.0",
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.6.0",
@@ -59,7 +60,7 @@
     "q": "^1.4.1",
     "seedrandom": "^2.4.2",
     "sequelize": "^3.33.0",
-    "sharp": "^0.19.0",
+    "sharp": "^0.21.1",
     "sinon": "^1.17.7",
     "smtp-connection": "^2.3.1",
     "smtp-server": "^1.9.0",
@@ -70,7 +71,6 @@
     "timemachine": "^0.2.8",
     "twilio": "^2.9.0",
     "typescript": "^1.8.2",
-    "@opengovsg/ura-subzones": "^1.0.0",
     "uuid": "^3.1.0",
     "vision": "^4.1.0",
     "xmldom": "^0.1.22"
