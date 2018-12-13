@@ -994,7 +994,7 @@ lab.experiment("Route manipulation", function () {
         startLng: startLatLng[0],
         endLat: endLatLng[1],
         endLng: endLatLng[0],
-        arrivalTime: new Date("1970-01-01T08:00:00+0800").toISOString(),
+        arrivalTime: new Date("2016-01-01T08:00:00+0800").toISOString(),
         startTime: new Date("2016-02-01T00:00:00+0800").toISOString(),
         endTime: new Date("2016-02-03T00:00:00+0800").toISOString(),
       }),

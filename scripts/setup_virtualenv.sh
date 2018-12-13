@@ -80,4 +80,4 @@ then
 fi
 
 # npm run actual_test
-node_modules/lab/bin/lab ${LAB_OPTIONS:-} -T node_modules/lab-babel --globals SharedArrayBuffer,Atomics,WebAssembly,__core-js_shared__ -S $TESTS
+node_modules/lab/bin/lab ${LAB_OPTIONS:-} -T node_modules/lab-babel --globals BigUint64Array,BigInt64Array,BigInt,URL,URLSearchParams,SharedArrayBuffer,Atomics,WebAssembly,__core-js_shared__ -S $TESTS
