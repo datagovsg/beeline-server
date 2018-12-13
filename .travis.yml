@@ -37,7 +37,7 @@ before_deploy:
       docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG &&
       docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER &&
       docker push $REPO &&
-      sed -i -e "s/@TAG/$TAG/g" Dockerrun.aws.json &&
+      sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json &&
       git rm -f --ignore-unmatch Dockerfile;
     fi
 deploy:
