@@ -118,13 +118,19 @@ server.on("start", () => {
 server.on("stop", () => {
   events.emit("lifecycle", { stage: "stop" })
 })
-server.on("request", function({ info, method, url }) {
-  console.log(`${info.id} - ${method.toUpperCase()} ${url.path} -> requested`)
+server.on("request-internal", function(request, event, tags) {
+  if (tags.received) {
+    console.log(
+      `${request.id} - ${request.method.toUpperCase()} ${
+        request.url.path
+      } -> requested`
+    )
+  }
 })
 
-server.on("response", function({ info, method, url, response }) {
+server.on("response", function({ id, method, url, response }) {
   console.log(
-    `${info.id} - ${method.toUpperCase()} ${url.path} -> ${
+    `${id} - ${method.toUpperCase()} ${url.path} -> ${
       (response || {}).statusCode
     }`
   )
