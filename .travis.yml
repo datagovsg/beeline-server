@@ -32,13 +32,14 @@ before_deploy:
       echo "Building image $REPO:$TAG" &&
       ls &&
       cat .dockerignore &&
+      git checkout Dockerfile &&
       cat Dockerfile &&
       docker build -f Dockerfile -t $REPO:$TRAVIS_COMMIT . &&
       docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG &&
       docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER &&
       docker push $REPO &&
       sed -i -e "s/@TAG/$TRAVIS_COMMIT/g" Dockerrun.aws.json &&
-      git rm -f --ignore-unmatch Dockerfile;
+      rm -f Dockerfile;
     fi
 deploy:
   - provider: lambda
@@ -73,6 +74,7 @@ deploy:
   - provider: elasticbeanstalk
     access_key_id: $AWS_ACCESS_KEY_ID
     secret_access_key: $AWS_SECRET_ACCESS_KEY
+    skip_cleanup: true
     region: "ap-southeast-1"
     app: "beeline-server"
     env: "beeline-server-dev"
@@ -83,6 +85,7 @@ deploy:
   - provider: elasticbeanstalk
     access_key_id: $AWS_ACCESS_KEY_ID
     secret_access_key: $AWS_SECRET_ACCESS_KEY
+    skip_cleanup: true
     region: "ap-southeast-1"
     app: "beeline-server"
     env: "beeline-server-prod"
@@ -93,6 +96,7 @@ deploy:
   - provider: elasticbeanstalk
     access_key_id: $AWS_ACCESS_KEY_ID
     secret_access_key: $AWS_SECRET_ACCESS_KEY
+    skip_cleanup: true
     region: "ap-southeast-1"
     app: "beeline-server"
     env: "beeline-server-admin"
