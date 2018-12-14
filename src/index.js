@@ -129,10 +129,12 @@ server.on("request-internal", function(request, event, tags) {
 })
 
 server.on("response", function({ id, method, url, response }) {
+  const [startTime] = id.split(":")
+  const elapsed = Date.now() - Number(startTime)
   console.log(
     `${id} - ${method.toUpperCase()} ${url.path} -> ${
       (response || {}).statusCode
-    }`
+    } in ${elapsed}ms`
   )
 })
 
