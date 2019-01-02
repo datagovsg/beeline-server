@@ -974,6 +974,11 @@ will not be refunded here, so we will make a net profit.`,
           const indicativeTrip = await m.IndicativeTrip.findById(routeInst.id)
           const amount = indicativeTrip.nextPrice
 
+          assertFound(
+            amount,
+            "Route has no trip, or has a trip which is not priced"
+          )
+
           // create transaction and transactionItems
           const transactionData = {
             type: "freeRoutePass",

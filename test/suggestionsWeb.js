@@ -407,7 +407,7 @@ lab.experiment("Suggestions from the web", function() {
     ).length).equal(1)
   })
 
-  lab.test("updateTravelTime()", { timeout: 5000 }, async function() {
+  lab.test.skip("updateTravelTime() - no longer needed", { timeout: 5000 }, async function() {
     let suggestion = await m.Suggestion.create({
       board: { type: "Point", coordinates: [103.947466, 1.373081] },
       alight: { type: "Point", coordinates: [103.755615, 1.316429] },

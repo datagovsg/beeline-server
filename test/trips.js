@@ -67,14 +67,16 @@ lab.experiment("Trip manipulation", function () {
       transportCompanyId: companyId,
     })
 
+    const year = new Date().getFullYear() + 1
+
     let tripInst = await m.Trip.create({
-      date: `2018-03-01`,
+      date: `${year}-03-01`,
       capacity: 10,
       routeId: routeInst.id,
       price: (Math.random() * 3 + 3).toFixed(2),
       tripStops: [
-        { stopId: stopInstances[0].id, canBoard: true, canAlight: true, time: `2018-03-01T08:30:00+0800`},
-        { stopId: stopInstances[1].id, canBoard: true, canAlight: true, time: `2018-03-01T08:31:00+0800`},
+        { stopId: stopInstances[0].id, canBoard: true, canAlight: true, time: `${year}-03-01T08:30:00+0800`},
+        { stopId: stopInstances[1].id, canBoard: true, canAlight: true, time: `${year}-03-01T08:31:00+0800`},
       ],
       bookingInfo: {
         windowType: 'stop',
@@ -455,6 +457,8 @@ lab.experiment("Trip manipulation", function () {
       authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
 
+    const year = new Date().getFullYear() + 1
+
     // Get the ticket reports
     // Dates OK
     let defaultQuery = {
@@ -462,8 +466,8 @@ lab.experiment("Trip manipulation", function () {
       page: 1,
       orderBy: 'createdAt',
       order: 'desc',
-      tripStartDate: new Date('2018-03-01').getTime(),
-      tripEndDate: new Date('2018-03-02').getTime(),
+      tripStartDate: new Date(`${year}-03-01`).getTime(),
+      tripEndDate: new Date(`${year}-03-02`).getTime(),
       statuses: JSON.stringify(['valid']),
     }
     let ticketReport = await server.inject({
@@ -598,6 +602,8 @@ lab.experiment("Trip manipulation", function () {
       authorization: `Bearer ${adminCreds.result.sessionToken}`,
     }
 
+    const year = new Date().getFullYear() + 1
+
     // Get the ticket reports
     // Dates OK
     let defaultQuery = {
@@ -605,8 +611,8 @@ lab.experiment("Trip manipulation", function () {
       page: 1,
       orderBy: 'createdAt',
       order: 'desc',
-      tripStartDate: new Date('2018-03-01').getTime(),
-      tripEndDate: new Date('2018-03-02').getTime(),
+      tripStartDate: new Date(`${year}-03-01`).getTime(),
+      tripEndDate: new Date(`${year}-03-02`).getTime(),
       statuses: JSON.stringify(['valid']),
       format: 'csv',
     }
