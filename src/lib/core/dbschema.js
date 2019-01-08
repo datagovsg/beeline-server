@@ -1,8 +1,5 @@
-const _ = require("lodash")
 const Sequelize = require("sequelize")
 const assert = require("assert")
-
-const config = require("../../config")
 
 let cache = null
 
@@ -54,9 +51,13 @@ const genModelAndTasks = seq => {
 
 const dbLogin = () => {
   // Grab the config parameters
-  let sequelizeOptions = _.extend({}, config.sequelizeOptions, {
+  let sequelizeOptions = {
     logging: process.env.SHUTUP ? false : console.warn,
-  })
+    pool: {
+      max: Number(process.env.MAX_DB_CONNECTIONS) || 5,
+      min: 0,
+    },
+  }
 
   // Find read replicas
   let replicas = []

@@ -7,7 +7,6 @@ const Inert = require("inert")
 const Vision = require("vision")
 const HapiSwagger = require("hapi-swagger")
 const version = require("../package.json").version
-const config = require("./config.js")
 const routes = require("./lib/routes.js")
 const events = require("./lib/events/events.js")
 const AnalyticsPlugin = require("./lib/util/analytics.js")
@@ -91,10 +90,8 @@ const server = new Hapi.Server({
 })
 
 // Configure the connection parameters
-// SSL can be enabled by configuring the tls parameter in config.js
 server.connection({
-  port: process.env.PORT || config.port,
-  tls: config.tls,
+  port: process.env.PORT,
   routes: {
     cors: {
       additionalHeaders: [
