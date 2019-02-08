@@ -46,7 +46,7 @@
     "jsdom": "^11.1.0",
     "jsonwebtoken": "^8.2.1",
     "left-pad": "^1.0.1",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "mimos": "^3.0.3",
     "moment": "^2.22.1",
     "ngeohash": "^0.6.0",
