@@ -1,7 +1,10 @@
-const email = require('./email')
+/* eslint-disable no-console */
+const email = require("../util/email")
+const { db } = require("../core/dbschema")()
 
-const ticketCountAgreesWithAvailability = db => db.query(
-  `
+const ticketCountAgreesWithAvailability = db =>
+  db.query(
+    `
   WITH availability as (SELECT trips.id AS "tripId",
       trips.capacity AS "seatsTotal",
       (trips.capacity - count("tripStops".id))::integer AS "seatsAvailable",
@@ -24,11 +27,12 @@ const ticketCountAgreesWithAvailability = db => db.query(
   and t."routeId" = r.id
   and not (r.tags @> ARRAY['crowdstart']::varchar[])
   `,
-  { type: db.QueryTypes.SELECT }
-)
+    { type: db.QueryTypes.SELECT }
+  )
 
-const allPaymentsHaveData = db => db.query(
-  `select t.*, p."paymentResource"
+const allPaymentsHaveData = db =>
+  db.query(
+    `select t.*, p."paymentResource"
   from tickets t, "transactionItems" tip, "transactionItems" tis, payments p
   where p.data is null
   and p.id = tip."itemId" and tip."itemType" = 'payment'
@@ -37,42 +41,53 @@ const allPaymentsHaveData = db => db.query(
   and t.status = 'valid' and t."createdAt" > '2017-01-01'
   order by t."createdAt" desc
   `,
-  { type: db.QueryTypes.SELECT }
-)
+    { type: db.QueryTypes.SELECT }
+  )
 
-export function conductSmokeTestAndEmail (db = require('../core/dbschema')().db) {
+const conductSmokeTestAndEmail = function conductSmokeTestAndEmail(db) {
   return Promise.all([
     ticketCountAgreesWithAvailability(db),
-    allPaymentsHaveData(db)
+    allPaymentsHaveData(db),
   ])
     .then(async ([badAvailTrips, badTickets]) => {
-      var mailText = ""
+      let mailText = ""
       if (badAvailTrips.length > 0) {
         mailText +=
           "The following trips report seat availability different from what is actually available:\n" +
           badAvailTrips.map(t => JSON.stringify(t) + "\n")
       }
       if (badTickets.length > 0) {
-        mailText += "\n" +
+        mailText +=
+          "\n" +
           "The following tickets lack payments:\n" +
           badTickets.map(t => JSON.stringify(t) + "\n")
       }
 
-      console.log(mailText || 'Smoketest complete - No Problems')
+      console.log(mailText || "Smoketest complete - No Problems")
       if (mailText) {
         const mail = {
-          from: 'smoketest-noreply@beeline.sg',
-          to: process.env.EMAIL || 'admin@beeline.sg',
-          subject: 'Smoke test ' + new Date().toISOString().split('T')[0] + ': ' +
-            (mailText ? 'Problems Found' : 'No Problems'),
+          from: "smoketest-noreply@beeline.sg",
+          to: process.env.EMAIL || "admin@beeline.sg",
+          subject:
+            "Smoke test " +
+            new Date().toISOString().split("T")[0] +
+            ": " +
+            (mailText ? "Problems Found" : "No Problems"),
           text: mailText,
         }
 
         email
           .sendMail(mail)
-          .then(info => console.log('Mail sent.'))
-          .catch(err => console.log('Mail send failure: ' + err))
+          .then(info => console.log("Mail sent."))
+          .catch(err => console.log("Mail send failure: " + err))
       }
     })
     .catch(err => console.error(err))
+}
+
+exports.conductSmokeTestAndEmail = conductSmokeTestAndEmail
+exports.handler = function(event, context, callback) {
+  return conductSmokeTestAndEmail(db)
+    .then(() => callback(null, "Complete"))
+    .catch(callback)
 }

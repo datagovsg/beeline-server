@@ -1,12 +1,12 @@
-const {conductSmokeTestAndEmail} = require('../util/smoketest')
-const {startPolling} = require('./scheduler')
+const { conductSmokeTestAndEmail } = require("../aws/smoketest")
+const { startPolling } = require("./scheduler")
 
-async function register (server, options, next) {
+const register = async function register(server, options, next) {
   if (!process.env.NO_DAEMON_MONITORING) {
-    const {models, db} = server.plugins.sequelize
+    const { db } = server.plugins.sequelize
     const options = {
       run: () => conductSmokeTestAndEmail(db),
-      name: 'Smoke Test',
+      name: "Smoke Test",
       interval: 24 * 60 * 60000,
     }
 
@@ -17,9 +17,9 @@ async function register (server, options, next) {
 }
 
 register.attributes = {
-  name: 'daemon-smoketest',
-  dependencies: ['sequelize'],
-  version: '1.0.0'
+  name: "daemon-smoketest",
+  dependencies: ["sequelize"],
+  version: "1.0.0",
 }
 
-module.exports = {register}
+module.exports = { register }
