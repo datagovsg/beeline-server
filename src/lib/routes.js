@@ -32,7 +32,6 @@ module.exports = (server, options, next) => {
       require("./custom/wrs"),
       require("./custom/userSuggestedRoutes"),
       require("./daemons/eventSubscriptions"),
-      require("./daemons/smoketest"),
     ])
     .then(next, err => {
       console.warn(err)
