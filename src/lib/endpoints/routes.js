@@ -359,12 +359,6 @@ the \`startDate\` defaults to the time of request.
           request.payload.transportCompanyId
         )
 
-        if (request.auth.credentials.scope !== "superadmin") {
-          /* Label and tags are set by superadmin */
-          delete request.payload.label
-          delete request.payload.tags
-        }
-
         // remove duplicate tags if available
         if (request.payload.tags) {
           request.payload.tags = _.uniq(request.payload.tags)
@@ -433,12 +427,6 @@ the \`startDate\` defaults to the time of request.
             "manage-routes",
             request.payload.transportCompanyId
           )
-        }
-
-        if (request.auth.credentials.scope !== "superadmin") {
-          /* Label and tags are set by superadmin */
-          delete request.payload.label
-          delete request.payload.tags
         }
 
         // remove duplicate tags if available

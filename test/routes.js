@@ -1765,10 +1765,6 @@ WHERE id = :id
         order: [['id', 'desc']],
       })
     }
-    const noLabelAndTags = function (r) {
-      expect(r.label).null()
-      expect(r.tags).null()
-    }
     const matchesLabelAndTags = function (r) {
       expect(r.label).equal(routeInfo.label)
       expect(r.tags).equal(routeInfo.tags)
@@ -1790,7 +1786,7 @@ WHERE id = :id
     })
     expect(response.statusCode).equal(200)
     const routePostByAdmin = await latest()
-    noLabelAndTags(routePostByAdmin)
+    matchesLabelAndTags(routePostByAdmin)
     matchesEverythingElse(routePostByAdmin)
 
     // Created by superadmin, no label and tags
@@ -1819,9 +1815,17 @@ WHERE id = :id
     })
     expect(response.statusCode).equal(200)
     const routePutByAdmin = await latest()
-    matchesLabelAndTags(routePutByAdmin)
     matchesEverythingElse(routePutByAdmin)
     expect(routePutByAdmin.companyTags).equal(['banana'])
+    expect(routePutByAdmin.label).equal('NewLabel')
+    expect(routePutByAdmin.tags).equal(['new', 'tags'])
+
+    await server.inject({
+      method: "PUT",
+      url: `/routes/${routePostBySuperadmin.id}`,
+      payload: routeInfo,
+      headers: authHeaders,
+    })
 
     response = await server.inject({
       method: "PUT",
