@@ -36,7 +36,7 @@
     "commonmark": "^0.26.0",
     "dateformat": "^2.0.0",
     "fast-csv": "^2.4.0",
-    "handlebars": "^4.0.5",
+    "handlebars": "^4.3.0",
     "hapi": "^16.6.3",
     "hapi-swagger": "^7.7.1",
     "hoek": "^4.2.1",
